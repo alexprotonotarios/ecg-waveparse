@@ -4,6 +4,20 @@ No package has been published. On 5 September 2026, both registry metadata
 endpoints returned HTTP 404 for `ecg-waveparse`. This does not reserve either
 name or establish account ownership.
 
+## Maintainer accounts
+
+Create personal accounts on [npm](https://www.npmjs.com/signup) and
+[PyPI](https://pypi.org/account/register/), ideally with the same username as
+GitHub if available. Verify the email address, enable two-factor authentication,
+and retain recovery codes privately. The package name is independent of the
+maintainer username. Confirm both usernames before configuring release ownership;
+do not put passwords, recovery codes or API tokens in source files or messages.
+
+Both registry accounts were still to be created when this preparation was
+written. There is no need to create an organisation to finish the initial setup.
+
+## Publication configuration
+
 | Setting | Intended value |
 | --- | --- |
 | npm package / Python distribution | `ecg-waveparse` |
@@ -14,9 +28,9 @@ name or establish account ownership.
 | Protected publication environment | `release` |
 | Initial prepared version | `0.1.0` |
 
-The package repository metadata points to the intended clean repository. Its
-creation/visibility and registry authentication are separate from local package
-verification. The existing data-bearing `ecg_digitizer` repository must stay
+The package repository metadata points to the existing private clean repository.
+Registry ownership, authentication and public visibility remain separate from
+local package verification. The existing data-bearing `ecg_digitizer` repository must stay
 private. Do not copy its git history into the release repository.
 
 Before configuring publication, complete LICENSING.md, inspect the source audit,

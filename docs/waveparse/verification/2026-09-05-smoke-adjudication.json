@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-05",
+  "clinicalValidationUse": "engineering-only",
+  "sourceRegressionReportSha256": "0fe752cf46759045bcbf7a3ee75bfc9ce22bfa95820bc7bc4c0c1a0ca539a3c9",
+  "package": {
+    "version": "0.1.0",
+    "entrySha256": "ecafa2910baccc433ccd0e384f4448b625841e0d3894db6628cc01099bd0b3fd",
+    "payloadManifestSha256": "ade3c347c983238365078466537f950166684da5956e079fe338039cec19265f",
+    "runtimeManifestSha256": "d9465db541f0d2ad0541eb04f36e3fee930a8bbbc1a50135fe2950b63203fc3a"
+  },
+  "historicalGateConfigurationSha256": "c6494a13adb2807e36fe4917ecc7d1edb557076701bbe90cdcb619237b125184",
+  "libraryGateConfigurationSha256": "021ec968477c876f68251399961c343947c4c2edf9a30a02be1afe3f7bab4339",
+  "inferenceRepeatedForAdjudication": false,
+  "installedPayloadFilesReverified": 30,
+  "cases": [
+    {
+      "id": "smoke__low_resolution",
+      "runId": "run_04eee9affed04423b354c0117b3741fc",
+      "sourceSha256": "f7aaf12af3594cf0915a4f02970ae416050600da1e718914283eadf176e86e66",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "status": "needs_review",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "geometry-standard-6x2-path-2200"
+      },
+      "reliability": {
+        "version": 1,
+        "originalPreserved": true,
+        "morphologyReconstructed": false,
+        "sourceSha256": "f7aaf12af3594cf0915a4f02970ae416050600da1e718914283eadf176e86e66",
+        "sourceWidth": 900,
+        "sourceHeight": 550,
+        "annotationMaskedPixels": 0,
+        "annotationMaskedFraction": 0,
+        "annotationComponents": [],
+        "nominalSampleRateHz": 500,
+        "effectiveSampleRateHz": 90,
+        "uncertainSampleCount": 976,
+        "missingSampleCount": 0,
+        "confidence": "lower",
+        "confidenceReasons": [
+          "All 12 expected trace positions were recoverable, but the result did not meet the strongest independent-agreement or source-verification threshold.",
+          "The source is below one or more preferred acquisition-fidelity targets; effective resolution and uncertainty should be reviewed."
+        ],
+        "inputQualityOutcome": "insufficient",
+        "inputQualityReasons": [
+          "source-resolution-below-quantitative-floor",
+          "source-short-edge-below-quantitative-floor"
+        ],
+        "reviewRequired": true
+      },
+      "scoreSha256": "bde4d680782285ba8edc85651f945f5229af9c41602d8a10eb2592c5081e2b70",
+      "summary": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29997,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 26.382972442289354,
+        "macroMeanCorrelation": 0.9755623325001932,
+        "macroMeanCoverage": 0.9998999999999999,
+        "macroMeanHighErrorRecall": 0.6271289407241879,
+        "macroMeanPhysionetSnrDb": 13.936554005462083,
+        "macroMeanRmseUv": 25.62096454456179,
+        "macroMeanSafeUsableFraction": 0.9583,
+        "macroMeanUncertaintyScoreAuroc": 0.9859440149015201,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.6160159731842813,
+        "macroMeanVisibleRmseUv": 25.62096454456179,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12
+      },
+      "morphologyEvents": [
+        {
+          "lead": "V1",
+          "amplitudeErrorUv": -101.66392660756173,
+          "candidateAmplitudeUv": 380.09546336043826,
+          "candidateLocalProminenceUv": 380.09546336043826,
+          "candidateSample": 793,
+          "candidateTurningPoint": true,
+          "direction": "peak",
+          "id": "v1_r_prime",
+          "kind": "r_prime_peak",
+          "preserved": true,
+          "timingErrorMs": 0.0,
+          "truthAmplitudeUv": 481.759389968,
+          "truthSample": 793
+        },
+        {
+          "lead": "V3",
+          "amplitudeErrorUv": -248.2472114738041,
+          "candidateAmplitudeUv": 439.2333919651959,
+          "candidateLocalProminenceUv": 573.4275803582927,
+          "candidateSample": 1210,
+          "candidateTurningPoint": true,
+          "direction": "peak",
+          "id": "v3_r_peak",
+          "kind": "fragmented_qrs_peak",
+          "preserved": true,
+          "timingErrorMs": 0.0,
+          "truthAmplitudeUv": 687.480603439,
+          "truthSample": 1210
+        },
+        {
+          "lead": "V3",
+          "amplitudeErrorUv": -55.238778381159236,
+          "candidateAmplitudeUv": 114.99447870884076,
+          "candidateLocalProminenceUv": -59.725236667561404,
+          "candidateSample": 1219,
+          "candidateTurningPoint": false,
+          "direction": "peak",
+          "id": "v3_r_prime_notch",
+          "kind": "narrow_r_prime_peak",
+          "preserved": false,
+          "timingErrorMs": -6.0,
+          "truthAmplitudeUv": 170.23325709,
+          "truthSample": 1222
+        }
+      ],
+      "verifiedAssets": {
+        "input": {
+          "sha256": "f7aaf12af3594cf0915a4f02970ae416050600da1e718914283eadf176e86e66",
+          "bytes": 425129
+        },
+        "diagnostic": {
+          "sha256": "53532250fa78bec7758ce87160090e88739a542fd80fe43b880dd135a4f1ad3c",
+          "bytes": 4775002
+        },
+        "paperRender": {
+          "sha256": "97caa6624ef563ca2ea66c8da6003bf818bb373ce1c1e08312c9d652420e4ab5",
+          "bytes": 97132
+        },
+        "canonicalCsv": {
+          "sha256": "2afe35bc5564aec9145eeebfd7b4af86074114ecf4b5d8faa25f3bb8c8aa0e92",
+          "bytes": 599651
+        },
+        "segmentsCsv": {
+          "sha256": "5b73b4cbe76ff9cc507577efb006620338274c09c5035e55a62721403493d999",
+          "bytes": 595501
+        },
+        "uncertaintyCsv": {
+          "sha256": "7ac411d2e7307a59165c39ca6ec1232e63ad6d424238bea21e3f232d46488413",
+          "bytes": 2113464
+        },
+        "metadataCsv": {
+          "sha256": "3ab53a860fbd11e892ef0876608717157414ace6dbd3d617ac6a6955778d99a3",
+          "bytes": 102
+        },
+        "provenanceJson": {
+          "sha256": "5695d3d96687602213eff98fd8b2a3b6bddd280bc9de6a810fa02ccb356e97bc",
+          "bytes": 118124
+        }
+      },
+      "sourceAndDiagnosticVisuallyInspected": true,
+      "visualReviewScope": "Engineering comparison of all twelve trace positions, broad morphology and segmentation. No clinical acceptance or validation."
+    },
+    {
+      "id": "smoke__perspective",
+      "runId": "run_e29d4cbe8f0246e79d0808ff74f79507",
+      "sourceSha256": "47cc3d0e725bd493ae763ade3bde8a3bd1de4718d1f3ee55e6b04640e260cd82",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "status": "needs_review",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "preprocessed-path-2200"
+      },
+      "reliability": {
+        "version": 1,
+        "originalPreserved": true,
+        "morphologyReconstructed": false,
+        "sourceSha256": "47cc3d0e725bd493ae763ade3bde8a3bd1de4718d1f3ee55e6b04640e260cd82",
+        "sourceWidth": 2264,
+        "sourceHeight": 1384,
+        "annotationMaskedPixels": 0,
+        "annotationMaskedFraction": 0,
+        "annotationComponents": [],
+        "nominalSampleRateHz": 500,
+        "effectiveSampleRateHz": 220,
+        "uncertainSampleCount": 7043,
+        "missingSampleCount": 144,
+        "confidence": "lower",
+        "confidenceReasons": [
+          "All 12 expected trace positions were recoverable, but the result did not meet the strongest independent-agreement or source-verification threshold."
+        ],
+        "inputQualityOutcome": "acceptable",
+        "inputQualityReasons": [
+          "source-quality-gate-passed"
+        ],
+        "reviewRequired": true
+      },
+      "scoreSha256": "7da022182805fc6108c535ec67e6dc90ef3106bc1b5534b77f5b76bc5633f667",
+      "summary": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29847,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 18.50637141173065,
+        "macroMeanCorrelation": 0.988228472022105,
+        "macroMeanCoverage": 0.9948999999999999,
+        "macroMeanHighErrorRecall": 0.9623336616504731,
+        "macroMeanPhysionetSnrDb": 16.923222372343712,
+        "macroMeanRmseUv": 18.088338499944907,
+        "macroMeanSafeUsableFraction": 0.7592666666666666,
+        "macroMeanUncertaintyScoreAuroc": 0.9510136690240952,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.273323339337964,
+        "macroMeanVisibleRmseUv": 18.088338499944907,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1.0,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12
+      },
+      "morphologyEvents": [
+        {
+          "lead": "V1",
+          "amplitudeErrorUv": -59.60870621350915,
+          "candidateAmplitudeUv": 422.15068375449084,
+          "candidateLocalProminenceUv": 415.7512162163924,
+          "candidateSample": 792,
+          "candidateTurningPoint": true,
+          "direction": "peak",
+          "id": "v1_r_prime",
+          "kind": "r_prime_peak",
+          "preserved": true,
+          "timingErrorMs": -2.0,
+          "truthAmplitudeUv": 481.759389968,
+          "truthSample": 793
+        },
+        {
+          "lead": "V3",
+          "amplitudeErrorUv": -7.185674681062665,
+          "candidateAmplitudeUv": 680.2949287579373,
+          "candidateLocalProminenceUv": 680.2949287579373,
+          "candidateSample": 1211,
+          "candidateTurningPoint": true,
+          "direction": "peak",
+          "id": "v3_r_peak",
+          "kind": "fragmented_qrs_peak",
+          "preserved": true,
+          "timingErrorMs": 2.0,
+          "truthAmplitudeUv": 687.480603439,
+          "truthSample": 1210
+        },
+        {
+          "lead": "V3",
+          "amplitudeErrorUv": -50.895160441580856,
+          "candidateAmplitudeUv": 119.33809664841914,
+          "candidateLocalProminenceUv": 126.28403671878156,
+          "candidateSample": 1222,
+          "candidateTurningPoint": true,
+          "direction": "peak",
+          "id": "v3_r_prime_notch",
+          "kind": "narrow_r_prime_peak",
+          "preserved": true,
+          "timingErrorMs": 0.0,
+          "truthAmplitudeUv": 170.23325709,
+          "truthSample": 1222
+        }
+      ],
+      "verifiedAssets": {
+        "input": {
+          "sha256": "47cc3d0e725bd493ae763ade3bde8a3bd1de4718d1f3ee55e6b04640e260cd82",
+          "bytes": 2461711
+        },
+        "diagnostic": {
+          "sha256": "465a1cba8c8ec50b5737d74a5ca284326612471590b53850ea62612cdc4f3ae2",
+          "bytes": 3560851
+        },
+        "paperRender": {
+          "sha256": "1caae3d6b05d424c72dfe035e0b710f0f392a01dc65626e8f93154e66e52bdf8",
+          "bytes": 96850
+        },
+        "canonicalCsv": {
+          "sha256": "ee6f2df8a93759c349b8b984a8b3a2979630afdb8ebe854f103349c15f3d803d",
+          "bytes": 597085
+        },
+        "segmentsCsv": {
+          "sha256": "b0e65fe492f47457db16f7f1901d2d8e976c20aaf26894d68f01f3146cb6b8b5",
+          "bytes": 592935
+        },
+        "uncertaintyCsv": {
+          "sha256": "08253e7bf754be955314367b604f3dc533fa0c376dfd74478923d08f68d2b7bf",
+          "bytes": 2256626
+        },
+        "metadataCsv": {
+          "sha256": "15eff85b87dcdd48d4efa55783a9b7e3fc6263373b68581912111229ae8652a6",
+          "bytes": 95
+        },
+        "provenanceJson": {
+          "sha256": "23f559fdaa30d23865b2716f3ec7b97acc178326df5cadf2522cef95b32a09a0",
+          "bytes": 131581
+        }
+      },
+      "sourceAndDiagnosticVisuallyInspected": true,
+      "visualReviewScope": "Engineering comparison of all twelve trace positions, broad morphology and segmentation. No clinical acceptance or validation."
+    }
+  ]
+}

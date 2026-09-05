@@ -62,6 +62,21 @@ Compare the six smoke cases with the existing quality expectations separately:
 The comparison preserves the gate configuration. A changed refusal/recovery
 decision is reported as a mismatch, even when the new waveform score is good.
 
+For the current installed-library recovery and mandatory-review contract, use:
+
+```bash
+"$RUNTIME_PYTHON" scripts/check_waveparse_regression.py \
+  --report /tmp/waveparse-regression-new-run/report.json \
+  --gates benchmark/suites/waveparse-smoke-gates.json \
+  --output /tmp/waveparse-regression-new-run/library-smoke-gates.json
+```
+
+This also checks the app status, publication outcome and review flag, which the
+benchmark's scoring-completion status cannot establish. The low-resolution case
+must report no more than 90 Hz effective sampling. See
+[SMOKE-ADJUDICATION.md](SMOKE-ADJUDICATION.md) for the unchanged historical
+comparison, original quantitative thresholds and known lost morphology.
+
 Rendering uses fonts available on the host. Generated image hashes can differ
 between platforms, so compare each run against its saved manifest and truth;
 do not infer numerical parity from a shared case name.

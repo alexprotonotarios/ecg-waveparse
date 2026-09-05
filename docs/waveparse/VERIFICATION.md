@@ -99,11 +99,13 @@ the eight sequential calls was about 24.4 minutes on this MPS-enabled Mac.
 
 The unchanged historical smoke gates reported 30 of 32 checks satisfied and
 **two status mismatches**: low resolution and perspective were expected to
-abstain but returned reviewable outputs. The comparison is therefore failed,
-not all green. Their measured errors are in the table above; the decision
-expectations need explicit evidence review before a public release. The gate
-configuration was not weakened or rewritten to make the run pass. See
-`verification/2026-09-05-historical-smoke-gates.json`.
+abstain but returned reviewable outputs. That historical comparison remains
+failed. The subsequent [evidence review](SMOKE-ADJUDICATION.md) traced the
+mismatch to an August policy change. A separate library configuration restores
+the original quantitative limits and adds review-state and morphology checks;
+all 66 checks pass on the saved run. Low resolution still loses the narrow V3
+notch and remains a limited, lower-confidence result. No inference policy was
+relaxed and no clinical result was accepted by this adjudication.
 
 
 ## Platform and lifecycle evidence

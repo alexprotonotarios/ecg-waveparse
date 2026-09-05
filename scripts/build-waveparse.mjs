@@ -134,6 +134,8 @@ for (const file of ['scripts/waveparse.test.ts', 'scripts/test_waveparse_runtime
 for (const file of ['scripts/waveparse-runtime-inventory.py', 'scripts/waveparse-regression.mjs', 'scripts/audit-waveparse-source.mjs', 'scripts/score_digitization.py', 'scripts/check_waveparse_regression.py', 'ecg_benchmark/scoring.py', 'ecg_benchmark/gates.py', 'benchmark/suites/smoke-gates.json', 'benchmark/suites/waveparse-3x4.json', 'benchmark/suites/waveparse-12x1.json']) sourceFiles.add(file);
 sourceFiles.add('scripts/digitizer-reliability.test.ts');
 sourceFiles.add('scripts/test_native_grid_digitizer.py');
+sourceFiles.add('scripts/test_waveparse_regression_gates.py');
+sourceFiles.add('benchmark/suites/waveparse-smoke-gates.json');
 for (const file of sourceFiles) {
   if (file === 'src/lib/local-reference.ts') continue;
   await copy(file, source);

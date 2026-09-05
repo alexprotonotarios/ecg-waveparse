@@ -68,7 +68,17 @@ maintainers confirming whether CC BY-SA 4.0 covers both named neural weight
 files and their use/distribution in a separately installed commercial runtime.
 Also confirm the three RapidOCR model files' redistribution terms. Ask whether
 additional notices, training-data restrictions or model-specific licences apply.
-No request has been sent to maintainers on the user's behalf.
+The release owner approved both prepared messages. They were posted as
+[Open-ECG-Digitizer issue 47](https://github.com/Ahus-AIM/Open-ECG-Digitizer/issues/47)
+and [RapidOCR discussion 736](https://github.com/RapidAI/RapidOCR/discussions/736)
+on 5 September 2026, then reloaded and checked against the approved text.
+Maintainer answers are still outstanding. The messages and verification receipt
+are saved in `licensing/open-ecg-enquiry.md`, `licensing/rapidocr-enquiry.md` and
+`licensing/2026-09-05-enquiries.json`. The existing Open-ECG
+licence issue confirms addition of the repository licence, without an explicit
+answer about the weights. The tagged RapidOCR README identifies Baidu as the
+model copyright holder; its installed catalogue matches all three pinned model
+hashes. Both enquiries ask about those precise remaining boundaries.
 
 These questions are deliberately concrete. The current packaging does not mirror
 the models, invent an MIT grant for them, or assert that every application using
