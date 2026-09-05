@@ -13,8 +13,6 @@ jobs:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    env:
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +33,8 @@ jobs:
       - run: pnpm waveparse:test && python -m unittest scripts.test_waveparse_runtime
       - run: WAVEPARSE_PYTHON=$(command -v python) pnpm waveparse:verify
       - name: Explicit runtime setup and real installed-package inference
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
         shell: bash
         run: |
           set -euo pipefail
