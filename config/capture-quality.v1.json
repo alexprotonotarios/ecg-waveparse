@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "profileId": "acquisition-source-quality-v1",
+  "evidenceBasis": "Acquisition-time targets reuse deterministic source-resolution, sharpness, glare, screen-artifact, and page-geometry evidence already used by the digitizer. They report expected fidelity and retake guidance but do not prove that visible ECG traces are unrecoverable. Camera captures use higher preferred resolution targets than archival imports because the operator can retake them.",
+  "thresholds": {
+    "minimumCameraLongEdgePixels": 2400,
+    "minimumCameraShortEdgePixels": 1200,
+    "minimumCameraHighAspectShortEdgePixels": 700,
+    "highAspectRatioThreshold": 2.2,
+    "minimumCaptureSharpnessLaplacianVariance": 200,
+    "maximumCapturePerspectiveStrength": 0.025,
+    "maximumCaptureRotationDegrees": 0.75,
+    "minimumDetectedPageAreaFraction": 0.55,
+    "clientAnalysisLongEdgePixels": 1200,
+    "clientMinimumSharpnessLaplacianVariance": 200,
+    "clientSevereBlurLaplacianVariance": 50,
+    "clientMinimumContrastRange": 45,
+    "clientSevereContrastRange": 25,
+    "clientMinimumInkWidthFraction": 0.55,
+    "clientMinimumInkHeightFraction": 0.3,
+    "stableReadyFrameCount": 4
+  }
+}

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ecg-waveparse"
+version = "0.1.0"
+description = "Local ECG image-to-signal digitization with a shared, versioned engine"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = {file = "LICENSE"}
+authors = [{name = "Alexandros Protonotarios"}]
+classifiers = ["Programming Language :: Python :: 3.12", "Operating System :: MacOS", "Operating System :: POSIX :: Linux", "Typing :: Typed"]
+
+[project.scripts]
+ecg-waveparse = "ecg_waveparse.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/alexprotonotarios/ecg-waveparse"
+Source = "https://github.com/alexprotonotarios/ecg-waveparse"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ecg_waveparse"]
+
+[tool.hatch.build]
+ignore-vcs = true
+
+[tool.hatch.build.targets.sdist]
+include = ["src/ecg_waveparse", "pyproject.toml", "README.md", "LICENSE", "LICENSES", "THIRD_PARTY_NOTICES.md", "docs"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"THIRD_PARTY_NOTICES.md" = "ecg_waveparse/THIRD_PARTY_NOTICES.md"
+"README.md" = "ecg_waveparse/README.md"
+"docs" = "ecg_waveparse/docs"
+"LICENSES" = "ecg_waveparse/LICENSES"

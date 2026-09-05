@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "runtimeId": "waveparse-0.1.0-97a15087d4ab",
+  "node": "22.22.2",
+  "python": "3.12.9",
+  "engineCommit": "97a15087d4abcda843da8c58ee74b1d8f47e6f9a",
+  "sourceUrl": "https://codeload.github.com/Ahus-AIM/Open-ECG-Digitizer/tar.gz/97a15087d4abcda843da8c58ee74b1d8f47e6f9a",
+  "sourceFiles": {
+    "LICENSE": "a1fdc6cdcf6bf2e6c0059da8f87108c7003fd7d1a2093179e7cb5767c7c6876b",
+    "pyproject.toml": "6a3870de8b39d8ddd4b7c73f0184f90aed04bc94250aedab15e5eed67cf588f1",
+    "setup.py": "56b4cbb31c5331b40c248642824238064ea288fc7e08ec763bca65ac5e5ca97e",
+    "src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/config/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/config/default.py": "28f230a39c1b0e1f0a3d7bfe52c03831236b98cd98716f6d7510ecb6cb935d6b",
+    "src/config/evaluate.yml": "115a5437769b9d82ffa295f56c38fc2dfd96ba2042f60e712d0bb90148270606",
+    "src/config/inference_wrapper.yml": "870e8b27f86687e6f4dd5295b8984793bc2d84a26410bb37ff6f7112e64df40a",
+    "src/config/inference_wrapper_ahus_testset.yml": "3b5bc19ad09078599b7d056e1d9a4872f3c0bf67dc2aaf7210956aa0fad9dd45",
+    "src/config/inference_wrapper_george-moody-2024.yml": "2ea9416ae5e2751fc2084523fdb95253072157acda9fde8ddd44429b6650b181",
+    "src/config/lead_layouts_all.yml": "da4be2f530771c0b729c9854d8bdabf8a25d7e9598b072227d0b32e1a5266e67",
+    "src/config/lead_layouts_george-moody-2024.yml": "bfcb996a73e0e8bfe26407472669efbb0d0f9ad406810569a1f74bbe219adca9",
+    "src/config/lead_layouts_reduced.yml": "10263efed464386e0694446f64dc43b092207d2bcfd0831c728fa7440d5f0e34",
+    "src/config/lead_name_unet.yml": "702281280497ac13250e55d83efb4cbb78a5eb9cf01fd0f0b57e9c0cf699b40f",
+    "src/config/photo_transform.yml": "5d5c9659235f680f402949288c457d320e7ffeda1bd6ca08e49a890e0c3c7e1b",
+    "src/config/unet.yml": "85825e061fb87d259b8af3399c10c92683c7a381db7b47cfa8362f29e48d90c3",
+    "src/dataset/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/dataset/ecg_scan.py": "678b565bb124631b6cfff01b8a3b5240b22a1b613144a7b7107ed75dd4aa9ecd",
+    "src/dataset/synthetic_lead_text.py": "f705bca02e9e677be3b271b0a99025d5a6f28d0de558f80ace8d130554be30a2",
+    "src/digitize.py": "33c70e9562741664b890f00d7110db2a6b4bda6b3c5a0f9ff4b977a93788fba9",
+    "src/evaluate.py": "69b7b46b64404e35252794ce19926a8a80be9ff8dc12e7604bc513a928046e72",
+    "src/loss/loss.py": "35ac463e3b38618634b78a973cce22a24f157080aa607debee1935c3caa1d7d4",
+    "src/model/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/model/cropper.py": "e00342396d80e1395a7bad7e847b30841c46d20d3086330bf9fd10a16ac65ef2",
+    "src/model/dewarper.py": "bdd06de88ca21dedf74390f355a2da9faf6ad79af0e1fe3466ac4624670e5664",
+    "src/model/inference_wrapper.py": "fc7ee888f4cb1065d3d6b80b1a73b7babd2f1cb989bce770515be9208b3d4fd2",
+    "src/model/lead_identifier.py": "dace2ea2f52468efba81e8ab20a0793c35a1376c51c35ca0a002e7fcd0a07c85",
+    "src/model/perspective_detector.py": "a5b50c3acbbacc3a57d7111b5b97dac56f0fd70d52c39506ba06b82265fb1de5",
+    "src/model/pixel_size_finder.py": "82b18209b432daf6a1f4cb4cc3cfe6b9304737eabb53713b9492c3191158d197",
+    "src/model/signal_extractor.py": "1b9a92bff449cda5599f066e24c84bf782b101d2822dee26bc143d293bcdf5dc",
+    "src/model/unet.py": "549a06ed70eb1bc04a833c3fc0ec71f3cb46ba3e9fe6ad08262fd9dcd87b55a2",
+    "src/optimizer/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/optimizer/adammuon.py": "803fa22cde10a80ba9aad74fbbc5840175dd8f750d151b8c03298b7c953e98da",
+    "src/report/binarization_example.py": "5d0abeafb6f4c4b275c6f2de5439891d41adce84e8b26415715601e340a80b47",
+    "src/report/perspective_example_figure.py": "ae6c6124427ca12bf0207951604c4d654e1d3aa3bd3e127bddec8bc0e56b894f",
+    "src/report/perspective_example_images.py": "1cf0f06cc7d4eaf3fdfc62bc0f1a7a4a210b314dbc5c596ff5aaa21544e7ebae",
+    "src/scripts/redact/apply_digital_redaction.py": "9fe7b90cfa4169d7744ee2d50e0d10c2e19c47b3f6edbe3b4e98c50aa4c592df",
+    "src/scripts/redact/detect_redacted_regions.ipynb": "178b34f4391c6f9b24aa75ec877fc9eb33b4dfee329a137a60d42ebf988062e6",
+    "src/scripts/split_transform_ecg_dataset.py": "e6f8af51ec837d13921fa5bc0181bb93e93e46022fd9b3e0444e50330f45bc02",
+    "src/scripts/visualize_transforms.py": "f582dcdbfc8eb361116cd5224a85ab4120caf66b9704d697609dc2beae7c876a",
+    "src/train.py": "15c85704702e0d9dbb333db2d4dc304c95d6374fd0f886350dd417ce88f6cf34",
+    "src/transform/overlay_images/en_large_text.png": "f71c23f3e4633abb4d4548624c1aa5cb17f27d9b773f885c4106fa69fcc5a91c",
+    "src/transform/overlay_images/korean_wikipedia.png": "c67418ba723c1a49a977a3293ac434e3a24a3015b29cd3a6e97ace8437e5dc28",
+    "src/transform/vision.py": "b71273fa5f7838c11ef1898732ed51a08b596569f606ae357bcf5acf0f0b3b4f",
+    "src/utils.py": "eaf86e4cdec8fc2dd9fcf4dc304d9e5adb8a414abb05041246e688459c523902"
+  },
+  "models": [
+    {
+      "path": "weights/unet_weights_07072025.pt",
+      "bytes": 90464067,
+      "sha256": "17fe7071ef270102631306127262fc08c250d79d4e3aeb572ab1719dd34d320b",
+      "url": "https://media.githubusercontent.com/media/Ahus-AIM/Open-ECG-Digitizer/97a15087d4abcda843da8c58ee74b1d8f47e6f9a/weights/unet_weights_07072025.pt"
+    },
+    {
+      "path": "weights/lead_name_unet_weights_07072025.pt",
+      "bytes": 23296757,
+      "sha256": "840bd6bf2433ee6c22db67f57c861d9d427f29e10a32eeb334f0bcf061b175a2",
+      "url": "https://media.githubusercontent.com/media/Ahus-AIM/Open-ECG-Digitizer/97a15087d4abcda843da8c58ee74b1d8f47e6f9a/weights/lead_name_unet_weights_07072025.pt"
+    }
+  ],
+  "ocrModels": [
+    {
+      "path": "rapidocr/models/PP-OCRv6_det_small.onnx",
+      "bytes": 9929594,
+      "sha256": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f"
+    },
+    {
+      "path": "rapidocr/models/PP-OCRv6_rec_small.onnx",
+      "bytes": 21234383,
+      "sha256": "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884"
+    },
+    {
+      "path": "rapidocr/models/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+      "bytes": 585532,
+      "sha256": "e47acedf663230f8863ff1ab0e64dd2d82b838fceb5957146dab185a89d6215c"
+    }
+  ],
+  "bootstrapSha256": "c808dd8d2565eba55a10b2e09429ab02b5057668dee5e22cae33cfa69d8d4773",
+  "platforms": {
+    "darwin-arm64": {
+      "requirements": "requirements-runtime-macos-arm64.txt",
+      "requirementsSha256": "b910bd9a0a8a946a6ca0e2a014b53f7472ee278652aa05220888bf72d454694c"
+    },
+    "linux-x64": {
+      "requirements": "requirements-runtime-linux-x64.txt",
+      "requirementsSha256": "44381c90d19c629538fe0e5e71a88a9778aaf5b811b3e29f1bb3bb5416235f44"
+    }
+  }
+}

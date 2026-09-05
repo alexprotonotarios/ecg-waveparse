@@ -1,0 +1,3320 @@
+{
+  "contextSelection": {
+    "standard_12x1": {
+      "annotation": {
+        "contextPriorMeanRmseUv": 83.045,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 83.045,
+        "meanImprovementUv": 0.0,
+        "validationCaseCount": 1
+      },
+      "degraded-raster": {
+        "contextPriorMeanRmseUv": 149.814,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 149.814,
+        "meanImprovementUv": 0.0,
+        "validationCaseCount": 3
+      },
+      "geometry": {
+        "contextPriorMeanRmseUv": 116.821,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 99.307,
+        "meanImprovementUv": -17.514,
+        "validationCaseCount": 2
+      }
+    },
+    "standard_3x4": {
+      "annotation": {
+        "contextPriorMeanRmseUv": 24.811,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 24.493,
+        "meanImprovementUv": -0.319,
+        "validationCaseCount": 1
+      },
+      "blur": {
+        "contextPriorMeanRmseUv": 43.401,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 50.904,
+        "meanImprovementUv": 7.503,
+        "validationCaseCount": 1
+      },
+      "clean": {
+        "contextPriorMeanRmseUv": 242.695,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 115.377,
+        "meanImprovementUv": -127.318,
+        "validationCaseCount": 2
+      },
+      "degraded-raster": {
+        "contextPriorMeanRmseUv": 111.064,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 111.064,
+        "meanImprovementUv": 0.0,
+        "validationCaseCount": 3
+      },
+      "geometry": {
+        "contextPriorMeanRmseUv": 44.11,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 71.01,
+        "meanImprovementUv": 26.9,
+        "validationCaseCount": 3
+      }
+    },
+    "standard_6x2": {
+      "blur": {
+        "contextPriorMeanRmseUv": 292.82,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 293.002,
+        "meanImprovementUv": 0.183,
+        "validationCaseCount": 3
+      },
+      "clean": {
+        "contextPriorMeanRmseUv": 95.902,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 107.437,
+        "meanImprovementUv": 11.535,
+        "validationCaseCount": 1
+      },
+      "geometry": {
+        "contextPriorMeanRmseUv": 131.695,
+        "enabled": false,
+        "layoutPriorMeanRmseUv": 130.736,
+        "meanImprovementUv": -0.959,
+        "validationCaseCount": 2
+      }
+    }
+  },
+  "layouts": {
+    "standard_12x1": {
+      "candidates": {
+        "annotation-masked": {
+          "caseCount": 1,
+          "medianRmseUv": 276.566,
+          "p75RmseUv": 276.566,
+          "riskRmseUv": 174.037,
+          "shrunkRmseUv": 151.953
+        },
+        "artifact-preprocessed-centroid-2200": {
+          "caseCount": 4,
+          "medianRmseUv": 176.576,
+          "p75RmseUv": 229.609,
+          "riskRmseUv": 169.666,
+          "shrunkRmseUv": 149.051
+        },
+        "centroid-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 91.1,
+          "p75RmseUv": 91.1,
+          "riskRmseUv": 143.126,
+          "shrunkRmseUv": 121.042
+        },
+        "crop-lower-panel-path-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 864.704,
+          "p75RmseUv": 864.704,
+          "riskRmseUv": 272.06,
+          "shrunkRmseUv": 249.976
+        },
+        "crop-upper-panel-centroid-1500": {
+          "caseCount": 1,
+          "medianRmseUv": 200.671,
+          "p75RmseUv": 200.671,
+          "riskRmseUv": 161.388,
+          "shrunkRmseUv": 139.304
+        },
+        "default": {
+          "caseCount": 1,
+          "medianRmseUv": 276.566,
+          "p75RmseUv": 276.566,
+          "riskRmseUv": 174.037,
+          "shrunkRmseUv": 151.953
+        },
+        "geometry-standard-12x1-centroid-2200": {
+          "caseCount": 5,
+          "medianRmseUv": 46.658,
+          "p75RmseUv": 121.575,
+          "riskRmseUv": 109.459,
+          "shrunkRmseUv": 86.844
+        },
+        "geometry-standard-12x1-path-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 32.489,
+          "p75RmseUv": 32.489,
+          "riskRmseUv": 133.358,
+          "shrunkRmseUv": 111.273
+        },
+        "ink-path-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 32.489,
+          "p75RmseUv": 32.489,
+          "riskRmseUv": 133.358,
+          "shrunkRmseUv": 111.273
+        },
+        "label-thresh-001": {
+          "caseCount": 4,
+          "medianRmseUv": 106.011,
+          "p75RmseUv": 126.711,
+          "riskRmseUv": 134.711,
+          "shrunkRmseUv": 117.688
+        },
+        "label-thresh-002": {
+          "caseCount": 3,
+          "medianRmseUv": 130.574,
+          "p75RmseUv": 205.354,
+          "riskRmseUv": 151.933,
+          "shrunkRmseUv": 128.359
+        },
+        "label-thresh-005": {
+          "caseCount": 2,
+          "medianRmseUv": 240.936,
+          "p75RmseUv": 248.838,
+          "riskRmseUv": 179.069,
+          "shrunkRmseUv": 159.575
+        },
+        "morphology-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 135.758,
+          "p75RmseUv": 135.758,
+          "riskRmseUv": 150.569,
+          "shrunkRmseUv": 128.485
+        },
+        "path-1500": {
+          "caseCount": 1,
+          "medianRmseUv": 526.648,
+          "p75RmseUv": 526.648,
+          "riskRmseUv": 215.718,
+          "shrunkRmseUv": 193.633
+        },
+        "preprocessed-native-grid-path": {
+          "caseCount": 4,
+          "medianRmseUv": 106.698,
+          "p75RmseUv": 136.265,
+          "riskRmseUv": 136.002,
+          "shrunkRmseUv": 117.993
+        },
+        "preprocessed-path-2200": {
+          "caseCount": 2,
+          "medianRmseUv": 117.415,
+          "p75RmseUv": 204.405,
+          "riskRmseUv": 149.426,
+          "shrunkRmseUv": 124.283
+        },
+        "twelve-row-native-grid-path": {
+          "caseCount": 5,
+          "medianRmseUv": 75.983,
+          "p75RmseUv": 127.03,
+          "riskRmseUv": 121.138,
+          "shrunkRmseUv": 101.507
+        },
+        "upscaled-centroid-2200": {
+          "caseCount": 1,
+          "medianRmseUv": 207.404,
+          "p75RmseUv": 207.404,
+          "riskRmseUv": 162.51,
+          "shrunkRmseUv": 140.426
+        }
+      },
+      "contexts": {
+        "annotation": {
+          "candidates": {
+            "geometry-standard-12x1-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 121.575,
+              "p75RmseUv": 121.575,
+              "riskRmseUv": 128.045,
+              "shrunkRmseUv": 126.121
+            },
+            "label-thresh-001": {
+              "caseCount": 1,
+              "medianRmseUv": 72.362,
+              "p75RmseUv": 72.362,
+              "riskRmseUv": 119.843,
+              "shrunkRmseUv": 117.919
+            },
+            "label-thresh-002": {
+              "caseCount": 1,
+              "medianRmseUv": 205.354,
+              "p75RmseUv": 205.354,
+              "riskRmseUv": 142.008,
+              "shrunkRmseUv": 140.084
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 136.265,
+              "p75RmseUv": 136.265,
+              "riskRmseUv": 130.493,
+              "shrunkRmseUv": 128.569
+            },
+            "twelve-row-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 127.03,
+              "p75RmseUv": 127.03,
+              "riskRmseUv": 128.954,
+              "shrunkRmseUv": 127.03
+            }
+          },
+          "families": {
+            "geometry-constrained:probability-centroid:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 121.575,
+              "p75RmseUv": 121.575,
+              "riskRmseUv": 128.045,
+              "shrunkRmseUv": 126.121
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 127.03,
+              "p75RmseUv": 127.03,
+              "riskRmseUv": 128.954,
+              "shrunkRmseUv": 127.03
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 136.265,
+              "p75RmseUv": 136.265,
+              "riskRmseUv": 130.493,
+              "shrunkRmseUv": 128.569
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 2,
+              "medianRmseUv": 138.858,
+              "p75RmseUv": 205.354,
+              "riskRmseUv": 136.808,
+              "shrunkRmseUv": 130.41
+            }
+          },
+          "referenceMedianRmseUv": 127.03,
+          "referenceRiskRmseUv": 129.339,
+          "scoreableCandidateCount": 5,
+          "selection": {
+            "contextPriorMeanRmseUv": 83.045,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 83.045,
+            "meanImprovementUv": 0.0,
+            "validationCaseCount": 1
+          }
+        },
+        "blur": {
+          "candidates": {
+            "crop-upper-panel-centroid-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 200.671,
+              "p75RmseUv": 200.671,
+              "riskRmseUv": 272.791,
+              "shrunkRmseUv": 206.282
+            },
+            "path-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 526.648,
+              "p75RmseUv": 526.648,
+              "riskRmseUv": 327.121,
+              "shrunkRmseUv": 260.611
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 207.404,
+              "p75RmseUv": 207.404,
+              "riskRmseUv": 273.913,
+              "shrunkRmseUv": 207.404
+            }
+          },
+          "families": {
+            "crop-proposal:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 200.671,
+              "p75RmseUv": 200.671,
+              "riskRmseUv": 272.791,
+              "shrunkRmseUv": 206.282
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 526.648,
+              "p75RmseUv": 526.648,
+              "riskRmseUv": 327.121,
+              "shrunkRmseUv": 260.611
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 207.404,
+              "p75RmseUv": 207.404,
+              "riskRmseUv": 273.913,
+              "shrunkRmseUv": 207.404
+            }
+          },
+          "referenceMedianRmseUv": 207.404,
+          "referenceRiskRmseUv": 287.215,
+          "scoreableCandidateCount": 3
+        },
+        "clean": {
+          "candidates": {
+            "geometry-standard-12x1-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 36.201,
+              "p75RmseUv": 36.201,
+              "riskRmseUv": 50.037,
+              "shrunkRmseUv": 50.027
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 52.838,
+              "p75RmseUv": 52.838,
+              "riskRmseUv": 52.809,
+              "shrunkRmseUv": 52.8
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 204.405,
+              "p75RmseUv": 204.405,
+              "riskRmseUv": 78.071,
+              "shrunkRmseUv": 78.061
+            },
+            "twelve-row-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 52.746,
+              "p75RmseUv": 52.746,
+              "riskRmseUv": 52.794,
+              "shrunkRmseUv": 52.784
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 204.405,
+              "p75RmseUv": 204.405,
+              "riskRmseUv": 78.071,
+              "shrunkRmseUv": 78.061
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 36.201,
+              "p75RmseUv": 36.201,
+              "riskRmseUv": 50.037,
+              "shrunkRmseUv": 50.027
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 52.746,
+              "p75RmseUv": 52.746,
+              "riskRmseUv": 52.794,
+              "shrunkRmseUv": 52.784
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 52.838,
+              "p75RmseUv": 52.838,
+              "riskRmseUv": 52.809,
+              "shrunkRmseUv": 52.8
+            }
+          },
+          "referenceMedianRmseUv": 52.792,
+          "referenceRiskRmseUv": 52.804,
+          "scoreableCandidateCount": 4
+        },
+        "degraded-raster": {
+          "candidates": {
+            "geometry-standard-12x1-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 29.369,
+              "p75RmseUv": 29.369,
+              "riskRmseUv": 41.269,
+              "shrunkRmseUv": 31.969
+            },
+            "geometry-standard-12x1-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 32.489,
+              "p75RmseUv": 32.489,
+              "riskRmseUv": 41.789,
+              "shrunkRmseUv": 32.489
+            },
+            "ink-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 32.489,
+              "p75RmseUv": 32.489,
+              "riskRmseUv": 41.789,
+              "shrunkRmseUv": 32.489
+            },
+            "morphology-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 135.758,
+              "p75RmseUv": 135.758,
+              "riskRmseUv": 59.001,
+              "shrunkRmseUv": 49.7
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 77.13,
+              "p75RmseUv": 77.13,
+              "riskRmseUv": 49.229,
+              "shrunkRmseUv": 39.929
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 30.425,
+              "p75RmseUv": 30.425,
+              "riskRmseUv": 41.445,
+              "shrunkRmseUv": 32.145
+            },
+            "twelve-row-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 75.983,
+              "p75RmseUv": 75.983,
+              "riskRmseUv": 49.038,
+              "shrunkRmseUv": 39.738
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 30.425,
+              "p75RmseUv": 30.425,
+              "riskRmseUv": 41.445,
+              "shrunkRmseUv": 32.145
+            },
+            "geometry-constrained:dynamic-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 32.489,
+              "p75RmseUv": 32.489,
+              "riskRmseUv": 41.789,
+              "shrunkRmseUv": 32.489
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 29.369,
+              "p75RmseUv": 29.369,
+              "riskRmseUv": 41.269,
+              "shrunkRmseUv": 31.969
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 75.983,
+              "p75RmseUv": 75.983,
+              "riskRmseUv": 49.038,
+              "shrunkRmseUv": 39.738
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 77.13,
+              "p75RmseUv": 77.13,
+              "riskRmseUv": 49.229,
+              "shrunkRmseUv": 39.929
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 84.123,
+              "p75RmseUv": 135.758,
+              "riskRmseUv": 58.901,
+              "shrunkRmseUv": 47.242
+            }
+          },
+          "referenceMedianRmseUv": 32.489,
+          "referenceRiskRmseUv": 43.649,
+          "scoreableCandidateCount": 7,
+          "selection": {
+            "contextPriorMeanRmseUv": 149.814,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 149.814,
+            "meanImprovementUv": 0.0,
+            "validationCaseCount": 3
+          }
+        },
+        "geometry": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 276.566,
+              "p75RmseUv": 276.566,
+              "riskRmseUv": 219.11,
+              "shrunkRmseUv": 204.292
+            },
+            "artifact-preprocessed-centroid-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 176.576,
+              "p75RmseUv": 229.609,
+              "riskRmseUv": 199.714,
+              "shrunkRmseUv": 183.944
+            },
+            "centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 91.1,
+              "p75RmseUv": 91.1,
+              "riskRmseUv": 188.199,
+              "shrunkRmseUv": 173.381
+            },
+            "crop-lower-panel-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 864.704,
+              "p75RmseUv": 864.704,
+              "riskRmseUv": 317.133,
+              "shrunkRmseUv": 302.315
+            },
+            "default": {
+              "caseCount": 1,
+              "medianRmseUv": 276.566,
+              "p75RmseUv": 276.566,
+              "riskRmseUv": 219.11,
+              "shrunkRmseUv": 204.292
+            },
+            "geometry-standard-12x1-centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 98.362,
+              "p75RmseUv": 150.066,
+              "riskRmseUv": 180.096,
+              "shrunkRmseUv": 163.702
+            },
+            "label-thresh-001": {
+              "caseCount": 3,
+              "medianRmseUv": 126.711,
+              "p75RmseUv": 330.906,
+              "riskRmseUv": 196.421,
+              "shrunkRmseUv": 166.165
+            },
+            "label-thresh-002": {
+              "caseCount": 2,
+              "medianRmseUv": 113.828,
+              "p75RmseUv": 130.574,
+              "riskRmseUv": 182.017,
+              "shrunkRmseUv": 168.121
+            },
+            "label-thresh-005": {
+              "caseCount": 2,
+              "medianRmseUv": 240.936,
+              "p75RmseUv": 248.838,
+              "riskRmseUv": 217.702,
+              "shrunkRmseUv": 204.437
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 475.621,
+              "p75RmseUv": 475.621,
+              "riskRmseUv": 252.286,
+              "shrunkRmseUv": 237.468
+            },
+            "twelve-row-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 164.916,
+              "p75RmseUv": 255.153,
+              "riskRmseUv": 201.863,
+              "shrunkRmseUv": 182.717
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 176.576,
+              "p75RmseUv": 229.609,
+              "riskRmseUv": 199.714,
+              "shrunkRmseUv": 183.944
+            },
+            "crop-proposal:dynamic-path:geometry-corrected": {
+              "caseCount": 1,
+              "medianRmseUv": 864.704,
+              "p75RmseUv": 864.704,
+              "riskRmseUv": 317.133,
+              "shrunkRmseUv": 302.315
+            },
+            "geometry-constrained:probability-centroid:geometry-corrected": {
+              "caseCount": 2,
+              "medianRmseUv": 98.362,
+              "p75RmseUv": 150.066,
+              "riskRmseUv": 180.096,
+              "shrunkRmseUv": 163.702
+            },
+            "native-grid:native-grid-path:geometry-corrected": {
+              "caseCount": 2,
+              "medianRmseUv": 164.916,
+              "p75RmseUv": 255.153,
+              "riskRmseUv": 201.863,
+              "shrunkRmseUv": 182.717
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 475.621,
+              "p75RmseUv": 475.621,
+              "riskRmseUv": 252.286,
+              "shrunkRmseUv": 237.468
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 276.566,
+              "p75RmseUv": 276.566,
+              "riskRmseUv": 219.11,
+              "shrunkRmseUv": 204.292
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 9,
+              "medianRmseUv": 130.574,
+              "p75RmseUv": 248.838,
+              "riskRmseUv": 177.097,
+              "shrunkRmseUv": 151.74
+            }
+          },
+          "referenceMedianRmseUv": 189.838,
+          "referenceRiskRmseUv": 207.618,
+          "scoreableCandidateCount": 20,
+          "selection": {
+            "contextPriorMeanRmseUv": 116.821,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 99.307,
+            "meanImprovementUv": -17.514,
+            "validationCaseCount": 2
+          }
+        }
+      },
+      "families": {
+        "adaptive-preprocessed:dynamic-path:preprocessed": {
+          "caseCount": 2,
+          "medianRmseUv": 117.415,
+          "p75RmseUv": 204.405,
+          "riskRmseUv": 149.426,
+          "shrunkRmseUv": 124.283
+        },
+        "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+          "caseCount": 4,
+          "medianRmseUv": 176.576,
+          "p75RmseUv": 229.609,
+          "riskRmseUv": 169.666,
+          "shrunkRmseUv": 149.051
+        },
+        "crop-proposal:dynamic-path:geometry-corrected": {
+          "caseCount": 1,
+          "medianRmseUv": 864.704,
+          "p75RmseUv": 864.704,
+          "riskRmseUv": 272.06,
+          "shrunkRmseUv": 249.976
+        },
+        "crop-proposal:probability-centroid:original": {
+          "caseCount": 1,
+          "medianRmseUv": 200.671,
+          "p75RmseUv": 200.671,
+          "riskRmseUv": 161.388,
+          "shrunkRmseUv": 139.304
+        },
+        "geometry-constrained:dynamic-path:original": {
+          "caseCount": 1,
+          "medianRmseUv": 32.489,
+          "p75RmseUv": 32.489,
+          "riskRmseUv": 133.358,
+          "shrunkRmseUv": 111.273
+        },
+        "geometry-constrained:probability-centroid:annotation-masked": {
+          "caseCount": 1,
+          "medianRmseUv": 121.575,
+          "p75RmseUv": 121.575,
+          "riskRmseUv": 148.205,
+          "shrunkRmseUv": 126.121
+        },
+        "geometry-constrained:probability-centroid:geometry-corrected": {
+          "caseCount": 2,
+          "medianRmseUv": 98.362,
+          "p75RmseUv": 150.066,
+          "riskRmseUv": 141.462,
+          "shrunkRmseUv": 118.839
+        },
+        "geometry-constrained:probability-centroid:original": {
+          "caseCount": 2,
+          "medianRmseUv": 32.785,
+          "p75RmseUv": 36.201,
+          "riskRmseUv": 119.277,
+          "shrunkRmseUv": 100.103
+        },
+        "native-grid:native-grid-path:geometry-corrected": {
+          "caseCount": 2,
+          "medianRmseUv": 164.916,
+          "p75RmseUv": 255.153,
+          "riskRmseUv": 163.23,
+          "shrunkRmseUv": 137.855
+        },
+        "native-grid:native-grid-path:original": {
+          "caseCount": 3,
+          "medianRmseUv": 75.983,
+          "p75RmseUv": 127.03,
+          "riskRmseUv": 129.237,
+          "shrunkRmseUv": 107.888
+        },
+        "native-grid:native-grid-path:preprocessed": {
+          "caseCount": 4,
+          "medianRmseUv": 106.698,
+          "p75RmseUv": 136.265,
+          "riskRmseUv": 136.002,
+          "shrunkRmseUv": 117.993
+        },
+        "source-model:dynamic-path:original": {
+          "caseCount": 3,
+          "medianRmseUv": 135.758,
+          "p75RmseUv": 526.648,
+          "riskRmseUv": 183.512,
+          "shrunkRmseUv": 130.303
+        },
+        "source-model:probability-centroid:annotation-masked": {
+          "caseCount": 1,
+          "medianRmseUv": 276.566,
+          "p75RmseUv": 276.566,
+          "riskRmseUv": 174.037,
+          "shrunkRmseUv": 151.953
+        },
+        "source-model:probability-centroid:original": {
+          "caseCount": 12,
+          "medianRmseUv": 167.964,
+          "p75RmseUv": 233.035,
+          "riskRmseUv": 175.202,
+          "shrunkRmseUv": 155.925
+        }
+      },
+      "referenceMedianRmseUv": 127.03,
+      "referenceRiskRmseUv": 153.532,
+      "scoreableCandidateCount": 39
+    },
+    "standard_3x4": {
+      "candidates": {
+        "annotation-masked": {
+          "caseCount": 21,
+          "medianRmseUv": 88.084,
+          "p75RmseUv": 205.616,
+          "riskRmseUv": 118.859,
+          "shrunkRmseUv": 90.351
+        },
+        "artifact-preprocessed-centroid-2200": {
+          "caseCount": 7,
+          "medianRmseUv": 46.483,
+          "p75RmseUv": 71.227,
+          "riskRmseUv": 82.683,
+          "shrunkRmseUv": 68.728
+        },
+        "artifact-preprocessed-path-2200": {
+          "caseCount": 4,
+          "medianRmseUv": 94.389,
+          "p75RmseUv": 138.642,
+          "riskRmseUv": 116.147,
+          "shrunkRmseUv": 97.434
+        },
+        "centroid-2200": {
+          "caseCount": 17,
+          "medianRmseUv": 86.803,
+          "p75RmseUv": 162.925,
+          "riskRmseUv": 110.122,
+          "shrunkRmseUv": 89.773
+        },
+        "default": {
+          "caseCount": 21,
+          "medianRmseUv": 88.084,
+          "p75RmseUv": 199.197,
+          "riskRmseUv": 117.563,
+          "shrunkRmseUv": 90.351
+        },
+        "geometry-standard-3x4-centroid-1500": {
+          "caseCount": 8,
+          "medianRmseUv": 47.703,
+          "p75RmseUv": 65.446,
+          "riskRmseUv": 80.048,
+          "shrunkRmseUv": 67.767
+        },
+        "geometry-standard-3x4-path-2200": {
+          "caseCount": 5,
+          "medianRmseUv": 211.52,
+          "p75RmseUv": 234.587,
+          "riskRmseUv": 170.994,
+          "shrunkRmseUv": 155.695
+        },
+        "ink-path-2200": {
+          "caseCount": 18,
+          "medianRmseUv": 140.069,
+          "p75RmseUv": 234.587,
+          "riskRmseUv": 155.221,
+          "shrunkRmseUv": 131.33
+        },
+        "label-thresh-001": {
+          "caseCount": 24,
+          "medianRmseUv": 67.237,
+          "p75RmseUv": 126.904,
+          "riskRmseUv": 89.49,
+          "shrunkRmseUv": 72.863
+        },
+        "label-thresh-002": {
+          "caseCount": 24,
+          "medianRmseUv": 61.306,
+          "p75RmseUv": 148.693,
+          "riskRmseUv": 90.316,
+          "shrunkRmseUv": 67.955
+        },
+        "label-thresh-005": {
+          "caseCount": 23,
+          "medianRmseUv": 60.386,
+          "p75RmseUv": 198.883,
+          "riskRmseUv": 100.312,
+          "shrunkRmseUv": 67.437
+        },
+        "lead-fusion": {
+          "caseCount": 1,
+          "medianRmseUv": 24.935,
+          "p75RmseUv": 24.935,
+          "riskRmseUv": 108.074,
+          "shrunkRmseUv": 87.381
+        },
+        "morphology-2200": {
+          "caseCount": 19,
+          "medianRmseUv": 139.3,
+          "p75RmseUv": 294.337,
+          "riskRmseUv": 166.943,
+          "shrunkRmseUv": 131.086
+        },
+        "path-1500": {
+          "caseCount": 17,
+          "medianRmseUv": 233.962,
+          "p75RmseUv": 294.337,
+          "riskRmseUv": 220.794,
+          "shrunkRmseUv": 203.487
+        },
+        "peer-gap-repair": {
+          "caseCount": 3,
+          "medianRmseUv": 51.897,
+          "p75RmseUv": 195.322,
+          "riskRmseUv": 110.846,
+          "shrunkRmseUv": 81.88
+        },
+        "preprocessed-native-grid-path": {
+          "caseCount": 18,
+          "medianRmseUv": 173.934,
+          "p75RmseUv": 219.582,
+          "riskRmseUv": 172.162,
+          "shrunkRmseUv": 157.833
+        },
+        "preprocessed-path-2200": {
+          "caseCount": 17,
+          "medianRmseUv": 53.202,
+          "p75RmseUv": 143.707,
+          "riskRmseUv": 86.936,
+          "shrunkRmseUv": 63.809
+        },
+        "three-by-four-native-grid-path": {
+          "caseCount": 14,
+          "medianRmseUv": 189.005,
+          "p75RmseUv": 251.245,
+          "riskRmseUv": 183.548,
+          "shrunkRmseUv": 165.548
+        },
+        "three-by-four-rhythm-native-grid-path": {
+          "caseCount": 7,
+          "medianRmseUv": 155.282,
+          "p75RmseUv": 179.982,
+          "riskRmseUv": 146.143,
+          "shrunkRmseUv": 132.194
+        },
+        "upscaled-centroid-2200": {
+          "caseCount": 10,
+          "medianRmseUv": 50.475,
+          "p75RmseUv": 63.424,
+          "riskRmseUv": 77.376,
+          "shrunkRmseUv": 66.94
+        }
+      },
+      "contexts": {
+        "annotation": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 56.868,
+              "p75RmseUv": 65.446,
+              "riskRmseUv": 94.929,
+              "shrunkRmseUv": 78.485
+            },
+            "centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 50.358,
+              "p75RmseUv": 50.358,
+              "riskRmseUv": 111.445,
+              "shrunkRmseUv": 88.208
+            },
+            "default": {
+              "caseCount": 4,
+              "medianRmseUv": 57.802,
+              "p75RmseUv": 65.309,
+              "riskRmseUv": 95.225,
+              "shrunkRmseUv": 78.9
+            },
+            "geometry-standard-3x4-centroid-1500": {
+              "caseCount": 3,
+              "medianRmseUv": 48.29,
+              "p75RmseUv": 65.446,
+              "riskRmseUv": 97.006,
+              "shrunkRmseUv": 77.97
+            },
+            "geometry-standard-3x4-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 283.123,
+              "p75RmseUv": 331.66,
+              "riskRmseUv": 172.69,
+              "shrunkRmseUv": 149.305
+            },
+            "ink-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 283.123,
+              "p75RmseUv": 331.66,
+              "riskRmseUv": 172.69,
+              "shrunkRmseUv": 149.305
+            },
+            "label-thresh-001": {
+              "caseCount": 4,
+              "medianRmseUv": 59.334,
+              "p75RmseUv": 62.887,
+              "riskRmseUv": 95.467,
+              "shrunkRmseUv": 79.581
+            },
+            "label-thresh-002": {
+              "caseCount": 4,
+              "medianRmseUv": 59.086,
+              "p75RmseUv": 63.286,
+              "riskRmseUv": 95.428,
+              "shrunkRmseUv": 79.47
+            },
+            "label-thresh-005": {
+              "caseCount": 4,
+              "medianRmseUv": 56.175,
+              "p75RmseUv": 60.386,
+              "riskRmseUv": 94.136,
+              "shrunkRmseUv": 78.177
+            },
+            "morphology-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 239.909,
+              "p75RmseUv": 239.909,
+              "riskRmseUv": 143.037,
+              "shrunkRmseUv": 119.8
+            },
+            "path-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 239.909,
+              "p75RmseUv": 239.909,
+              "riskRmseUv": 143.037,
+              "shrunkRmseUv": 119.8
+            },
+            "peer-gap-repair": {
+              "caseCount": 2,
+              "medianRmseUv": 120.968,
+              "p75RmseUv": 195.322,
+              "riskRmseUv": 128.204,
+              "shrunkRmseUv": 102.975
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 4,
+              "medianRmseUv": 162.483,
+              "p75RmseUv": 219.532,
+              "riskRmseUv": 147.255,
+              "shrunkRmseUv": 125.425
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 3,
+              "medianRmseUv": 143.707,
+              "p75RmseUv": 270.786,
+              "riskRmseUv": 143.093,
+              "shrunkRmseUv": 113.751
+            },
+            "three-by-four-native-grid-path": {
+              "caseCount": 3,
+              "medianRmseUv": 104.483,
+              "p75RmseUv": 277.822,
+              "riskRmseUv": 132.721,
+              "shrunkRmseUv": 99.042
+            },
+            "three-by-four-rhythm-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 219.651,
+              "p75RmseUv": 219.651,
+              "riskRmseUv": 139.661,
+              "shrunkRmseUv": 116.424
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 43.465,
+              "p75RmseUv": 43.465,
+              "riskRmseUv": 110.296,
+              "shrunkRmseUv": 87.059
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 3,
+              "medianRmseUv": 143.707,
+              "p75RmseUv": 270.786,
+              "riskRmseUv": 143.093,
+              "shrunkRmseUv": 113.751
+            },
+            "geometry-constrained:dynamic-path:annotation-masked": {
+              "caseCount": 2,
+              "medianRmseUv": 283.123,
+              "p75RmseUv": 331.66,
+              "riskRmseUv": 172.69,
+              "shrunkRmseUv": 149.305
+            },
+            "geometry-constrained:probability-centroid:annotation-masked": {
+              "caseCount": 3,
+              "medianRmseUv": 48.29,
+              "p75RmseUv": 65.446,
+              "riskRmseUv": 97.006,
+              "shrunkRmseUv": 77.97
+            },
+            "native-grid:native-grid-path:annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 162.067,
+              "p75RmseUv": 219.651,
+              "riskRmseUv": 147.129,
+              "shrunkRmseUv": 125.24
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 162.483,
+              "p75RmseUv": 219.532,
+              "riskRmseUv": 147.255,
+              "shrunkRmseUv": 125.425
+            },
+            "peer-gap-repair:probability-centroid:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 46.614,
+              "p75RmseUv": 46.614,
+              "riskRmseUv": 110.821,
+              "shrunkRmseUv": 87.584
+            },
+            "peer-gap-repair:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 195.322,
+              "p75RmseUv": 195.322,
+              "riskRmseUv": 135.606,
+              "shrunkRmseUv": 112.369
+            },
+            "source-model:dynamic-path:annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 239.909,
+              "p75RmseUv": 239.909,
+              "riskRmseUv": 175.328,
+              "shrunkRmseUv": 159.836
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 6,
+              "medianRmseUv": 49.324,
+              "p75RmseUv": 65.446,
+              "riskRmseUv": 85.313,
+              "shrunkRmseUv": 70.439
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 16,
+              "medianRmseUv": 58.083,
+              "p75RmseUv": 65.309,
+              "riskRmseUv": 75.074,
+              "shrunkRmseUv": 67.058
+            }
+          },
+          "referenceMedianRmseUv": 95.778,
+          "referenceRiskRmseUv": 123.662,
+          "scoreableCandidateCount": 44,
+          "selection": {
+            "contextPriorMeanRmseUv": 24.811,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 24.493,
+            "meanImprovementUv": -0.319,
+            "validationCaseCount": 1
+          }
+        },
+        "blur": {
+          "candidates": {
+            "centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 90.435,
+              "p75RmseUv": 90.435,
+              "riskRmseUv": 78.381,
+              "shrunkRmseUv": 76.29
+            },
+            "ink-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 59.198,
+              "p75RmseUv": 59.198,
+              "riskRmseUv": 73.175,
+              "shrunkRmseUv": 71.083
+            },
+            "morphology-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 83.498,
+              "p75RmseUv": 83.498,
+              "riskRmseUv": 77.225,
+              "shrunkRmseUv": 75.133
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 63.424,
+              "p75RmseUv": 63.424,
+              "riskRmseUv": 73.879,
+              "shrunkRmseUv": 71.788
+            }
+          },
+          "families": {
+            "source-model:dynamic-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 71.348,
+              "p75RmseUv": 83.498,
+              "riskRmseUv": 75.517,
+              "shrunkRmseUv": 72.857
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 2,
+              "medianRmseUv": 76.929,
+              "p75RmseUv": 90.435,
+              "riskRmseUv": 77.209,
+              "shrunkRmseUv": 74.452
+            }
+          },
+          "referenceMedianRmseUv": 73.461,
+          "referenceRiskRmseUv": 75.97,
+          "scoreableCandidateCount": 4,
+          "selection": {
+            "contextPriorMeanRmseUv": 43.401,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 50.904,
+            "meanImprovementUv": 7.503,
+            "validationCaseCount": 1
+          }
+        },
+        "clean": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 2,
+              "medianRmseUv": 121.844,
+              "p75RmseUv": 220.472,
+              "riskRmseUv": 200.258,
+              "shrunkRmseUv": 192.177
+            },
+            "centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 404.236,
+              "p75RmseUv": 404.236,
+              "riskRmseUv": 252.174,
+              "shrunkRmseUv": 250.965
+            },
+            "default": {
+              "caseCount": 2,
+              "medianRmseUv": 121.844,
+              "p75RmseUv": 220.472,
+              "riskRmseUv": 200.258,
+              "shrunkRmseUv": 192.177
+            },
+            "geometry-standard-3x4-centroid-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 121.844,
+              "p75RmseUv": 220.472,
+              "riskRmseUv": 200.258,
+              "shrunkRmseUv": 192.177
+            },
+            "geometry-standard-3x4-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 21.02,
+              "p75RmseUv": 21.02,
+              "riskRmseUv": 188.304,
+              "shrunkRmseUv": 187.095
+            },
+            "ink-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 185.201,
+              "p75RmseUv": 349.381,
+              "riskRmseUv": 223.043,
+              "shrunkRmseUv": 210.279
+            },
+            "label-thresh-001": {
+              "caseCount": 3,
+              "medianRmseUv": 220.405,
+              "p75RmseUv": 362.432,
+              "riskRmseUv": 234.568,
+              "shrunkRmseUv": 220.346
+            },
+            "label-thresh-002": {
+              "caseCount": 3,
+              "medianRmseUv": 223.511,
+              "p75RmseUv": 379.948,
+              "riskRmseUv": 237.083,
+              "shrunkRmseUv": 221.51
+            },
+            "label-thresh-005": {
+              "caseCount": 3,
+              "medianRmseUv": 220.972,
+              "p75RmseUv": 373.041,
+              "riskRmseUv": 235.722,
+              "shrunkRmseUv": 220.559
+            },
+            "morphology-2200": {
+              "caseCount": 3,
+              "medianRmseUv": 226.115,
+              "p75RmseUv": 715.104,
+              "riskRmseUv": 269.237,
+              "shrunkRmseUv": 222.487
+            },
+            "path-1500": {
+              "caseCount": 3,
+              "medianRmseUv": 226.115,
+              "p75RmseUv": 384.906,
+              "riskRmseUv": 238.281,
+              "shrunkRmseUv": 222.487
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 161.739,
+              "p75RmseUv": 219.582,
+              "riskRmseUv": 208.744,
+              "shrunkRmseUv": 203.576
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 22.864,
+              "p75RmseUv": 22.864,
+              "riskRmseUv": 188.612,
+              "shrunkRmseUv": 187.403
+            },
+            "three-by-four-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 162.17,
+              "p75RmseUv": 220.31,
+              "riskRmseUv": 208.888,
+              "shrunkRmseUv": 203.699
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 140.015,
+              "p75RmseUv": 140.015,
+              "riskRmseUv": 208.137,
+              "shrunkRmseUv": 206.928
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 22.864,
+              "p75RmseUv": 22.864,
+              "riskRmseUv": 188.612,
+              "shrunkRmseUv": 187.403
+            },
+            "geometry-constrained:dynamic-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 21.02,
+              "p75RmseUv": 21.02,
+              "riskRmseUv": 188.304,
+              "shrunkRmseUv": 187.095
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 2,
+              "medianRmseUv": 121.844,
+              "p75RmseUv": 220.472,
+              "riskRmseUv": 200.258,
+              "shrunkRmseUv": 192.177
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 162.17,
+              "p75RmseUv": 220.31,
+              "riskRmseUv": 208.888,
+              "shrunkRmseUv": 203.699
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 2,
+              "medianRmseUv": 161.739,
+              "p75RmseUv": 219.582,
+              "riskRmseUv": 208.744,
+              "shrunkRmseUv": 203.576
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 8,
+              "medianRmseUv": 226.115,
+              "p75RmseUv": 349.381,
+              "riskRmseUv": 243.404,
+              "shrunkRmseUv": 223.882
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 2,
+              "medianRmseUv": 121.844,
+              "p75RmseUv": 220.472,
+              "riskRmseUv": 200.258,
+              "shrunkRmseUv": 192.177
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 13,
+              "medianRmseUv": 220.472,
+              "p75RmseUv": 362.432,
+              "riskRmseUv": 246.462,
+              "shrunkRmseUv": 220.427
+            }
+          },
+          "referenceMedianRmseUv": 220.31,
+          "referenceRiskRmseUv": 221.761,
+          "scoreableCandidateCount": 31,
+          "selection": {
+            "contextPriorMeanRmseUv": 242.695,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 115.377,
+            "meanImprovementUv": -127.318,
+            "validationCaseCount": 2
+          }
+        },
+        "degraded-raster": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 10,
+              "medianRmseUv": 106.44,
+              "p75RmseUv": 205.616,
+              "riskRmseUv": 126.112,
+              "shrunkRmseUv": 101.291
+            },
+            "centroid-2200": {
+              "caseCount": 8,
+              "medianRmseUv": 96.279,
+              "p75RmseUv": 184.843,
+              "riskRmseUv": 117.438,
+              "shrunkRmseUv": 94.246
+            },
+            "default": {
+              "caseCount": 10,
+              "medianRmseUv": 106.44,
+              "p75RmseUv": 205.616,
+              "riskRmseUv": 126.112,
+              "shrunkRmseUv": 101.291
+            },
+            "geometry-standard-3x4-centroid-1500": {
+              "caseCount": 3,
+              "medianRmseUv": 47.115,
+              "p75RmseUv": 126.076,
+              "riskRmseUv": 97.488,
+              "shrunkRmseUv": 74.539
+            },
+            "geometry-standard-3x4-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 122.071,
+              "p75RmseUv": 211.52,
+              "riskRmseUv": 124.029,
+              "shrunkRmseUv": 99.873
+            },
+            "ink-path-2200": {
+              "caseCount": 7,
+              "medianRmseUv": 142.624,
+              "p75RmseUv": 211.52,
+              "riskRmseUv": 141.523,
+              "shrunkRmseUv": 121.111
+            },
+            "label-thresh-001": {
+              "caseCount": 10,
+              "medianRmseUv": 66.851,
+              "p75RmseUv": 106.269,
+              "riskRmseUv": 89.76,
+              "shrunkRmseUv": 74.899
+            },
+            "label-thresh-002": {
+              "caseCount": 10,
+              "medianRmseUv": 58.51,
+              "p75RmseUv": 126.567,
+              "riskRmseUv": 88.972,
+              "shrunkRmseUv": 69.338
+            },
+            "label-thresh-005": {
+              "caseCount": 9,
+              "medianRmseUv": 59.387,
+              "p75RmseUv": 188.944,
+              "riskRmseUv": 100.381,
+              "shrunkRmseUv": 70.675
+            },
+            "lead-fusion": {
+              "caseCount": 1,
+              "medianRmseUv": 24.935,
+              "p75RmseUv": 24.935,
+              "riskRmseUv": 100.712,
+              "shrunkRmseUv": 79.984
+            },
+            "morphology-2200": {
+              "caseCount": 8,
+              "medianRmseUv": 195.027,
+              "p75RmseUv": 294.337,
+              "riskRmseUv": 179.86,
+              "shrunkRmseUv": 155.014
+            },
+            "path-1500": {
+              "caseCount": 8,
+              "medianRmseUv": 253.783,
+              "p75RmseUv": 294.337,
+              "riskRmseUv": 206.978,
+              "shrunkRmseUv": 191.172
+            },
+            "peer-gap-repair": {
+              "caseCount": 1,
+              "medianRmseUv": 51.897,
+              "p75RmseUv": 51.897,
+              "riskRmseUv": 105.206,
+              "shrunkRmseUv": 84.477
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 10,
+              "medianRmseUv": 161.415,
+              "p75RmseUv": 191.197,
+              "riskRmseUv": 151.196,
+              "shrunkRmseUv": 137.941
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 7,
+              "medianRmseUv": 127.684,
+              "p75RmseUv": 189.483,
+              "riskRmseUv": 131.773,
+              "shrunkRmseUv": 112.396
+            },
+            "three-by-four-native-grid-path": {
+              "caseCount": 6,
+              "medianRmseUv": 165.077,
+              "p75RmseUv": 251.245,
+              "riskRmseUv": 154.459,
+              "shrunkRmseUv": 131.402
+            },
+            "three-by-four-rhythm-native-grid-path": {
+              "caseCount": 4,
+              "medianRmseUv": 161.132,
+              "p75RmseUv": 166.981,
+              "riskRmseUv": 136.635,
+              "shrunkRmseUv": 122.166
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 7,
+              "medianRmseUv": 49.251,
+              "p75RmseUv": 53.146,
+              "riskRmseUv": 77.576,
+              "shrunkRmseUv": 66.644
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 7,
+              "medianRmseUv": 127.684,
+              "p75RmseUv": 189.483,
+              "riskRmseUv": 131.773,
+              "shrunkRmseUv": 112.396
+            },
+            "geometry-constrained:dynamic-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 122.071,
+              "p75RmseUv": 211.52,
+              "riskRmseUv": 124.029,
+              "shrunkRmseUv": 99.873
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 3,
+              "medianRmseUv": 47.115,
+              "p75RmseUv": 126.076,
+              "riskRmseUv": 97.488,
+              "shrunkRmseUv": 74.539
+            },
+            "lead-fusion:dynamic-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 24.935,
+              "p75RmseUv": 24.935,
+              "riskRmseUv": 100.712,
+              "shrunkRmseUv": 79.984
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 10,
+              "medianRmseUv": 161.132,
+              "p75RmseUv": 190.491,
+              "riskRmseUv": 150.937,
+              "shrunkRmseUv": 137.752
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 10,
+              "medianRmseUv": 161.415,
+              "p75RmseUv": 191.197,
+              "riskRmseUv": 151.196,
+              "shrunkRmseUv": 137.941
+            },
+            "peer-gap-repair:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 51.897,
+              "p75RmseUv": 51.897,
+              "riskRmseUv": 105.206,
+              "shrunkRmseUv": 84.477
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 23,
+              "medianRmseUv": 194.62,
+              "p75RmseUv": 294.337,
+              "riskRmseUv": 201.035,
+              "shrunkRmseUv": 176.115
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 10,
+              "medianRmseUv": 106.44,
+              "p75RmseUv": 205.616,
+              "riskRmseUv": 126.112,
+              "shrunkRmseUv": 101.291
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 54,
+              "medianRmseUv": 59.356,
+              "p75RmseUv": 126.904,
+              "riskRmseUv": 79.601,
+              "shrunkRmseUv": 62.038
+            }
+          },
+          "referenceMedianRmseUv": 90.993,
+          "referenceRiskRmseUv": 115.868,
+          "scoreableCandidateCount": 121,
+          "selection": {
+            "contextPriorMeanRmseUv": 111.064,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 111.064,
+            "meanImprovementUv": 0.0,
+            "validationCaseCount": 3
+          }
+        },
+        "geometry": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 5,
+              "medianRmseUv": 162.925,
+              "p75RmseUv": 199.197,
+              "riskRmseUv": 140.393,
+              "shrunkRmseUv": 125.644
+            },
+            "artifact-preprocessed-centroid-2200": {
+              "caseCount": 7,
+              "medianRmseUv": 46.483,
+              "p75RmseUv": 71.227,
+              "riskRmseUv": 76.054,
+              "shrunkRmseUv": 63.933
+            },
+            "artifact-preprocessed-path-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 94.389,
+              "p75RmseUv": 138.642,
+              "riskRmseUv": 107.309,
+              "shrunkRmseUv": 91.042
+            },
+            "centroid-2200": {
+              "caseCount": 6,
+              "medianRmseUv": 72.81,
+              "p75RmseUv": 104.337,
+              "riskRmseUv": 93.465,
+              "shrunkRmseUv": 79.88
+            },
+            "default": {
+              "caseCount": 5,
+              "medianRmseUv": 162.925,
+              "p75RmseUv": 199.197,
+              "riskRmseUv": 140.393,
+              "shrunkRmseUv": 125.644
+            },
+            "ink-path-2200": {
+              "caseCount": 6,
+              "medianRmseUv": 95.417,
+              "p75RmseUv": 188.266,
+              "riskRmseUv": 114.159,
+              "shrunkRmseUv": 92.211
+            },
+            "label-thresh-001": {
+              "caseCount": 7,
+              "medianRmseUv": 71.587,
+              "p75RmseUv": 151.788,
+              "riskRmseUv": 98.786,
+              "shrunkRmseUv": 78.577
+            },
+            "label-thresh-002": {
+              "caseCount": 7,
+              "medianRmseUv": 86.567,
+              "p75RmseUv": 148.693,
+              "riskRmseUv": 104.888,
+              "shrunkRmseUv": 87.316
+            },
+            "label-thresh-005": {
+              "caseCount": 7,
+              "medianRmseUv": 111.922,
+              "p75RmseUv": 198.883,
+              "riskRmseUv": 123.3,
+              "shrunkRmseUv": 102.106
+            },
+            "morphology-2200": {
+              "caseCount": 6,
+              "medianRmseUv": 124.497,
+              "p75RmseUv": 170.085,
+              "riskRmseUv": 123.576,
+              "shrunkRmseUv": 108.073
+            },
+            "path-1500": {
+              "caseCount": 5,
+              "medianRmseUv": 170.085,
+              "p75RmseUv": 265.366,
+              "riskRmseUv": 151.35,
+              "shrunkRmseUv": 129.224
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 255.588,
+              "p75RmseUv": 316.461,
+              "riskRmseUv": 155.083,
+              "shrunkRmseUv": 136.142
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 6,
+              "medianRmseUv": 44.073,
+              "p75RmseUv": 53.202,
+              "riskRmseUv": 74.737,
+              "shrunkRmseUv": 64.205
+            },
+            "three-by-four-native-grid-path": {
+              "caseCount": 3,
+              "medianRmseUv": 238.225,
+              "p75RmseUv": 353.096,
+              "riskRmseUv": 168.1,
+              "shrunkRmseUv": 144.562
+            },
+            "three-by-four-rhythm-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 129.466,
+              "p75RmseUv": 138.702,
+              "riskRmseUv": 115.36,
+              "shrunkRmseUv": 100.107
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:artifact-preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 94.389,
+              "p75RmseUv": 138.642,
+              "riskRmseUv": 107.309,
+              "shrunkRmseUv": 91.042
+            },
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 6,
+              "medianRmseUv": 44.073,
+              "p75RmseUv": 53.202,
+              "riskRmseUv": 74.737,
+              "shrunkRmseUv": 64.205
+            },
+            "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+              "caseCount": 7,
+              "medianRmseUv": 46.483,
+              "p75RmseUv": 71.227,
+              "riskRmseUv": 76.054,
+              "shrunkRmseUv": 63.933
+            },
+            "native-grid:native-grid-path:geometry-corrected": {
+              "caseCount": 4,
+              "medianRmseUv": 188.464,
+              "p75RmseUv": 238.225,
+              "riskRmseUv": 149.732,
+              "shrunkRmseUv": 132.852
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 187.519,
+              "p75RmseUv": 187.519,
+              "riskRmseUv": 121.915,
+              "shrunkRmseUv": 104.889
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 2,
+              "medianRmseUv": 255.588,
+              "p75RmseUv": 316.461,
+              "riskRmseUv": 155.083,
+              "shrunkRmseUv": 136.142
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 17,
+              "medianRmseUv": 137.514,
+              "p75RmseUv": 188.266,
+              "riskRmseUv": 140.791,
+              "shrunkRmseUv": 126.344
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 5,
+              "medianRmseUv": 162.925,
+              "p75RmseUv": 199.197,
+              "riskRmseUv": 140.393,
+              "shrunkRmseUv": 125.644
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 32,
+              "medianRmseUv": 87.326,
+              "p75RmseUv": 151.788,
+              "riskRmseUv": 104.165,
+              "shrunkRmseUv": 87.466
+            }
+          },
+          "referenceMedianRmseUv": 88.363,
+          "referenceRiskRmseUv": 108.794,
+          "scoreableCandidateCount": 78,
+          "selection": {
+            "contextPriorMeanRmseUv": 44.11,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 71.01,
+            "meanImprovementUv": 26.9,
+            "validationCaseCount": 3
+          }
+        }
+      },
+      "families": {
+        "adaptive-preprocessed:dynamic-path:artifact-preprocessed": {
+          "caseCount": 4,
+          "medianRmseUv": 94.389,
+          "p75RmseUv": 138.642,
+          "riskRmseUv": 116.147,
+          "shrunkRmseUv": 97.434
+        },
+        "adaptive-preprocessed:dynamic-path:preprocessed": {
+          "caseCount": 17,
+          "medianRmseUv": 53.202,
+          "p75RmseUv": 143.707,
+          "riskRmseUv": 86.936,
+          "shrunkRmseUv": 63.809
+        },
+        "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+          "caseCount": 7,
+          "medianRmseUv": 46.483,
+          "p75RmseUv": 71.227,
+          "riskRmseUv": 82.683,
+          "shrunkRmseUv": 68.728
+        },
+        "geometry-constrained:dynamic-path:annotation-masked": {
+          "caseCount": 2,
+          "medianRmseUv": 283.123,
+          "p75RmseUv": 331.66,
+          "riskRmseUv": 173.432,
+          "shrunkRmseUv": 152.228
+        },
+        "geometry-constrained:dynamic-path:original": {
+          "caseCount": 3,
+          "medianRmseUv": 32.623,
+          "p75RmseUv": 211.52,
+          "riskRmseUv": 106.944,
+          "shrunkRmseUv": 74.652
+        },
+        "geometry-constrained:probability-centroid:annotation-masked": {
+          "caseCount": 3,
+          "medianRmseUv": 48.29,
+          "p75RmseUv": 65.446,
+          "riskRmseUv": 97.656,
+          "shrunkRmseUv": 80.528
+        },
+        "geometry-constrained:probability-centroid:original": {
+          "caseCount": 5,
+          "medianRmseUv": 47.115,
+          "p75RmseUv": 126.076,
+          "riskRmseUv": 95.779,
+          "shrunkRmseUv": 73.493
+        },
+        "lead-fusion:dynamic-path:original": {
+          "caseCount": 1,
+          "medianRmseUv": 24.935,
+          "p75RmseUv": 24.935,
+          "riskRmseUv": 108.074,
+          "shrunkRmseUv": 87.381
+        },
+        "native-grid:native-grid-path:annotation-masked": {
+          "caseCount": 4,
+          "medianRmseUv": 162.067,
+          "p75RmseUv": 219.651,
+          "riskRmseUv": 147.707,
+          "shrunkRmseUv": 127.513
+        },
+        "native-grid:native-grid-path:geometry-corrected": {
+          "caseCount": 4,
+          "medianRmseUv": 188.464,
+          "p75RmseUv": 238.225,
+          "riskRmseUv": 158.57,
+          "shrunkRmseUv": 139.245
+        },
+        "native-grid:native-grid-path:original": {
+          "caseCount": 13,
+          "medianRmseUv": 166.981,
+          "p75RmseUv": 190.491,
+          "riskRmseUv": 159.482,
+          "shrunkRmseUv": 148.339
+        },
+        "native-grid:native-grid-path:preprocessed": {
+          "caseCount": 18,
+          "medianRmseUv": 173.934,
+          "p75RmseUv": 219.582,
+          "riskRmseUv": 172.162,
+          "shrunkRmseUv": 157.833
+        },
+        "peer-gap-repair:probability-centroid:annotation-masked": {
+          "caseCount": 1,
+          "medianRmseUv": 46.614,
+          "p75RmseUv": 46.614,
+          "riskRmseUv": 111.687,
+          "shrunkRmseUv": 90.994
+        },
+        "peer-gap-repair:probability-centroid:original": {
+          "caseCount": 2,
+          "medianRmseUv": 123.609,
+          "p75RmseUv": 195.322,
+          "riskRmseUv": 129.512,
+          "shrunkRmseUv": 106.653
+        },
+        "source-model:dynamic-path:annotation-masked": {
+          "caseCount": 4,
+          "medianRmseUv": 239.909,
+          "p75RmseUv": 239.909,
+          "riskRmseUv": 175.905,
+          "shrunkRmseUv": 162.11
+        },
+        "source-model:dynamic-path:original": {
+          "caseCount": 50,
+          "medianRmseUv": 140.962,
+          "p75RmseUv": 289.357,
+          "riskRmseUv": 173.21,
+          "shrunkRmseUv": 137.227
+        },
+        "source-model:probability-centroid:annotation-masked": {
+          "caseCount": 23,
+          "medianRmseUv": 86.803,
+          "p75RmseUv": 205.616,
+          "riskRmseUv": 117.97,
+          "shrunkRmseUv": 89.137
+        },
+        "source-model:probability-centroid:original": {
+          "caseCount": 117,
+          "medianRmseUv": 69.394,
+          "p75RmseUv": 181.922,
+          "riskRmseUv": 98.64,
+          "shrunkRmseUv": 70.643
+        }
+      },
+      "referenceMedianRmseUv": 99.87,
+      "referenceRiskRmseUv": 124.702,
+      "scoreableCandidateCount": 278
+    },
+    "standard_6x2": {
+      "candidates": {
+        "annotation-masked": {
+          "caseCount": 10,
+          "medianRmseUv": 76.298,
+          "p75RmseUv": 162.946,
+          "riskRmseUv": 100.592,
+          "shrunkRmseUv": 72.952
+        },
+        "artifact-preprocessed-centroid-2200": {
+          "caseCount": 2,
+          "medianRmseUv": 35.312,
+          "p75RmseUv": 39.337,
+          "riskRmseUv": 85.989,
+          "shrunkRmseUv": 57.418
+        },
+        "artifact-preprocessed-path-2200": {
+          "caseCount": 4,
+          "medianRmseUv": 35.849,
+          "p75RmseUv": 37.419,
+          "riskRmseUv": 74.917,
+          "shrunkRmseUv": 52.744
+        },
+        "centroid-2200": {
+          "caseCount": 5,
+          "medianRmseUv": 78.154,
+          "p75RmseUv": 200.473,
+          "riskRmseUv": 107.295,
+          "shrunkRmseUv": 72.207
+        },
+        "default": {
+          "caseCount": 10,
+          "medianRmseUv": 76.298,
+          "p75RmseUv": 162.946,
+          "riskRmseUv": 100.592,
+          "shrunkRmseUv": 72.952
+        },
+        "geometry-standard-6x2-centroid-1500": {
+          "caseCount": 7,
+          "medianRmseUv": 47.307,
+          "p75RmseUv": 94.498,
+          "riskRmseUv": 78.585,
+          "shrunkRmseUv": 55.204
+        },
+        "geometry-standard-6x2-path-2200": {
+          "caseCount": 7,
+          "medianRmseUv": 37.889,
+          "p75RmseUv": 43.657,
+          "riskRmseUv": 67.05,
+          "shrunkRmseUv": 49.71
+        },
+        "geometry-standard-6x2-rhythm-centroid-2200": {
+          "caseCount": 12,
+          "medianRmseUv": 40.191,
+          "p75RmseUv": 50.21,
+          "riskRmseUv": 61.272,
+          "shrunkRmseUv": 47.858
+        },
+        "ink-path-2200": {
+          "caseCount": 8,
+          "medianRmseUv": 36.268,
+          "p75RmseUv": 39.288,
+          "riskRmseUv": 63.498,
+          "shrunkRmseUv": 47.804
+        },
+        "label-thresh-001": {
+          "caseCount": 11,
+          "medianRmseUv": 63.45,
+          "p75RmseUv": 153.092,
+          "riskRmseUv": 92.109,
+          "shrunkRmseUv": 64.328
+        },
+        "label-thresh-002": {
+          "caseCount": 11,
+          "medianRmseUv": 100.269,
+          "p75RmseUv": 160.53,
+          "riskRmseUv": 112.372,
+          "shrunkRmseUv": 89.641
+        },
+        "label-thresh-005": {
+          "caseCount": 11,
+          "medianRmseUv": 95.443,
+          "p75RmseUv": 162.578,
+          "riskRmseUv": 110.236,
+          "shrunkRmseUv": 86.324
+        },
+        "labeled-six-by-two-row-local-native-grid-path": {
+          "caseCount": 7,
+          "medianRmseUv": 85.69,
+          "p75RmseUv": 149.375,
+          "riskRmseUv": 103.38,
+          "shrunkRmseUv": 77.594
+        },
+        "lead-fusion": {
+          "caseCount": 5,
+          "medianRmseUv": 47.768,
+          "p75RmseUv": 49.908,
+          "riskRmseUv": 77.08,
+          "shrunkRmseUv": 57.014
+        },
+        "morphology-2200": {
+          "caseCount": 10,
+          "medianRmseUv": 38.041,
+          "p75RmseUv": 239.73,
+          "riskRmseUv": 94.261,
+          "shrunkRmseUv": 47.447
+        },
+        "path-1500": {
+          "caseCount": 9,
+          "medianRmseUv": 143.737,
+          "p75RmseUv": 249.741,
+          "riskRmseUv": 147.245,
+          "shrunkRmseUv": 116.067
+        },
+        "peer-gap-repair": {
+          "caseCount": 3,
+          "medianRmseUv": 50.204,
+          "p75RmseUv": 88.53,
+          "riskRmseUv": 88.58,
+          "shrunkRmseUv": 60.239
+        },
+        "preprocessed-native-grid-path": {
+          "caseCount": 22,
+          "medianRmseUv": 90.005,
+          "p75RmseUv": 219.918,
+          "riskRmseUv": 119.404,
+          "shrunkRmseUv": 85.607
+        },
+        "preprocessed-path-2200": {
+          "caseCount": 7,
+          "medianRmseUv": 34.195,
+          "p75RmseUv": 36.684,
+          "riskRmseUv": 64.417,
+          "shrunkRmseUv": 47.556
+        },
+        "six-by-two-native-grid-path": {
+          "caseCount": 4,
+          "medianRmseUv": 215.965,
+          "p75RmseUv": 230.419,
+          "riskRmseUv": 156.4,
+          "shrunkRmseUv": 132.796
+        },
+        "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+          "caseCount": 13,
+          "medianRmseUv": 391.608,
+          "p75RmseUv": 511.677,
+          "riskRmseUv": 333.912,
+          "shrunkRmseUv": 301.234
+        },
+        "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+          "caseCount": 13,
+          "medianRmseUv": 402.487,
+          "p75RmseUv": 511.808,
+          "riskRmseUv": 339.828,
+          "shrunkRmseUv": 309.091
+        },
+        "six-by-two-rhythm-native-grid-path": {
+          "caseCount": 12,
+          "medianRmseUv": 61.485,
+          "p75RmseUv": 94.078,
+          "riskRmseUv": 80.287,
+          "shrunkRmseUv": 62.89
+        },
+        "upscaled-centroid-2200": {
+          "caseCount": 2,
+          "medianRmseUv": 238.48,
+          "p75RmseUv": 427.373,
+          "riskRmseUv": 157.242,
+          "shrunkRmseUv": 115.466
+        }
+      },
+      "contexts": {
+        "annotation": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 32.428,
+              "p75RmseUv": 32.428,
+              "riskRmseUv": 118.746,
+              "shrunkRmseUv": 55.083
+            },
+            "centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 382.686,
+              "p75RmseUv": 382.686,
+              "riskRmseUv": 177.123,
+              "shrunkRmseUv": 113.459
+            },
+            "default": {
+              "caseCount": 1,
+              "medianRmseUv": 33.17,
+              "p75RmseUv": 33.17,
+              "riskRmseUv": 118.87,
+              "shrunkRmseUv": 55.207
+            },
+            "geometry-standard-6x2-centroid-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 32.428,
+              "p75RmseUv": 32.428,
+              "riskRmseUv": 118.746,
+              "shrunkRmseUv": 55.083
+            },
+            "geometry-standard-6x2-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 34.59,
+              "p75RmseUv": 34.688,
+              "riskRmseUv": 107.04,
+              "shrunkRmseUv": 52.464
+            },
+            "geometry-standard-6x2-rhythm-centroid-2200": {
+              "caseCount": 3,
+              "medianRmseUv": 54.547,
+              "p75RmseUv": 336.641,
+              "riskRmseUv": 131.908,
+              "shrunkRmseUv": 57.714
+            },
+            "ink-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 34.59,
+              "p75RmseUv": 34.688,
+              "riskRmseUv": 107.04,
+              "shrunkRmseUv": 52.464
+            },
+            "label-thresh-001": {
+              "caseCount": 3,
+              "medianRmseUv": 62.631,
+              "p75RmseUv": 381.921,
+              "riskRmseUv": 138.426,
+              "shrunkRmseUv": 60.745
+            },
+            "label-thresh-002": {
+              "caseCount": 2,
+              "medianRmseUv": 96.513,
+              "p75RmseUv": 158.95,
+              "riskRmseUv": 129.185,
+              "shrunkRmseUv": 70.157
+            },
+            "label-thresh-005": {
+              "caseCount": 2,
+              "medianRmseUv": 96.906,
+              "p75RmseUv": 160.589,
+              "riskRmseUv": 129.386,
+              "shrunkRmseUv": 70.269
+            },
+            "labeled-six-by-two-row-local-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 50.17,
+              "p75RmseUv": 58.316,
+              "riskRmseUv": 112.066,
+              "shrunkRmseUv": 56.916
+            },
+            "morphology-2200": {
+              "caseCount": 3,
+              "medianRmseUv": 37.55,
+              "p75RmseUv": 674.291,
+              "riskRmseUv": 158.782,
+              "shrunkRmseUv": 51.34
+            },
+            "path-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 353.07,
+              "p75RmseUv": 673.416,
+              "riskRmseUv": 220.909,
+              "shrunkRmseUv": 143.458
+            },
+            "peer-gap-repair": {
+              "caseCount": 1,
+              "medianRmseUv": 34.47,
+              "p75RmseUv": 34.47,
+              "riskRmseUv": 119.087,
+              "shrunkRmseUv": 55.423
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 5,
+              "medianRmseUv": 60.924,
+              "p75RmseUv": 94.613,
+              "riskRmseUv": 102.678,
+              "shrunkRmseUv": 60.269
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 34.402,
+              "p75RmseUv": 35.215,
+              "riskRmseUv": 107.037,
+              "shrunkRmseUv": 52.41
+            },
+            "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+              "caseCount": 4,
+              "medianRmseUv": 533.991,
+              "p75RmseUv": 579.588,
+              "riskRmseUv": 317.957,
+              "shrunkRmseUv": 270.448
+            },
+            "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+              "caseCount": 4,
+              "medianRmseUv": 536.298,
+              "p75RmseUv": 579.383,
+              "riskRmseUv": 318.703,
+              "shrunkRmseUv": 271.473
+            },
+            "six-by-two-rhythm-native-grid-path": {
+              "caseCount": 3,
+              "medianRmseUv": 94.078,
+              "p75RmseUv": 266.732,
+              "riskRmseUv": 136.472,
+              "shrunkRmseUv": 72.538
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 2,
+              "medianRmseUv": 34.402,
+              "p75RmseUv": 35.215,
+              "riskRmseUv": 107.037,
+              "shrunkRmseUv": 52.41
+            },
+            "geometry-constrained:dynamic-path:annotation-masked": {
+              "caseCount": 2,
+              "medianRmseUv": 34.59,
+              "p75RmseUv": 34.688,
+              "riskRmseUv": 107.04,
+              "shrunkRmseUv": 52.464
+            },
+            "geometry-constrained:probability-centroid:annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 45.292,
+              "p75RmseUv": 54.547,
+              "riskRmseUv": 96.719,
+              "shrunkRmseUv": 53.249
+            },
+            "native-grid:native-grid-path:annotation-masked": {
+              "caseCount": 3,
+              "medianRmseUv": 94.078,
+              "p75RmseUv": 266.732,
+              "riskRmseUv": 136.472,
+              "shrunkRmseUv": 72.538
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 50.17,
+              "p75RmseUv": 58.316,
+              "riskRmseUv": 112.066,
+              "shrunkRmseUv": 56.916
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 5,
+              "medianRmseUv": 60.924,
+              "p75RmseUv": 94.613,
+              "riskRmseUv": 102.678,
+              "shrunkRmseUv": 60.269
+            },
+            "panel-composite:dynamic-path:annotation-masked": {
+              "caseCount": 8,
+              "medianRmseUv": 536.298,
+              "p75RmseUv": 579.588,
+              "riskRmseUv": 389.001,
+              "shrunkRmseUv": 352.958
+            },
+            "peer-gap-repair:dynamic-path:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 34.47,
+              "p75RmseUv": 34.47,
+              "riskRmseUv": 119.087,
+              "shrunkRmseUv": 55.423
+            },
+            "source-model:dynamic-path:annotation-masked": {
+              "caseCount": 7,
+              "medianRmseUv": 34.688,
+              "p75RmseUv": 673.416,
+              "riskRmseUv": 170.053,
+              "shrunkRmseUv": 45.074
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 2,
+              "medianRmseUv": 207.557,
+              "p75RmseUv": 382.686,
+              "riskRmseUv": 168.961,
+              "shrunkRmseUv": 101.883
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 8,
+              "medianRmseUv": 48.353,
+              "p75RmseUv": 158.95,
+              "riskRmseUv": 99.082,
+              "shrunkRmseUv": 52.684
+            }
+          },
+          "referenceMedianRmseUv": 59.614,
+          "referenceRiskRmseUv": 136.01,
+          "scoreableCandidateCount": 44
+        },
+        "blur": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 126.794,
+              "p75RmseUv": 126.794,
+              "riskRmseUv": 135.858,
+              "shrunkRmseUv": 118.125
+            },
+            "default": {
+              "caseCount": 1,
+              "medianRmseUv": 126.794,
+              "p75RmseUv": 126.794,
+              "riskRmseUv": 135.858,
+              "shrunkRmseUv": 118.125
+            },
+            "geometry-standard-6x2-centroid-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 126.794,
+              "p75RmseUv": 126.794,
+              "riskRmseUv": 135.858,
+              "shrunkRmseUv": 118.125
+            },
+            "geometry-standard-6x2-path-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 43.549,
+              "p75RmseUv": 47.811,
+              "riskRmseUv": 111.084,
+              "shrunkRmseUv": 95.579
+            },
+            "geometry-standard-6x2-rhythm-centroid-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 50.21,
+              "p75RmseUv": 50.21,
+              "riskRmseUv": 123.094,
+              "shrunkRmseUv": 105.361
+            },
+            "ink-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 39.288,
+              "p75RmseUv": 39.288,
+              "riskRmseUv": 121.274,
+              "shrunkRmseUv": 103.541
+            },
+            "label-thresh-001": {
+              "caseCount": 1,
+              "medianRmseUv": 101.433,
+              "p75RmseUv": 101.433,
+              "riskRmseUv": 131.632,
+              "shrunkRmseUv": 113.898
+            },
+            "label-thresh-002": {
+              "caseCount": 1,
+              "medianRmseUv": 110.29,
+              "p75RmseUv": 110.29,
+              "riskRmseUv": 133.108,
+              "shrunkRmseUv": 115.375
+            },
+            "label-thresh-005": {
+              "caseCount": 1,
+              "medianRmseUv": 116.391,
+              "p75RmseUv": 116.391,
+              "riskRmseUv": 134.125,
+              "shrunkRmseUv": 116.391
+            },
+            "lead-fusion": {
+              "caseCount": 1,
+              "medianRmseUv": 47.768,
+              "p75RmseUv": 47.768,
+              "riskRmseUv": 122.687,
+              "shrunkRmseUv": 104.954
+            },
+            "morphology-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 172.308,
+              "p75RmseUv": 275.215,
+              "riskRmseUv": 154.918,
+              "shrunkRmseUv": 132.368
+            },
+            "path-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 143.737,
+              "p75RmseUv": 143.737,
+              "riskRmseUv": 138.682,
+              "shrunkRmseUv": 120.949
+            },
+            "peer-gap-repair": {
+              "caseCount": 1,
+              "medianRmseUv": 50.204,
+              "p75RmseUv": 50.204,
+              "riskRmseUv": 123.093,
+              "shrunkRmseUv": 105.36
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 3,
+              "medianRmseUv": 197.732,
+              "p75RmseUv": 234.441,
+              "riskRmseUv": 163.635,
+              "shrunkRmseUv": 146.894
+            },
+            "six-by-two-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 221.704,
+              "p75RmseUv": 241.896,
+              "riskRmseUv": 163.123,
+              "shrunkRmseUv": 146.481
+            },
+            "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 426.172,
+              "p75RmseUv": 426.172,
+              "riskRmseUv": 185.755,
+              "shrunkRmseUv": 168.022
+            },
+            "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 426.145,
+              "p75RmseUv": 426.145,
+              "riskRmseUv": 185.75,
+              "shrunkRmseUv": 168.017
+            },
+            "six-by-two-rhythm-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 65.198,
+              "p75RmseUv": 65.198,
+              "riskRmseUv": 125.592,
+              "shrunkRmseUv": 107.859
+            }
+          },
+          "families": {
+            "geometry-constrained:dynamic-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 43.549,
+              "p75RmseUv": 47.811,
+              "riskRmseUv": 111.084,
+              "shrunkRmseUv": 95.579
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 2,
+              "medianRmseUv": 88.502,
+              "p75RmseUv": 126.794,
+              "riskRmseUv": 126.358,
+              "shrunkRmseUv": 108.423
+            },
+            "lead-fusion:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 47.768,
+              "p75RmseUv": 47.768,
+              "riskRmseUv": 122.687,
+              "shrunkRmseUv": 104.954
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 3,
+              "medianRmseUv": 201.511,
+              "p75RmseUv": 241.896,
+              "riskRmseUv": 165.397,
+              "shrunkRmseUv": 148.311
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 3,
+              "medianRmseUv": 197.732,
+              "p75RmseUv": 234.441,
+              "riskRmseUv": 163.635,
+              "shrunkRmseUv": 146.894
+            },
+            "panel-composite:dynamic-path:original": {
+              "caseCount": 2,
+              "medianRmseUv": 426.159,
+              "p75RmseUv": 426.172,
+              "riskRmseUv": 220.097,
+              "shrunkRmseUv": 204.896
+            },
+            "peer-gap-repair:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 50.204,
+              "p75RmseUv": 50.204,
+              "riskRmseUv": 123.093,
+              "shrunkRmseUv": 105.36
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 4,
+              "medianRmseUv": 106.568,
+              "p75RmseUv": 143.737,
+              "riskRmseUv": 127.978,
+              "shrunkRmseUv": 112.026
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 126.794,
+              "p75RmseUv": 126.794,
+              "riskRmseUv": 135.858,
+              "shrunkRmseUv": 118.125
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 4,
+              "medianRmseUv": 113.341,
+              "p75RmseUv": 116.391,
+              "riskRmseUv": 127.197,
+              "shrunkRmseUv": 115.036
+            }
+          },
+          "referenceMedianRmseUv": 116.391,
+          "referenceRiskRmseUv": 137.671,
+          "scoreableCandidateCount": 23,
+          "selection": {
+            "contextPriorMeanRmseUv": 292.82,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 293.002,
+            "meanImprovementUv": 0.183,
+            "validationCaseCount": 3
+          }
+        },
+        "clean": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 58.097,
+              "p75RmseUv": 58.097,
+              "riskRmseUv": 77.214,
+              "shrunkRmseUv": 58.097
+            },
+            "default": {
+              "caseCount": 1,
+              "medianRmseUv": 58.097,
+              "p75RmseUv": 58.097,
+              "riskRmseUv": 77.214,
+              "shrunkRmseUv": 58.097
+            },
+            "geometry-standard-6x2-centroid-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 58.097,
+              "p75RmseUv": 58.097,
+              "riskRmseUv": 77.214,
+              "shrunkRmseUv": 58.097
+            },
+            "geometry-standard-6x2-rhythm-centroid-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 33.884,
+              "p75RmseUv": 37.463,
+              "riskRmseUv": 60.478,
+              "shrunkRmseUv": 47.336
+            },
+            "label-thresh-001": {
+              "caseCount": 1,
+              "medianRmseUv": 63.45,
+              "p75RmseUv": 63.45,
+              "riskRmseUv": 78.106,
+              "shrunkRmseUv": 58.989
+            },
+            "label-thresh-002": {
+              "caseCount": 1,
+              "medianRmseUv": 62.767,
+              "p75RmseUv": 62.767,
+              "riskRmseUv": 77.992,
+              "shrunkRmseUv": 58.875
+            },
+            "label-thresh-005": {
+              "caseCount": 1,
+              "medianRmseUv": 59.973,
+              "p75RmseUv": 59.973,
+              "riskRmseUv": 77.526,
+              "shrunkRmseUv": 58.409
+            },
+            "labeled-six-by-two-row-local-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 112.904,
+              "p75RmseUv": 149.375,
+              "riskRmseUv": 92.747,
+              "shrunkRmseUv": 73.756
+            },
+            "lead-fusion": {
+              "caseCount": 3,
+              "medianRmseUv": 36.8,
+              "p75RmseUv": 49.908,
+              "riskRmseUv": 65.677,
+              "shrunkRmseUv": 50.111
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 6,
+              "medianRmseUv": 46.128,
+              "p75RmseUv": 78.044,
+              "riskRmseUv": 66.348,
+              "shrunkRmseUv": 51.568
+            },
+            "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+              "caseCount": 4,
+              "medianRmseUv": 280.441,
+              "p75RmseUv": 318.441,
+              "riskRmseUv": 173.883,
+              "shrunkRmseUv": 156.916
+            },
+            "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+              "caseCount": 4,
+              "medianRmseUv": 282.673,
+              "p75RmseUv": 323.594,
+              "riskRmseUv": 175.2,
+              "shrunkRmseUv": 157.909
+            },
+            "six-by-two-rhythm-native-grid-path": {
+              "caseCount": 4,
+              "medianRmseUv": 40.461,
+              "p75RmseUv": 40.983,
+              "riskRmseUv": 63.061,
+              "shrunkRmseUv": 50.259
+            }
+          },
+          "families": {
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 5,
+              "medianRmseUv": 37.463,
+              "p75RmseUv": 42.919,
+              "riskRmseUv": 59.932,
+              "shrunkRmseUv": 47.78
+            },
+            "lead-fusion:probability-centroid:original": {
+              "caseCount": 3,
+              "medianRmseUv": 36.8,
+              "p75RmseUv": 49.908,
+              "riskRmseUv": 65.677,
+              "shrunkRmseUv": 50.111
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 6,
+              "medianRmseUv": 45.247,
+              "p75RmseUv": 76.432,
+              "riskRmseUv": 65.768,
+              "shrunkRmseUv": 51.088
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 6,
+              "medianRmseUv": 46.128,
+              "p75RmseUv": 78.044,
+              "riskRmseUv": 66.348,
+              "shrunkRmseUv": 51.568
+            },
+            "panel-composite:dynamic-path:original": {
+              "caseCount": 8,
+              "medianRmseUv": 280.441,
+              "p75RmseUv": 323.594,
+              "riskRmseUv": 210.386,
+              "shrunkRmseUv": 194.924
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 1,
+              "medianRmseUv": 58.097,
+              "p75RmseUv": 58.097,
+              "riskRmseUv": 77.214,
+              "shrunkRmseUv": 58.097
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 4,
+              "medianRmseUv": 61.37,
+              "p75RmseUv": 62.767,
+              "riskRmseUv": 72.451,
+              "shrunkRmseUv": 59.551
+            }
+          },
+          "referenceMedianRmseUv": 58.097,
+          "referenceRiskRmseUv": 81.037,
+          "scoreableCandidateCount": 33,
+          "selection": {
+            "contextPriorMeanRmseUv": 95.902,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 107.437,
+            "meanImprovementUv": 11.535,
+            "validationCaseCount": 1
+          }
+        },
+        "degraded-raster": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 3,
+              "medianRmseUv": 238.096,
+              "p75RmseUv": 557.038,
+              "riskRmseUv": 258.924,
+              "shrunkRmseUv": 214.582
+            },
+            "centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 139.313,
+              "p75RmseUv": 200.473,
+              "riskRmseUv": 203.872,
+              "shrunkRmseUv": 182.999
+            },
+            "default": {
+              "caseCount": 3,
+              "medianRmseUv": 238.096,
+              "p75RmseUv": 557.038,
+              "riskRmseUv": 258.924,
+              "shrunkRmseUv": 214.582
+            },
+            "geometry-standard-6x2-centroid-1500": {
+              "caseCount": 1,
+              "medianRmseUv": 94.498,
+              "p75RmseUv": 94.498,
+              "riskRmseUv": 202.066,
+              "shrunkRmseUv": 182.81
+            },
+            "geometry-standard-6x2-rhythm-centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 77.522,
+              "p75RmseUv": 109.727,
+              "riskRmseUv": 184.149,
+              "shrunkRmseUv": 165.344
+            },
+            "ink-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 134.708,
+              "p75RmseUv": 134.708,
+              "riskRmseUv": 208.767,
+              "shrunkRmseUv": 189.512
+            },
+            "label-thresh-001": {
+              "caseCount": 2,
+              "medianRmseUv": 136.402,
+              "p75RmseUv": 173.487,
+              "riskRmseUv": 201.32,
+              "shrunkRmseUv": 182.167
+            },
+            "label-thresh-002": {
+              "caseCount": 3,
+              "medianRmseUv": 218.629,
+              "p75RmseUv": 654.68,
+              "riskRmseUv": 262.603,
+              "shrunkRmseUv": 207.282
+            },
+            "label-thresh-005": {
+              "caseCount": 3,
+              "medianRmseUv": 224.647,
+              "p75RmseUv": 664.745,
+              "riskRmseUv": 265.239,
+              "shrunkRmseUv": 209.538
+            },
+            "labeled-six-by-two-row-local-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 140.718,
+              "p75RmseUv": 195.746,
+              "riskRmseUv": 203.835,
+              "shrunkRmseUv": 183.4
+            },
+            "morphology-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 239.73,
+              "p75RmseUv": 239.73,
+              "riskRmseUv": 226.271,
+              "shrunkRmseUv": 207.016
+            },
+            "path-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 525.575,
+              "p75RmseUv": 801.408,
+              "riskRmseUv": 329.566,
+              "shrunkRmseUv": 293.359
+            },
+            "peer-gap-repair": {
+              "caseCount": 1,
+              "medianRmseUv": 88.53,
+              "p75RmseUv": 88.53,
+              "riskRmseUv": 201.071,
+              "shrunkRmseUv": 181.816
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 4,
+              "medianRmseUv": 145.008,
+              "p75RmseUv": 204.62,
+              "riskRmseUv": 195.282,
+              "shrunkRmseUv": 175.822
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 1,
+              "medianRmseUv": 102.962,
+              "p75RmseUv": 102.962,
+              "riskRmseUv": 203.476,
+              "shrunkRmseUv": 184.221
+            },
+            "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 334.736,
+              "p75RmseUv": 376.561,
+              "riskRmseUv": 258.326,
+              "shrunkRmseUv": 238.834
+            },
+            "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 336.053,
+              "p75RmseUv": 379.208,
+              "riskRmseUv": 258.797,
+              "shrunkRmseUv": 239.21
+            },
+            "six-by-two-rhythm-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 135.119,
+              "p75RmseUv": 221.066,
+              "riskRmseUv": 204.444,
+              "shrunkRmseUv": 181.8
+            },
+            "upscaled-centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 238.48,
+              "p75RmseUv": 427.373,
+              "riskRmseUv": 241.329,
+              "shrunkRmseUv": 211.332
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 1,
+              "medianRmseUv": 102.962,
+              "p75RmseUv": 102.962,
+              "riskRmseUv": 203.476,
+              "shrunkRmseUv": 184.221
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 3,
+              "medianRmseUv": 94.498,
+              "p75RmseUv": 109.727,
+              "riskRmseUv": 176.601,
+              "shrunkRmseUv": 160.732
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 4,
+              "medianRmseUv": 140.718,
+              "p75RmseUv": 195.746,
+              "riskRmseUv": 192.866,
+              "shrunkRmseUv": 173.915
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 145.008,
+              "p75RmseUv": 204.62,
+              "riskRmseUv": 195.282,
+              "shrunkRmseUv": 175.822
+            },
+            "panel-composite:dynamic-path:original": {
+              "caseCount": 4,
+              "medianRmseUv": 334.736,
+              "p75RmseUv": 376.561,
+              "riskRmseUv": 277.629,
+              "shrunkRmseUv": 260.145
+            },
+            "peer-gap-repair:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 88.53,
+              "p75RmseUv": 88.53,
+              "riskRmseUv": 201.071,
+              "shrunkRmseUv": 181.816
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 4,
+              "medianRmseUv": 244.735,
+              "p75RmseUv": 249.741,
+              "riskRmseUv": 233.538,
+              "shrunkRmseUv": 220.145
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 3,
+              "medianRmseUv": 238.096,
+              "p75RmseUv": 557.038,
+              "riskRmseUv": 258.924,
+              "shrunkRmseUv": 214.582
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 15,
+              "medianRmseUv": 200.473,
+              "p75RmseUv": 427.373,
+              "riskRmseUv": 248.793,
+              "shrunkRmseUv": 200.473
+            }
+          },
+          "referenceMedianRmseUv": 200.473,
+          "referenceRiskRmseUv": 223.579,
+          "scoreableCandidateCount": 39
+        },
+        "geometry": {
+          "candidates": {
+            "annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 39.526,
+              "p75RmseUv": 41.758,
+              "riskRmseUv": 55.255,
+              "shrunkRmseUv": 39.137
+            },
+            "artifact-preprocessed-centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 35.312,
+              "p75RmseUv": 39.337,
+              "riskRmseUv": 58.513,
+              "shrunkRmseUv": 37.821
+            },
+            "artifact-preprocessed-path-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 35.849,
+              "p75RmseUv": 37.419,
+              "riskRmseUv": 53.547,
+              "shrunkRmseUv": 37.502
+            },
+            "centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 34.347,
+              "p75RmseUv": 39.089,
+              "riskRmseUv": 58.289,
+              "shrunkRmseUv": 37.545
+            },
+            "default": {
+              "caseCount": 4,
+              "medianRmseUv": 39.526,
+              "p75RmseUv": 41.758,
+              "riskRmseUv": 55.255,
+              "shrunkRmseUv": 39.137
+            },
+            "geometry-standard-6x2-centroid-1500": {
+              "caseCount": 3,
+              "medianRmseUv": 38.561,
+              "p75RmseUv": 47.307,
+              "riskRmseUv": 57.4,
+              "shrunkRmseUv": 38.726
+            },
+            "geometry-standard-6x2-path-2200": {
+              "caseCount": 3,
+              "medianRmseUv": 37.889,
+              "p75RmseUv": 43.657,
+              "riskRmseUv": 56.869,
+              "shrunkRmseUv": 38.474
+            },
+            "geometry-standard-6x2-rhythm-centroid-2200": {
+              "caseCount": 2,
+              "medianRmseUv": 29.849,
+              "p75RmseUv": 30.604,
+              "riskRmseUv": 56.719,
+              "shrunkRmseUv": 36.26
+            },
+            "ink-path-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 35.025,
+              "p75RmseUv": 37.849,
+              "riskRmseUv": 53.32,
+              "shrunkRmseUv": 37.136
+            },
+            "label-thresh-001": {
+              "caseCount": 4,
+              "medianRmseUv": 41.023,
+              "p75RmseUv": 44.116,
+              "riskRmseUv": 56.016,
+              "shrunkRmseUv": 39.802
+            },
+            "label-thresh-002": {
+              "caseCount": 4,
+              "medianRmseUv": 40.916,
+              "p75RmseUv": 44.097,
+              "riskRmseUv": 55.978,
+              "shrunkRmseUv": 39.754
+            },
+            "label-thresh-005": {
+              "caseCount": 4,
+              "medianRmseUv": 40.028,
+              "p75RmseUv": 42.557,
+              "riskRmseUv": 55.511,
+              "shrunkRmseUv": 39.36
+            },
+            "labeled-six-by-two-row-local-native-grid-path": {
+              "caseCount": 1,
+              "medianRmseUv": 142.598,
+              "p75RmseUv": 142.598,
+              "riskRmseUv": 79.926,
+              "shrunkRmseUv": 56.12
+            },
+            "lead-fusion": {
+              "caseCount": 1,
+              "medianRmseUv": 66.26,
+              "p75RmseUv": 66.26,
+              "riskRmseUv": 67.203,
+              "shrunkRmseUv": 43.397
+            },
+            "morphology-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 31.874,
+              "p75RmseUv": 32.034,
+              "riskRmseUv": 51.624,
+              "shrunkRmseUv": 35.736
+            },
+            "path-1500": {
+              "caseCount": 4,
+              "medianRmseUv": 42.029,
+              "p75RmseUv": 43.979,
+              "riskRmseUv": 56.336,
+              "shrunkRmseUv": 40.249
+            },
+            "preprocessed-native-grid-path": {
+              "caseCount": 4,
+              "medianRmseUv": 242.087,
+              "p75RmseUv": 252.337,
+              "riskRmseUv": 146.173,
+              "shrunkRmseUv": 129.164
+            },
+            "preprocessed-path-2200": {
+              "caseCount": 4,
+              "medianRmseUv": 32.44,
+              "p75RmseUv": 34.195,
+              "riskRmseUv": 52.053,
+              "shrunkRmseUv": 35.987
+            },
+            "six-by-two-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 183.441,
+              "p75RmseUv": 230.419,
+              "riskRmseUv": 103.904,
+              "shrunkRmseUv": 80.144
+            },
+            "six-by-two-rhythm-composite-path-local-ink-24-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 543.586,
+              "p75RmseUv": 575.495,
+              "riskRmseUv": 205.726,
+              "shrunkRmseUv": 183.042
+            },
+            "six-by-two-rhythm-composite-path-local-ink-40-1500": {
+              "caseCount": 2,
+              "medianRmseUv": 544.932,
+              "p75RmseUv": 578.057,
+              "riskRmseUv": 206.198,
+              "shrunkRmseUv": 183.427
+            },
+            "six-by-two-rhythm-native-grid-path": {
+              "caseCount": 2,
+              "medianRmseUv": 171.79,
+              "p75RmseUv": 281.37,
+              "riskRmseUv": 105.047,
+              "shrunkRmseUv": 76.815
+            }
+          },
+          "families": {
+            "adaptive-preprocessed:dynamic-path:artifact-preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 35.849,
+              "p75RmseUv": 37.419,
+              "riskRmseUv": 53.547,
+              "shrunkRmseUv": 37.502
+            },
+            "adaptive-preprocessed:dynamic-path:preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 32.44,
+              "p75RmseUv": 34.195,
+              "riskRmseUv": 52.053,
+              "shrunkRmseUv": 35.987
+            },
+            "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+              "caseCount": 2,
+              "medianRmseUv": 35.312,
+              "p75RmseUv": 39.337,
+              "riskRmseUv": 58.513,
+              "shrunkRmseUv": 37.821
+            },
+            "geometry-constrained:dynamic-path:geometry-corrected": {
+              "caseCount": 2,
+              "medianRmseUv": 33.955,
+              "p75RmseUv": 37.889,
+              "riskRmseUv": 58.119,
+              "shrunkRmseUv": 37.433
+            },
+            "geometry-constrained:dynamic-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 43.657,
+              "p75RmseUv": 43.657,
+              "riskRmseUv": 63.436,
+              "shrunkRmseUv": 39.63
+            },
+            "geometry-constrained:probability-centroid:geometry-corrected": {
+              "caseCount": 4,
+              "medianRmseUv": 32.946,
+              "p75RmseUv": 35.288,
+              "riskRmseUv": 52.343,
+              "shrunkRmseUv": 36.212
+            },
+            "geometry-constrained:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 47.307,
+              "p75RmseUv": 47.307,
+              "riskRmseUv": 64.044,
+              "shrunkRmseUv": 40.239
+            },
+            "lead-fusion:probability-centroid:original": {
+              "caseCount": 1,
+              "medianRmseUv": 66.26,
+              "p75RmseUv": 66.26,
+              "riskRmseUv": 67.203,
+              "shrunkRmseUv": 43.397
+            },
+            "native-grid:native-grid-path:geometry-corrected": {
+              "caseCount": 4,
+              "medianRmseUv": 139.53,
+              "p75RmseUv": 142.598,
+              "riskRmseUv": 99.794,
+              "shrunkRmseUv": 83.583
+            },
+            "native-grid:native-grid-path:original": {
+              "caseCount": 1,
+              "medianRmseUv": 230.419,
+              "p75RmseUv": 230.419,
+              "riskRmseUv": 94.563,
+              "shrunkRmseUv": 70.757
+            },
+            "native-grid:native-grid-path:preprocessed": {
+              "caseCount": 4,
+              "medianRmseUv": 242.087,
+              "p75RmseUv": 252.337,
+              "riskRmseUv": 146.173,
+              "shrunkRmseUv": 129.164
+            },
+            "panel-composite:dynamic-path:geometry-corrected": {
+              "caseCount": 4,
+              "medianRmseUv": 543.651,
+              "p75RmseUv": 575.495,
+              "riskRmseUv": 282.601,
+              "shrunkRmseUv": 263.192
+            },
+            "source-model:dynamic-path:original": {
+              "caseCount": 12,
+              "medianRmseUv": 35.025,
+              "p75RmseUv": 40.078,
+              "riskRmseUv": 45.436,
+              "shrunkRmseUv": 36.142
+            },
+            "source-model:probability-centroid:annotation-masked": {
+              "caseCount": 4,
+              "medianRmseUv": 39.526,
+              "p75RmseUv": 41.758,
+              "riskRmseUv": 55.255,
+              "shrunkRmseUv": 39.137
+            },
+            "source-model:probability-centroid:original": {
+              "caseCount": 18,
+              "medianRmseUv": 38.51,
+              "p75RmseUv": 44.116,
+              "riskRmseUv": 45.885,
+              "shrunkRmseUv": 38.578
+            }
+          },
+          "referenceMedianRmseUv": 38.825,
+          "referenceRiskRmseUv": 67.392,
+          "scoreableCandidateCount": 66,
+          "selection": {
+            "contextPriorMeanRmseUv": 131.695,
+            "enabled": false,
+            "layoutPriorMeanRmseUv": 130.736,
+            "meanImprovementUv": -0.959,
+            "validationCaseCount": 2
+          }
+        }
+      },
+      "families": {
+        "adaptive-preprocessed:dynamic-path:artifact-preprocessed": {
+          "caseCount": 4,
+          "medianRmseUv": 35.849,
+          "p75RmseUv": 37.419,
+          "riskRmseUv": 74.917,
+          "shrunkRmseUv": 52.744
+        },
+        "adaptive-preprocessed:dynamic-path:preprocessed": {
+          "caseCount": 7,
+          "medianRmseUv": 34.195,
+          "p75RmseUv": 36.684,
+          "riskRmseUv": 64.417,
+          "shrunkRmseUv": 47.556
+        },
+        "adaptive-preprocessed:probability-centroid:artifact-preprocessed": {
+          "caseCount": 2,
+          "medianRmseUv": 35.312,
+          "p75RmseUv": 39.337,
+          "riskRmseUv": 85.989,
+          "shrunkRmseUv": 57.418
+        },
+        "geometry-constrained:dynamic-path:annotation-masked": {
+          "caseCount": 2,
+          "medianRmseUv": 34.59,
+          "p75RmseUv": 34.688,
+          "riskRmseUv": 85.502,
+          "shrunkRmseUv": 57.212
+        },
+        "geometry-constrained:dynamic-path:geometry-corrected": {
+          "caseCount": 2,
+          "medianRmseUv": 33.955,
+          "p75RmseUv": 37.889,
+          "riskRmseUv": 85.594,
+          "shrunkRmseUv": 57.03
+        },
+        "geometry-constrained:dynamic-path:original": {
+          "caseCount": 3,
+          "medianRmseUv": 43.657,
+          "p75RmseUv": 47.811,
+          "riskRmseUv": 82.921,
+          "shrunkRmseUv": 57.784
+        },
+        "geometry-constrained:probability-centroid:annotation-masked": {
+          "caseCount": 4,
+          "medianRmseUv": 45.292,
+          "p75RmseUv": 54.547,
+          "riskRmseUv": 79.967,
+          "shrunkRmseUv": 56.941
+        },
+        "geometry-constrained:probability-centroid:geometry-corrected": {
+          "caseCount": 4,
+          "medianRmseUv": 32.946,
+          "p75RmseUv": 35.288,
+          "riskRmseUv": 73.712,
+          "shrunkRmseUv": 51.454
+        },
+        "geometry-constrained:probability-centroid:original": {
+          "caseCount": 11,
+          "medianRmseUv": 47.307,
+          "p75RmseUv": 94.498,
+          "riskRmseUv": 73.715,
+          "shrunkRmseUv": 53.23
+        },
+        "lead-fusion:probability-centroid:original": {
+          "caseCount": 5,
+          "medianRmseUv": 47.768,
+          "p75RmseUv": 49.908,
+          "riskRmseUv": 77.08,
+          "shrunkRmseUv": 57.014
+        },
+        "native-grid:native-grid-path:annotation-masked": {
+          "caseCount": 3,
+          "medianRmseUv": 94.078,
+          "p75RmseUv": 266.732,
+          "riskRmseUv": 117.626,
+          "shrunkRmseUv": 76.692
+        },
+        "native-grid:native-grid-path:geometry-corrected": {
+          "caseCount": 4,
+          "medianRmseUv": 139.53,
+          "p75RmseUv": 142.598,
+          "riskRmseUv": 121.164,
+          "shrunkRmseUv": 98.825
+        },
+        "native-grid:native-grid-path:original": {
+          "caseCount": 16,
+          "medianRmseUv": 70.815,
+          "p75RmseUv": 195.746,
+          "riskRmseUv": 102.955,
+          "shrunkRmseUv": 69.731
+        },
+        "native-grid:native-grid-path:preprocessed": {
+          "caseCount": 22,
+          "medianRmseUv": 90.005,
+          "p75RmseUv": 219.918,
+          "riskRmseUv": 119.404,
+          "shrunkRmseUv": 85.607
+        },
+        "panel-composite:dynamic-path:annotation-masked": {
+          "caseCount": 8,
+          "medianRmseUv": 536.298,
+          "p75RmseUv": 579.588,
+          "riskRmseUv": 377.403,
+          "shrunkRmseUv": 355.514
+        },
+        "panel-composite:dynamic-path:geometry-corrected": {
+          "caseCount": 4,
+          "medianRmseUv": 543.651,
+          "p75RmseUv": 575.495,
+          "riskRmseUv": 303.97,
+          "shrunkRmseUv": 278.434
+        },
+        "panel-composite:dynamic-path:original": {
+          "caseCount": 14,
+          "medianRmseUv": 321.017,
+          "p75RmseUv": 391.608,
+          "riskRmseUv": 277.4,
+          "shrunkRmseUv": 253.976
+        },
+        "peer-gap-repair:dynamic-path:annotation-masked": {
+          "caseCount": 1,
+          "medianRmseUv": 34.47,
+          "p75RmseUv": 34.47,
+          "riskRmseUv": 93.959,
+          "shrunkRmseUv": 60.962
+        },
+        "peer-gap-repair:native-grid-path:original": {
+          "caseCount": 1,
+          "medianRmseUv": 88.53,
+          "p75RmseUv": 88.53,
+          "riskRmseUv": 102.969,
+          "shrunkRmseUv": 69.972
+        },
+        "peer-gap-repair:probability-centroid:original": {
+          "caseCount": 1,
+          "medianRmseUv": 50.204,
+          "p75RmseUv": 50.204,
+          "riskRmseUv": 96.581,
+          "shrunkRmseUv": 63.584
+        },
+        "source-model:dynamic-path:annotation-masked": {
+          "caseCount": 7,
+          "medianRmseUv": 34.688,
+          "p75RmseUv": 673.416,
+          "riskRmseUv": 157.49,
+          "shrunkRmseUv": 47.843
+        },
+        "source-model:dynamic-path:original": {
+          "caseCount": 20,
+          "medianRmseUv": 42.029,
+          "p75RmseUv": 170.079,
+          "riskRmseUv": 80.404,
+          "shrunkRmseUv": 46.875
+        },
+        "source-model:probability-centroid:annotation-masked": {
+          "caseCount": 11,
+          "medianRmseUv": 94.498,
+          "p75RmseUv": 238.096,
+          "riskRmseUv": 122.729,
+          "shrunkRmseUv": 85.674
+        },
+        "source-model:probability-centroid:original": {
+          "caseCount": 49,
+          "medianRmseUv": 78.154,
+          "p75RmseUv": 160.589,
+          "riskRmseUv": 99.419,
+          "shrunkRmseUv": 77.052
+        }
+      },
+      "referenceMedianRmseUv": 66.26,
+      "referenceRiskRmseUv": 105.857,
+      "scoreableCandidateCount": 205
+    }
+  },
+  "profileId": "paired-truth-layout-artifact-risk-priors-v2",
+  "training": {
+    "artifactContextMethod": "manifest-degradation-family-v1",
+    "benchmarkRunId": "benchmark_multisource_truth_v1_subset_100_digitizer_20260820113112_daa7195a",
+    "clinicalValidationUse": false,
+    "contextSelectionRule": "At least five validation cases and at least 1 uV lower mean RMSE than the layout-only prior",
+    "groupedSplitAudit": {
+      "groupKey": "groupId with sourceId fallback",
+      "groupsBySplit": {
+        "development": 72,
+        "validation": 28
+      },
+      "leakageChecked": true
+    },
+    "heldoutUsed": false,
+    "objective": "macro mean 12-lead RMSE in microvolts",
+    "pipelineCommit": "6e3910827c617fc0034195eb5c15fa8061c5d6f3-dirty",
+    "pipelineContractVersion": 3,
+    "riskStatistic": "75% median RMSE + 25% p75 RMSE",
+    "shrinkageReferenceCases": 5,
+    "split": "development",
+    "splitMethod": "manifest-grouped-source-split",
+    "suiteId": "multisource_truth_v1_subset_100"
+  },
+  "version": 2
+}

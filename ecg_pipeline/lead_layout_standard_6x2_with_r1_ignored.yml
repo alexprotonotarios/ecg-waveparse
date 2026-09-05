@@ -1,0 +1,16 @@
+standard_6x2_with_r1_ignored:
+  description: "Geometry-confirmed 6x2 standard layout with one review-only rhythm row"
+  layout:
+    rows: 6
+    cols: 2
+  leads:
+    - ["I", "V1"]
+    - ["II", "V2"]
+    - ["III", "V3"]
+    - ["aVR", "V4"]
+    - ["aVL", "V5"]
+    - ["aVF", "V6"]
+  # The seventh row is useful layout evidence but must not overwrite one of the
+  # primary 12 leads when its identity is uncertain.
+  rhythm_leads: []
+  total_rows: 7

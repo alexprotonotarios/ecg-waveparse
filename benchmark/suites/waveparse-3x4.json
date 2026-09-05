@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "suiteId": "waveparse-3x4",
+  "description": "Synthetic layout regression, not clinical validation.",
+  "sampleRateHz": 500,
+  "durationSeconds": 2.5,
+  "layout": "standard_3x4",
+  "paperSpeedMmPerSecond": 25,
+  "gainMmPerMv": 10,
+  "render": { "pixelsPerMm": 8, "traceWidthPixels": 3 },
+  "cases": [{ "caseId": "clean", "kind": "none", "seed": 2101, "parameters": {} }]
+}

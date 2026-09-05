@@ -1,0 +1,20 @@
+{
+  "name": "ecg-waveparse",
+  "version": "0.1.0",
+  "description": "Local ECG image-to-signal digitization with a shared, versioned engine",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "require": "./dist/index.cjs" },
+    "./package.json": "./package.json"
+  },
+  "bin": { "ecg-waveparse": "./dist/cli.cjs" },
+  "engines": { "node": "22.22.2" },
+  "files": ["dist", "runtime", "docs", "README.md", "LICENSE", "LICENSES", "THIRD_PARTY_NOTICES.md"],
+  "repository": { "type": "git", "url": "https://github.com/alexprotonotarios/ecg-waveparse.git", "directory": "packages/javascript" },
+  "homepage": "https://github.com/alexprotonotarios/ecg-waveparse",
+  "scripts": { "prepublishOnly": "node -e \"throw new Error('Publication is disabled for release preparation.')\"" }
+}

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "sampleRateHz": 500,
+  "pageDurationSeconds": 10,
+  "leads": ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"],
+  "layouts": {
+    "standard_3x4": {
+      "pageRows": 4,
+      "rows": [["I", "aVR", "V1", "V4"], ["II", "aVL", "V2", "V5"], ["III", "aVF", "V3", "V6"]]
+    },
+    "standard_6x2": {
+      "pageRows": 6,
+      "rows": [["I", "V1"], ["II", "V2"], ["III", "V3"], ["aVR", "V4"], ["aVL", "V5"], ["aVF", "V6"]]
+    },
+    "standard_12x1": {
+      "pageRows": 12,
+      "rows": [["I"], ["II"], ["III"], ["aVR"], ["aVL"], ["aVF"], ["V1"], ["V2"], ["V3"], ["V4"], ["V5"], ["V6"]]
+    },
+    "standard_6x1_limb": {
+      "pageRows": 6,
+      "rows": [["I"], ["II"], ["III"], ["aVR"], ["aVL"], ["aVF"]]
+    },
+    "cabrera_6x1_limb": {
+      "pageRows": 6,
+      "rows": [["aVL"], ["I"], ["aVR"], ["II"], ["aVF"], ["III"]]
+    },
+    "precordial_6x1": {
+      "pageRows": 6,
+      "rows": [["V1"], ["V2"], ["V3"], ["V4"], ["V5"], ["V6"]]
+    },
+    "precordial_3x2": {
+      "pageRows": 3,
+      "rows": [["V1", "V4"], ["V2", "V5"], ["V3", "V6"]]
+    }
+  },
+  "inputVariants": ["original", "annotation-masked", "preprocessed"],
+  "vectorizers": ["probability-centroid", "dynamic-path", "native-grid-path"],
+  "publicationOutcomes": ["needs_review", "partial", "failed"]
+}

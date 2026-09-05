@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "python": "3.12.9",
+    "node": "22.22.2",
+    "pnpm": "10.34.5"
+  },
+  "python": {
+    "bootstrapRequirements": "requirements-runtime-bootstrap.txt",
+    "requirements": "requirements-runtime-macos-arm64.txt",
+    "distributionCount": 66,
+    "requireHashes": true,
+    "binaryOnly": true,
+    "buildIsolation": false,
+    "sourceDistributions": ["antlr4-python3-runtime==4.9.3"]
+  },
+  "storage": {
+    "directory": "storage/runs",
+    "minimumFreeBytes": 5368709120,
+    "minimumRunReservationBytes": 1073741824
+  },
+  "engine": {
+    "name": "Open-ECG-Digitizer",
+    "version": "1.9.3",
+    "repository": "https://github.com/Ahus-AIM/Open-ECG-Digitizer.git",
+    "commit": "97a15087d4abcda843da8c58ee74b1d8f47e6f9a",
+    "tree": "7d3d5bbfdd4c68c3b1ad4f4f12a80c9210e8cc20",
+    "models": [
+      {
+        "path": "weights/unet_weights_07072025.pt",
+        "bytes": 90464067,
+        "sha256": "17fe7071ef270102631306127262fc08c250d79d4e3aeb572ab1719dd34d320b"
+      },
+      {
+        "path": "weights/lead_name_unet_weights_07072025.pt",
+        "bytes": 23296757,
+        "sha256": "840bd6bf2433ee6c22db67f57c861d9d427f29e10a32eeb334f0bcf061b175a2"
+      }
+    ]
+  },
+  "ocr": {
+    "engine": "rapidocr",
+    "telemetryDisabled": true,
+    "models": [
+      {
+        "path": "rapidocr/models/PP-OCRv6_det_small.onnx",
+        "bytes": 9929594,
+        "sha256": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f"
+      },
+      {
+        "path": "rapidocr/models/PP-OCRv6_rec_small.onnx",
+        "bytes": 21234383,
+        "sha256": "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884"
+      },
+      {
+        "path": "rapidocr/models/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+        "bytes": 585532,
+        "sha256": "e47acedf663230f8863ff1ab0e64dd2d82b838fceb5957146dab185a89d6215c"
+      }
+    ]
+  }
+}

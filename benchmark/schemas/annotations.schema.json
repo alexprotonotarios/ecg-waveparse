@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.ecg-digitizer.test/schemas/annotations.schema.json",
+  "title": "ECG digitization benchmark morphology and visibility annotations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "caseId", "highErrorThresholdUv", "leads"],
+  "properties": {
+    "version": { "const": 1 },
+    "caseId": { "type": "string", "pattern": "^[a-zA-Z0-9_-]+$" },
+    "highErrorThresholdUv": { "type": "number", "exclusiveMinimum": 0 },
+    "leads": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["events", "occludedRanges"],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "sample",
+                "direction",
+                "windowSamples",
+                "minProminenceUv"
+              ],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "kind": { "type": "string", "minLength": 1 },
+                "sample": { "type": "integer", "minimum": 0 },
+                "direction": { "enum": ["peak", "trough"] },
+                "windowSamples": { "type": "integer", "minimum": 1 },
+                "minProminenceUv": { "type": "number", "minimum": 0 },
+                "requiresTurningPoint": { "type": "boolean" },
+                "prominenceWindowSamples": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "minLocalProminenceUv": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "occludedRanges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "startSample",
+                "endSample",
+                "reason",
+                "falseDeflectionThresholdUv"
+              ],
+              "properties": {
+                "startSample": { "type": "integer", "minimum": 0 },
+                "endSample": { "type": "integer", "minimum": 1 },
+                "reason": { "type": "string", "minLength": 1 },
+                "falseDeflectionThresholdUv": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
