@@ -1,8 +1,9 @@
 # Version 0.1.0 release verification — 5 September 2026
 
-This records local preparation. Nothing has been published to npm/PyPI or made
-public. Creation of the intended private clean GitHub repository and its first
-push are awaiting approval. The native GitHub workflow has not run.
+This records the local preparation baseline. The clean source repository has
+since been created privately at `alexprotonotarios/ecg-waveparse`; the native
+workflow follow-up is recorded in HOSTED-CI.md. Nothing has been published to
+npm/PyPI or made public.
 
 ## Current package identity and reproducibility
 
@@ -113,8 +114,8 @@ x86-64 (Debian Bookworm under Docker emulation), with Node 22.22.2 and CPython
 earlier installed Python/Linux CPU smoke completed all seven candidates and
 produced a reviewable 6x2 CSV, SHA-256
 `1256bd8ea544a1f348daec51a2860541b00bfb1470d9c11faf62b44d4a28ad50`.
-That smoke predates the panel-timing safeguard. Native macOS/Linux CI for the
-final source is still required; emulation is not a native runner result.
+That smoke predates the panel-timing safeguard and is an emulated result.
+The subsequent native macOS/Linux checks are recorded separately in HOSTED-CI.md.
 
 Earlier package lifecycle checks exercised review rejection, refusal of
 acceptance without confirmations, source integrity, deliberate synthetic-copy
@@ -150,8 +151,8 @@ vendor update must retain that boundary in its verification record.
    3x4/12x1 scope of any initial research/developer release.
 2. Complete the model-specific licence clarifications in LICENSING.md and
    approve the stated mixed-licence allocation.
-3. Approve creation/push of `alexprotonotarios/ecg-waveparse` as a private clean
-   repository, then obtain passing native Ubuntu/macOS package CI.
+3. Bind the intended publication artifacts to the supported-platform checks in
+   HOSTED-CI.md; changes to the engine require corresponding regression evidence.
 4. Establish npm/PyPI maintainer ownership and registry publishing configuration
    using PUBLISHING.md. Name lookups returning 404 do not reserve either name.
 5. Approve the exact release artifacts and clean-source public visibility.
