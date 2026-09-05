@@ -20,6 +20,12 @@ The YAML layout definitions share upstream structure and lead arrangements.
 This code inspection cannot establish authorship or rights to every historical
 contribution; the release owner still reviews the stated allocation.
 
+The clean source also includes benchmark scoring functions adapted from the
+BSD-2-Clause PhysioNet 2024 evaluator at commit
+`1a5135470e7fd9817633f055f3dadebb58fc89ef`. Its original copyright and licence
+are retained in `LICENSES/PhysioNet-evaluation-2024-BSD-2-Clause.txt`.
+Those scoring functions are absent from the distributed inference payload.
+
 Open-ECG-Digitizer is fetched unmodified from commit
 `97a15087d4abcda843da8c58ee74b1d8f47e6f9a`. Its original licence is hash-verified
 at setup. Its source and weights are absent from npm, wheel, sdist and clean

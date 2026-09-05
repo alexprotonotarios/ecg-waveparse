@@ -161,7 +161,8 @@ async function main() {
     }
     if (run.status === "running" || run.status === "pending_digitizer") { run.status = "failed"; run.message = "Engine did not produce a terminal result." }
     run.updatedAt = new Date().toISOString()
-    run.processing = { ...run.processing!, state: run.status === "timed_out" ? "timed_out" : run.status === "failed" ? "failed" : "completed", finishedAt: run.updatedAt, ...(run.status === "failed" ? { failureCode: "worker_failure" as const } : {}), ...(timedOut ? { failureCode: "job_timeout" as const } : {}) }
+    const policyAbstention = run.status === "failed" && run.publicationDecision?.outcome === "failed"
+    run.processing = { ...run.processing!, state: run.status === "timed_out" ? "timed_out" : run.status === "failed" ? "failed" : "completed", finishedAt: run.updatedAt, ...(run.status === "failed" && !policyAbstention ? { failureCode: "worker_failure" as const } : {}), ...(timedOut ? { failureCode: "job_timeout" as const } : {}) }
     try { await saveRun(run) } finally { await releaseStoredRunProcessingClaim(run.id, owner) }
     run = await compactStoredRun(run.id)
   }

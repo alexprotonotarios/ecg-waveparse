@@ -43,6 +43,7 @@ jobs:
           python -m pip install --no-deps dist/ecg_waveparse-0.1.0-py3-none-any.whl
           python -m ecg_waveparse setup --runtime-dir "$RUNNER_TEMP/runtime"
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/waveparse-runtime-inventory.py --manifest config/waveparse-runtime.json --output "$RUNNER_TEMP/runtime-licences.json"
+          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" -m unittest scripts.test_native_grid_digitizer
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/generate_benchmark.py --suite benchmark/suites/smoke.json --output "$RUNNER_TEMP/synthetic"
           node scripts/waveparse-inference-smoke.mjs "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/synthetic/cases/clean/image.png" "$RUNNER_TEMP/runtime" "$RUNNER_TEMP/results" > "$RUNNER_TEMP/inference.json"
       - uses: actions/upload-artifact@v4

@@ -7,6 +7,10 @@
    CLI, real model inference, review and failure behaviour.
 5. Save compact test evidence and artifact SHA-256 values in the release report.
 
+Run `node scripts/audit-waveparse-source.mjs build/waveparse/source dist/source-audit.json`
+before transferring clean source. `PUBLISHING.md` records the intended registry
+configuration; `LICENSING.md` records what has and has not been established.
+
 Public distribution is deliberately disabled for this preparation. Before enabling
 it, complete the licensing actions in `THIRD_PARTY_NOTICES.md`, verify ownership of
 the npm/PyPI names and approve the exact artifacts. A 404 during a registry lookup

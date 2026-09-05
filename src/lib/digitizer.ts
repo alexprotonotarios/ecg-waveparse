@@ -5900,9 +5900,23 @@ function isAnnotationSafeInputVariant(
   )
 }
 
+function nativeCandidateHasUnverifiedPanelTiming(candidate: CandidateResult) {
+  const layout = normalizeQaLayout(candidate.layout)
+  return (
+    candidateCapabilities(candidate.parameters).nativeGrid &&
+    (layout === "standard_3x4" || layout === "standard_12x1") &&
+    candidate.sourceFidelity?.sourcePanelTimingDetected !== true &&
+    candidate.sourceFidelity?.rowLocalSourceTimingDetected !== true
+  )
+}
+
 function candidateEligibleForSelection(candidate: CandidateResult) {
   const capabilities = candidateCapabilities(candidate.parameters)
   if (!capabilities.selectionEligible) return false
+  // A populated CSV and recognised lead labels cannot validate a time origin.
+  // Equal-width page fallback includes label/calibration margins on 3x4 and
+  // sequential pages, even when source-ink coverage or peer agreement is high.
+  if (nativeCandidateHasUnverifiedPanelTiming(candidate)) return false
   if (
     candidate.parameters.inputVariant === "preprocessed" &&
     candidate.parameters.adaptivePreprocessingEligible !== true &&
@@ -5934,6 +5948,7 @@ function hasLowResolutionNativeTraceCorroboration(
   const fidelity = candidate.sourceFidelity
   const capabilities = candidateCapabilities(candidate.parameters)
   if (
+    nativeCandidateHasUnverifiedPanelTiming(candidate) ||
     sourceMaxDimension > LOW_RESOLUTION_NATIVE_CORROBORATION_MAX_DIMENSION ||
     !capabilities.nativeGrid ||
     !capabilities.preprocessed ||
@@ -5957,6 +5972,7 @@ function hasLowResolutionNativeTraceCorroboration(
     const peerFidelity = peer.sourceFidelity
     if (
       peer.id === candidate.id ||
+      nativeCandidateHasUnverifiedPanelTiming(peer) ||
       peer.parameters.vectorizer !== "native-grid-path" ||
       !peer.canonical ||
       normalizeQaLayout(peer.layout) !== normalizeQaLayout(candidate.layout) ||

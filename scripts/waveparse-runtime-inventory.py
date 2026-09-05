@@ -11,6 +11,7 @@ import importlib.metadata as metadata
 import json
 import platform
 import re
+import sys
 from pathlib import Path
 
 
@@ -21,6 +22,14 @@ def digest(data: bytes) -> str:
 def collect(manifest_path: Path) -> dict:
     manifest_bytes = manifest_path.read_bytes()
     manifest = json.loads(manifest_bytes)
+    engine = Path(sys.prefix).parent
+    if digest((engine / "LICENSE").read_bytes()) != manifest["sourceFiles"]["LICENSE"]:
+        raise ValueError("Installed engine licence does not match the runtime manifest")
+    for model in manifest["models"] + manifest["ocrModels"]:
+        absolute = (engine / model["path"]) if model in manifest["models"] else Path(metadata.distribution("rapidocr").locate_file(model["path"]))
+        data = absolute.read_bytes()
+        if len(data) != model["bytes"] or digest(data) != model["sha256"]:
+            raise ValueError(f"Installed model differs from manifest: {model['path']}")
     distributions = []
     for distribution in sorted(metadata.distributions(), key=lambda d: d.metadata["Name"].lower()):
         info = distribution.metadata
@@ -52,6 +61,7 @@ def collect(manifest_path: Path) -> dict:
         "engine": {"commit": manifest["engineCommit"], "license": "CC-BY-SA-4.0",
                    "licenseSha256": manifest["sourceFiles"]["LICENSE"]},
         "models": manifest["models"], "ocrModels": manifest["ocrModels"],
+        "installedModelHashesVerified": True,
         "modelTermsStatus": "Repository/package declarations inventoried; no separate model-specific grant has been established. See LICENSING.md.",
     }
 

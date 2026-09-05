@@ -3634,8 +3634,15 @@ def digitize_native_grid(
         )
     if three_by_four_label_validated:
         fidelity["leadLabelValidation"] = geometry.get("leadLabelValidation")
+        # Recognising lead names does not establish where waveform time starts.
+        # Falling back to equal page quarters can include calibration pulses
+        # and label strokes, yet still pass ink continuity and coverage checks.
+        # Such a candidate remains diagnostic evidence, never source-verified
+        # quantitative evidence.
+        fidelity["sourcePanelTimingRequired"] = True
         fidelity["passed"] = bool(
             fidelity["passed"]
+            and labeled_three_by_four_ranges is not None
             and (geometry.get("leadLabelValidation") or {}).get("passed")
             and (geometry.get("leadLabelValidation") or {}).get("order")
             == "standard"

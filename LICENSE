@@ -7,6 +7,8 @@ exports. See THIRD_PARTY_NOTICES.md for the distribution boundary and review
 required before publication. The explicit layout and extension file list in
 THIRD_PARTY_NOTICES.md is offered under CC BY-SA 4.0 instead of MIT. Its full
 licence text is in LICENSES/. Files in input/ and historical output/ assets are
+not covered. The PhysioNet-derived scoring functions retain BSD-2-Clause terms
+and the original copyright notice listed in THIRD_PARTY_NOTICES.md. Data files are
 not licensed by this file. The independently authored output/render_digitized_paper.py
 software is included in the MIT scope.
 

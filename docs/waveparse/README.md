@@ -195,3 +195,6 @@ directory of the clean source archive. See `THIRD_PARTY_NOTICES.md` for licensin
 boundaries and publication blockers. No patient/reference ECGs are distributed.
 `VERIFICATION.md` records the tested platforms, synthetic parity results and
 remaining release checks. These documents are also bundled in each package's `docs` directory.
+`REGRESSION.md` describes the installed-package engineering suite;
+`LICENSING.md` and `PUBLISHING.md` record the remaining publication decisions.
+`CHANGELOG.md` records changes to both the interfaces and extraction behaviour.

@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "waveparse:build": "node scripts/build-waveparse.mjs",
-    "waveparse:test": "node --import tsx --test scripts/waveparse.test.ts",
+    "waveparse:test": "node --import tsx --test scripts/waveparse.test.ts scripts/digitizer-reliability.test.ts",
     "waveparse:verify": "node scripts/verify-waveparse-packages.mjs"
   },
   "dependencies": {

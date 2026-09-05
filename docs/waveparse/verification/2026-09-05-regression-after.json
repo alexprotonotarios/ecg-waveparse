@@ -1,0 +1,947 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-05T19:45:04.167Z",
+  "finishedAt": "2026-09-05T20:09:28.542Z",
+  "clinicalValidationUse": false,
+  "description": "Deterministic engineering regression; one synthetic waveform family, no patient cohort.",
+  "platform": {
+    "os": "darwin",
+    "architecture": "arm64",
+    "release": "25.6.0",
+    "node": "v22.22.2",
+    "device": "mps"
+  },
+  "package": {
+    "version": "0.1.0",
+    "entrySha256": "ecafa2910baccc433ccd0e384f4448b625841e0d3894db6628cc01099bd0b3fd",
+    "payloadManifestSha256": "ade3c347c983238365078466537f950166684da5956e079fe338039cec19265f",
+    "runtimeManifestSha256": "d9465db541f0d2ad0541eb04f36e3fee930a8bbbc1a50135fe2950b63203fc3a"
+  },
+  "scorer": {
+    "version": 5,
+    "scriptSha256": "159122aa5277a699f421c06be2a2ba9e0939d1f6ab9f839f82ec288751716c84",
+    "maxAlignmentMs": 40
+  },
+  "denominator": 8,
+  "summary": {
+    "quantitative": 7,
+    "abstentions": 1,
+    "failures": 0,
+    "quantitativeYield": 0.875,
+    "comparedSamples": 194007,
+    "globalRmseUv": 28.61593301886997,
+    "meanCaseCorrelation": 0.9599448545477912,
+    "meanCaseCoverage": 0.9931904761904763,
+    "totalRuntimeMs": 1464315
+  },
+  "originalReportSha256": "0fe752cf46759045bcbf7a3ee75bfc9ce22bfa95820bc7bc4c0c1a0ca539a3c9",
+  "manifests": [
+    {
+      "suiteId": "waveparse-3x4",
+      "sha256": "8d8e1e233e5d2a000668e25fd1debf65f487e57dd68b948b6b1cbd2164546659"
+    },
+    {
+      "suiteId": "waveparse-12x1",
+      "sha256": "257aca26cf5f1c45c47b759375cdfb442ef084e801322cbfa76c6e586514a03a"
+    },
+    {
+      "suiteId": "smoke",
+      "sha256": "3d4f9981590f4066f01fc4f575c87092800180c70d7d702f0893ea4a1125e16c"
+    }
+  ],
+  "interpretation": "After native panel-timing safeguards. Quantitative results remain unaccepted and require source review. One deterministic waveform family is engineering evidence, not clinical validation.",
+  "cases": [
+    {
+      "id": "waveparse-3x4__clean",
+      "layout": "standard_3x4",
+      "degradation": "none",
+      "sourceSha256": "8a347b7b1e47046cd1e7b676305aa0d0f6d76d74b9fa1a2fd05a981a372b0c78",
+      "truthSha256": "ed3c8e8d3f5ade68245f68bb9b5ae713ba38573eef65cd43108bdfad1bec2317",
+      "runId": "run_12d357f6332843b181bb570d36129713",
+      "status": "needs_review",
+      "detectedLayout": "standard_3x4",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "artifact-preprocessed-path-2200"
+      },
+      "selectedCandidateId": "artifact-preprocessed-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "three-by-four-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 13131.044415999997
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 14885.574207999998
+        },
+        {
+          "id": "geometry-standard-3x4-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 25416.904874999993
+        },
+        {
+          "id": "geometry-standard-3x4-path-2200",
+          "status": "completed",
+          "runtimeMs": 32597.117499999993
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 15543.752041999993
+        },
+        {
+          "id": "artifact-preprocessed-centroid-2200",
+          "status": "completed",
+          "runtimeMs": 15746.614791
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 45277.08799999999
+        },
+        {
+          "id": "artifact-preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 14611.850084000005
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 14645.636583999993
+        },
+        {
+          "id": "stability-artifact-preprocessed-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 49301.66141600002
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "canonicalSha256": "7cd2a9ea0b4c186e4a1d4283ee5f35e3ddc6810cd40bfee3eceed1e18bdd2bb8",
+      "score": {
+        "alignmentLimitHitCount": 1,
+        "comparedSamples": 14563,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 74.45308446593388,
+        "macroMeanCorrelation": 0.8094467514214084,
+        "macroMeanCoverage": 0.9708666666666664,
+        "macroMeanHighErrorRecall": 0.4784224598930482,
+        "macroMeanPhysionetSnrDb": 14.757319141643633,
+        "macroMeanRmseUv": 46.19211202991037,
+        "macroMeanSafeUsableFraction": 0.8666666666666666,
+        "macroMeanUncertaintyScoreAuroc": 0.8358726849693069,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.3108480602535121,
+        "macroMeanVisibleRmseUv": 46.19211202991037,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 295622,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "waveparse-12x1__clean",
+      "layout": "standard_12x1",
+      "degradation": "none",
+      "sourceSha256": "c2650f457355cc987891e5bf7afb694d0ae933e8f28276d6ee231a3ecde06ae8",
+      "truthSha256": "a3a04e7caab45e8981d08ab2494675e6fdfb0523a4fe8917763df6df120b2588",
+      "runId": "run_5cdb8e5888224774a463ac418126ed87",
+      "status": "failed",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "failed",
+        "reasonCode": "no_publishable_candidate"
+      },
+      "candidateOutcomes": [
+        {
+          "id": "twelve-row-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 5635.276583999999
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 35429.59716599999
+        },
+        {
+          "id": "geometry-standard-12x1-centroid-2200",
+          "status": "failed",
+          "runtimeMs": 304341.93325
+        },
+        {
+          "id": "geometry-standard-12x1-path-2200",
+          "status": "completed",
+          "runtimeMs": 34817.639041999995
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 33469.136750000005
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 34109.10479199997
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 18514.967958000023
+        },
+        {
+          "id": "label-thresh-005",
+          "status": "completed",
+          "runtimeMs": 12639.767083999934
+        }
+      ],
+      "outcome": "abstention",
+      "runtimeMs": 530887,
+      "retainedAssetKeys": [
+        "input",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__clean",
+      "layout": "standard_6x2",
+      "degradation": "none",
+      "sourceSha256": "c717830e02f8cda47646296abce342265ace7a24a438d52671ba3399de7d1f6c",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_57762e8f04ef4000bbf362998c5083c0",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4272.720042000001
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 7737.101874999997
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 6668.584125000001
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 12569.822500000002
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9669.246875000004
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 9693.865041999998
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 11400.977541
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "canonicalSha256": "916e38c071c8b7d5cc290589f6ae9bea96ffbfd6aff121468a8231ecc1fbea23",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29984,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 16.209529105512576,
+        "macroMeanCorrelation": 0.9912151300942806,
+        "macroMeanCoverage": 0.9994666666666667,
+        "macroMeanHighErrorRecall": 0.7240611221191412,
+        "macroMeanPhysionetSnrDb": 17.0563216609209,
+        "macroMeanRmseUv": 15.672803761455986,
+        "macroMeanSafeUsableFraction": 0.8734333333333333,
+        "macroMeanUncertaintyScoreAuroc": 0.9640911898191128,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.25006911380948793,
+        "macroMeanVisibleRmseUv": 15.672803761455986,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 98644,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__v1_blue_arrow",
+      "layout": "standard_6x2",
+      "degradation": "blue_arrow",
+      "sourceSha256": "fc3393ecc4e9a62c44cfc65af7f8a61fbfe6d2e34c94f923b1ffc06501947ff9",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_81ee9250e62447459f68e9a05130cf0f",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 5900.896167000003
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 15815.356915999997
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 11582.979457999994
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 24109.771082999992
+        },
+        {
+          "id": "annotation-masked",
+          "status": "completed",
+          "runtimeMs": 11744.723125000004
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9794.267334000004
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 10238.338875000001
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "canonicalSha256": "d3c9db5875eec2926974cca2f944e35a9fcb70efe946b378a832c31d38aad660",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29655,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 16.10053696942902,
+        "macroMeanCorrelation": 0.9911670750259273,
+        "macroMeanCoverage": 0.9885,
+        "macroMeanHighErrorRecall": 0.6601343189166428,
+        "macroMeanPhysionetSnrDb": 16.89731832541667,
+        "macroMeanRmseUv": 15.639825998564843,
+        "macroMeanSafeUsableFraction": 0.8682333333333334,
+        "macroMeanUncertaintyScoreAuroc": 0.9488195419113756,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.2468250484996588,
+        "macroMeanVisibleRmseUv": 15.639825998564843,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 129712,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__v3_notch_resolution",
+      "layout": "standard_6x2",
+      "degradation": "notch_resolution",
+      "sourceSha256": "eec59b7bb78efcc2cfebb4219894a87aa121809252f84a655576c76e52cc1c4a",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_d73b18154db3430c96598f4dfd49fa41",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 2515.7760830000007
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 7972.647416
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 7203.585959
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 14356.819749999999
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9944.459541999997
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 8110.360499999995
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 9185.999500000005
+        }
+      ],
+      "effectiveSampleRateHz": 150,
+      "reviewRequired": true,
+      "canonicalSha256": "7bd8d91fd97c7ddd1a16a87aa28a78f7086c6fccf63a8ef108914749a7fc4d01",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29974,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 15.834547573207924,
+        "macroMeanCorrelation": 0.9919668868526936,
+        "macroMeanCoverage": 0.9991333333333334,
+        "macroMeanHighErrorRecall": 0.7010877109529944,
+        "macroMeanPhysionetSnrDb": 17.991394465329996,
+        "macroMeanRmseUv": 15.145008960403992,
+        "macroMeanSafeUsableFraction": 0.9648666666666665,
+        "macroMeanUncertaintyScoreAuroc": 0.9806698837156209,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.33017370018794784,
+        "macroMeanVisibleRmseUv": 15.145008960403992,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 83713,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__low_resolution",
+      "layout": "standard_6x2",
+      "degradation": "low_resolution",
+      "sourceSha256": "f7aaf12af3594cf0915a4f02970ae416050600da1e718914283eadf176e86e66",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_04eee9affed04423b354c0117b3741fc",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "geometry-standard-6x2-path-2200"
+      },
+      "selectedCandidateId": "geometry-standard-6x2-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 3296.7146249999987
+        },
+        {
+          "id": "preprocessed-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 1674.5800830000007
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 6814.5780829999985
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 7725.652250000003
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 13030.859499999999
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9830.871874999997
+        },
+        {
+          "id": "upscaled-centroid-2200",
+          "status": "completed",
+          "runtimeMs": 9168.817666000003
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 15047.874167000002
+        },
+        {
+          "id": "stability-geometry-standard-6x2-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 9445.111166999995
+        }
+      ],
+      "effectiveSampleRateHz": 90,
+      "reviewRequired": true,
+      "canonicalSha256": "2afe35bc5564aec9145eeebfd7b4af86074114ecf4b5d8faa25f3bb8c8aa0e92",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29997,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 26.382972442289354,
+        "macroMeanCorrelation": 0.9755623325001932,
+        "macroMeanCoverage": 0.9998999999999999,
+        "macroMeanHighErrorRecall": 0.6271289407241879,
+        "macroMeanPhysionetSnrDb": 13.936554005462083,
+        "macroMeanRmseUv": 25.62096454456179,
+        "macroMeanSafeUsableFraction": 0.9583,
+        "macroMeanUncertaintyScoreAuroc": 0.9859440149015201,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.6160159731842813,
+        "macroMeanVisibleRmseUv": 25.62096454456179,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 94267,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__blur",
+      "layout": "standard_6x2",
+      "degradation": "blur",
+      "sourceSha256": "c4e3aafdf37322866051a9ce73ac31f7518f1e1cb3d103060f569e34647b9350",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_8217167688d34beeaa138a85a6484839",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4423.494458000001
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 8377.689000000002
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 7920.0064580000035
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 12576.965542000005
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9807.732749999996
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 8840.137499999997
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 9313.883916000006
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "canonicalSha256": "4b2dd6e2b2caa7cf9a016e20c524d0beb78c6d0aefeb62ef10003603ec743580",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29987,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 28.26520549431607,
+        "macroMeanCorrelation": 0.9720273339179308,
+        "macroMeanCoverage": 0.9995666666666668,
+        "macroMeanHighErrorRecall": 0.8401521813813724,
+        "macroMeanPhysionetSnrDb": 13.371524742115708,
+        "macroMeanRmseUv": 27.510240143858322,
+        "macroMeanSafeUsableFraction": 0.7957,
+        "macroMeanUncertaintyScoreAuroc": 0.9383537942585107,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.41538001493785054,
+        "macroMeanVisibleRmseUv": 27.510240143858322,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 92803,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    },
+    {
+      "id": "smoke__perspective",
+      "layout": "standard_6x2",
+      "degradation": "perspective",
+      "sourceSha256": "47cc3d0e725bd493ae763ade3bde8a3bd1de4718d1f3ee55e6b04640e260cd82",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_e29d4cbe8f0246e79d0808ff74f79507",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "preprocessed-path-2200"
+      },
+      "selectedCandidateId": "preprocessed-path-2200",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4598.3578750000015
+        },
+        {
+          "id": "preprocessed-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 9229.639167000005
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 8786.964457999995
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 7908.207042000002
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 13717.675209
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 10772.349792000008
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 9534.798041000002
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 13573.576457999996
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 9028.014874999993
+        },
+        {
+          "id": "label-thresh-005",
+          "status": "completed",
+          "runtimeMs": 7640.219125000003
+        },
+        {
+          "id": "stability-preprocessed-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 10064.20212500001
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "canonicalSha256": "ee6f2df8a93759c349b8b984a8b3a2979630afdb8ebe854f103349c15f3d803d",
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29847,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 18.50637141173065,
+        "macroMeanCorrelation": 0.988228472022105,
+        "macroMeanCoverage": 0.9948999999999999,
+        "macroMeanHighErrorRecall": 0.9623336616504731,
+        "macroMeanPhysionetSnrDb": 16.923222372343712,
+        "macroMeanRmseUv": 18.088338499944907,
+        "macroMeanSafeUsableFraction": 0.7592666666666666,
+        "macroMeanUncertaintyScoreAuroc": 0.9510136690240952,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.273323339337964,
+        "macroMeanVisibleRmseUv": 18.088338499944907,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12
+      },
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 138667,
+      "retainedAssetKeys": [
+        "input",
+        "diagnostic",
+        "paperRender",
+        "canonicalCsv",
+        "segmentsCsv",
+        "uncertaintyCsv",
+        "metadataCsv",
+        "provenanceJson"
+      ],
+      "processingFailureCode": null
+    }
+  ]
+}

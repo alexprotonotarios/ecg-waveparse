@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "suiteId": "smoke",
+  "adapter": "digitizer",
+  "candidateId": "selector",
+  "global": {
+    "maximumFailureCount": 0,
+    "maximumFalseDeflectionCount": 0
+  },
+  "cases": {
+    "clean": {
+      "requireComplete12Lead": true,
+      "maximumGlobalRmseUv": 30,
+      "minimumUncertaintyAuroc": 0.8,
+      "minimumSafeUsableFraction": 0.65
+    },
+    "v1_blue_arrow": {
+      "requireComplete12Lead": true,
+      "maximumGlobalRmseUv": 30,
+      "minimumUncertaintyAuroc": 0.8,
+      "minimumSafeUsableFraction": 0.65,
+      "maximumFalseDeflectionCount": 0
+    },
+    "v3_notch_resolution": {
+      "requireComplete12Lead": true,
+      "maximumGlobalRmseUv": 30,
+      "minimumUncertaintyAuroc": 0.8,
+      "minimumSafeUsableFraction": 0.65,
+      "requiredEvents": [
+        {
+          "lead": "V3",
+          "id": "v3_r_prime_notch",
+          "requirePreserved": true,
+          "requireTurningPoint": true,
+          "minimumLocalProminenceUv": 80
+        }
+      ]
+    },
+    "low_resolution": {
+      "expectedStatus": "failed",
+      "expectedFailureKind": "publication_abstention",
+      "expectedPublicationReasonCode": "input_quality_insufficient"
+    },
+    "blur": {
+      "requireComplete12Lead": true,
+      "maximumGlobalRmseUv": 45,
+      "minimumUncertaintyAuroc": 0.8,
+      "minimumSafeUsableFraction": 0.65
+    },
+    "perspective": {
+      "expectedStatus": "failed",
+      "expectedFailureKind": "publication_abstention",
+      "expectedPublicationReasonCode": "reviewable_constrained"
+    }
+  }
+}

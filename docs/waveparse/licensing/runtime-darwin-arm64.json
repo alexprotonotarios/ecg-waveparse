@@ -1984,6 +1984,7 @@
     "license": "CC-BY-SA-4.0",
     "licenseSha256": "a1fdc6cdcf6bf2e6c0059da8f87108c7003fd7d1a2093179e7cb5767c7c6876b"
   },
+  "installedModelHashesVerified": true,
   "modelTermsStatus": "Repository/package declarations inventoried; no separate model-specific grant has been established. See LICENSING.md.",
   "models": [
     {

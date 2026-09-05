@@ -131,7 +131,9 @@ sourceFiles.add('packages/javascript/package.json'); sourceFiles.add('packages/p
 for (const file of ['scripts/waveparse.test.ts', 'scripts/test_waveparse_runtime.py', 'scripts/verify-waveparse-packages.mjs', 'scripts/waveparse-linux-smoke.sh', 'scripts/waveparse-inference-smoke.mjs', 'scripts/generate_benchmark.py', 'ecg_benchmark/__init__.py', 'ecg_benchmark/generate.py', 'ecg_benchmark/io.py', 'benchmark/suites/smoke.json', 'benchmark/schemas/case-manifest.schema.json', 'benchmark/schemas/annotations.schema.json', '.github/workflows/waveparse-packages.yml']) {
   try { await fs.access(path.join(root, file)); sourceFiles.add(file); } catch { /* Optional before first test build. */ }
 }
-for (const file of ['scripts/waveparse-runtime-inventory.py', 'scripts/waveparse-regression.mjs', 'scripts/audit-waveparse-source.mjs', 'scripts/score_digitization.py', 'ecg_benchmark/scoring.py', 'benchmark/suites/waveparse-3x4.json', 'benchmark/suites/waveparse-12x1.json']) sourceFiles.add(file);
+for (const file of ['scripts/waveparse-runtime-inventory.py', 'scripts/waveparse-regression.mjs', 'scripts/audit-waveparse-source.mjs', 'scripts/score_digitization.py', 'scripts/check_waveparse_regression.py', 'ecg_benchmark/scoring.py', 'ecg_benchmark/gates.py', 'benchmark/suites/smoke-gates.json', 'benchmark/suites/waveparse-3x4.json', 'benchmark/suites/waveparse-12x1.json']) sourceFiles.add(file);
+sourceFiles.add('scripts/digitizer-reliability.test.ts');
+sourceFiles.add('scripts/test_native_grid_digitizer.py');
 for (const file of sourceFiles) {
   if (file === 'src/lib/local-reference.ts') continue;
   await copy(file, source);

@@ -12,6 +12,7 @@ authored WaveParse software, not to every component of the assembled runtime.
 | Neural model weights | Downloaded separately from that upstream revision; recorded hashes identify the exact files. Confirm their redistribution terms before mirroring or bundling them. |
 | RapidOCR / ONNX OCR models and Python dependencies | Obtained in the locked runtime environment. RapidOCR 3.9.2 declares Apache-2.0. Package declarations, original notice-file hashes and model identities are in `docs/licensing/`; model-specific confirmation remains outstanding. |
 | ECG images, reference outputs, benchmark datasets | Excluded from distributions and the clean source archive. The repository history is not a publishable source artifact. |
+| Benchmark PhysioNet alignment/SNR compatibility functions | Adapted from `physionetchallenges/evaluation-2024`, commit `1a5135470e7fd9817633f055f3dadebb58fc89ef`, BSD-2-Clause. Present in the clean source benchmark tooling; absent from the inference runtime. Original notice retained in `LICENSES/PhysioNet-evaluation-2024-BSD-2-Clause.txt`. |
 
 Upstream licence: https://github.com/Ahus-AIM/Open-ECG-Digitizer/blob/97a15087d4abcda843da8c58ee74b1d8f47e6f9a/LICENSE
 
@@ -48,6 +49,11 @@ The source paths above are under `runtime/` in the npm package and under
 separately, unmodified, from the pinned commit; WaveParse does not claim upstream
 endorsement. Retain this attribution, the licence text and modification notice
 when redistributing those files. See `docs/LICENSING.md` for the review boundary.
+
+`ecg_benchmark/scoring.py` implements bounded alignment and SNR compatibility
+with the above PhysioNet evaluator. The `physionet_align_signals` and
+`physionet_snr` functions retain BSD-2-Clause attribution. WaveParse adds
+lead-local timing, missingness, coverage, uncertainty and morphology scoring.
 
 ## Before public distribution
 
