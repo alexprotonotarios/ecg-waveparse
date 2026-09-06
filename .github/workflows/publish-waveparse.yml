@@ -1,0 +1,118 @@
+name: Publish WaveParse
+on:
+  workflow_dispatch:
+    inputs:
+      package_run_id:
+        description: Successful manual native package run ID
+        required: true
+        type: string
+      source_commit:
+        description: Full source commit tested by that run
+        required: true
+        type: string
+      artifact_hashes:
+        description: JSON object of four reviewed Ubuntu archive names and SHA-256 hashes
+        required: true
+        type: string
+      target:
+        description: Verify only, or publish through a configured trusted publisher
+        required: true
+        default: verify
+        type: choice
+        options: [verify, pypi, npm]
+      npm_tag:
+        description: npm distribution tag (experimental releases use next)
+        required: true
+        default: next
+        type: choice
+        options: [next, latest]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: waveparse-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.repository == 'alexprotonotarios/ecg-waveparse' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PACKAGE_RUN_ID: ${{ inputs.package_run_id }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      ARTIFACT_HASHES: ${{ inputs.artifact_hashes }}
+      PUBLICATION_TARGET: ${{ inputs.target }}
+      PUBLICATION_ENABLED: ${{ vars.WAVEPARSE_PUBLICATION_ENABLED }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.9'
+      - name: Verify the source run and publication state
+        run: python scripts/verify_waveparse_release.py metadata
+      - name: Download both native runs without rebuilding
+        run: >-
+          gh run download "$PACKAGE_RUN_ID" --repo alexprotonotarios/ecg-waveparse
+          --name waveparse-ubuntu-24.04 --name waveparse-macos-15 --dir artifacts
+      - name: Verify reviewed archives and native evidence
+        run: python scripts/verify_waveparse_release.py artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waveparse-verified-release
+          path: verified/
+          if-no-files-found: error
+      - name: Record verification result
+        run: |
+          cat verified/release-verification.json >> "$GITHUB_STEP_SUMMARY"
+          echo 'This receipt verifies the prepared archives; it does not record a registry publication.' >> "$GITHUB_STEP_SUMMARY"
+
+  pypi:
+    needs: verify
+    if: inputs.target == 'pypi' && vars.WAVEPARSE_PUBLICATION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: waveparse-verified-release
+          path: verified
+      - name: Publish the verified wheel and sdist
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: verified/python/
+
+  npm:
+    needs: verify
+    if: inputs.target == 'npm' && vars.WAVEPARSE_PUBLICATION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: waveparse-verified-release
+          path: verified
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global npm@11.15.0 --ignore-scripts
+      - name: Publish the verified tarball (requires an existing npm trusted publisher)
+        env:
+          NPM_DIST_TAG: ${{ inputs.npm_tag }}
+        run: npm publish verified/npm/*.tgz --access public --tag "$NPM_DIST_TAG" --ignore-scripts

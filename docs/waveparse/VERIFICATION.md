@@ -149,14 +149,15 @@ vendor update must retain that boundary in its verification record.
 
 ## Remaining public-release work
 
-1. Review the two historical decision mismatches above and confirm the limited
-   3x4/12x1 scope of any initial research/developer release.
+1. Retain the completed smoke adjudication above and confirm the limited
+   3x4/12x1 scope of the initial research/developer release.
 2. Complete the model-specific licence clarifications in LICENSING.md and
    approve the stated mixed-licence allocation.
 3. Bind the intended publication artifacts to the supported-platform checks in
    HOSTED-CI.md; changes to the engine require corresponding regression evidence.
-4. Establish npm/PyPI maintainer ownership and registry publishing configuration
-   using PUBLISHING.md. Name lookups returning 404 do not reserve either name.
+4. Complete registry publishing configuration using PUBLISHING.md. Both
+   `alexprotonotarios` accounts and 2FA were verified on 6 September 2026;
+   package ownership and publisher connections are still separate steps.
 5. Approve the exact release artifacts and clean-source public visibility.
 
 The documented 3x4 accuracy limitation and 12x1 abstention must accompany any

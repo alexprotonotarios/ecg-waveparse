@@ -2,7 +2,7 @@ name: WaveParse packages
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['packages/**', 'src/lib/**', 'ecg_pipeline/**', 'ecg_benchmark/**', 'benchmark/suites/**', 'config/**', 'docs/waveparse/**', 'LICENSE*', 'LICENSES/**', 'THIRD_PARTY_NOTICES.md', 'requirements*', 'scripts/*waveparse*', '.github/workflows/waveparse-packages.yml']
+    paths: ['packages/**', 'src/lib/**', 'ecg_pipeline/**', 'ecg_benchmark/**', 'benchmark/suites/**', 'config/**', 'docs/waveparse/**', 'LICENSE*', 'LICENSES/**', 'THIRD_PARTY_NOTICES.md', 'requirements*', 'scripts/*waveparse*', '.github/workflows/*waveparse*']
 permissions:
   contents: read
 jobs:
@@ -31,6 +31,7 @@ jobs:
       - run: pnpm waveparse:build && python -m build --no-isolation packages/python --outdir dist
       - run: node scripts/audit-waveparse-source.mjs build/waveparse/source dist/source-audit.json
       - run: pnpm waveparse:test && python -m unittest scripts.test_waveparse_runtime
+      - run: python -m unittest scripts.test_waveparse_release
       - run: WAVEPARSE_PYTHON=$(command -v python) pnpm waveparse:verify
       - name: Explicit runtime setup and real installed-package inference
         env:

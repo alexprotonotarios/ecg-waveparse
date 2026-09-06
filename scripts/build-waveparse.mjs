@@ -136,6 +136,7 @@ sourceFiles.add('scripts/digitizer-reliability.test.ts');
 sourceFiles.add('scripts/test_native_grid_digitizer.py');
 sourceFiles.add('scripts/test_waveparse_regression_gates.py');
 sourceFiles.add('benchmark/suites/waveparse-smoke-gates.json');
+for (const file of ['.github/workflows/publish-waveparse.yml', 'scripts/verify_waveparse_release.py', 'scripts/test_waveparse_release.py']) sourceFiles.add(file);
 for (const file of sourceFiles) {
   if (file === 'src/lib/local-reference.ts') continue;
   await copy(file, source);
