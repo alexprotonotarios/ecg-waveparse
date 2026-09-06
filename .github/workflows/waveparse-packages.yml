@@ -70,7 +70,7 @@ jobs:
         with:
           name: waveparse-frozen-fixtures
           path: ${{ runner.temp }}/frozen-fixtures/
-      - name: Explicit runtime setup and real installed-package inference
+      - name: Install the package and pinned model runtime
         env:
           MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
         shell: bash
@@ -81,13 +81,42 @@ jobs:
           python -m pip install --no-deps dist/ecg_waveparse-0.1.0-py3-none-any.whl
           python -m ecg_waveparse setup --runtime-dir "$RUNNER_TEMP/runtime"
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/waveparse-runtime-inventory.py --manifest config/waveparse-runtime.json --output "$RUNNER_TEMP/runtime-licences.json"
+      - name: Test native runtime contracts
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+        shell: bash
+        run: |
+          set -euo pipefail
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" -m unittest scripts.test_native_grid_digitizer
           PYTHONPATH="$RUNNER_TEMP/runtime/engine" "$RUNNER_TEMP/runtime/engine/.venv/bin/python" -m unittest scripts.test_fidelity_inference_wrapper
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/test_waveparse_regression_gates.py
-          node scripts/waveparse-regression.mjs --consumer "$RUNNER_TEMP/consumer" --runtime "$RUNNER_TEMP/runtime" --python "$RUNNER_TEMP/runtime/engine/.venv/bin/python" --manifest "$RUNNER_TEMP/frozen-fixtures/smoke/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/three-by-four/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/twelve-by-one/manifest.json" --output "$RUNNER_TEMP/regression" --device cpu
+      - name: Run all eight frozen CPU cases and measure resources
+        id: regression
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/profile_waveparse.py --output "$RUNNER_TEMP/regression-resources.json" --workspace "$RUNNER_TEMP/regression" --interval 1 -- node scripts/waveparse-regression.mjs --consumer "$RUNNER_TEMP/consumer" --runtime "$RUNNER_TEMP/runtime" --python "$RUNNER_TEMP/runtime/engine/.venv/bin/python" --manifest "$RUNNER_TEMP/frozen-fixtures/smoke/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/three-by-four/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/twelve-by-one/manifest.json" --output "$RUNNER_TEMP/regression" --device cpu
+      - name: Retain compact evidence even when regression is interrupted
+        if: ${{ always() && steps.regression.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/platform_evidence.py pack --allow-incomplete --first "$RUNNER_TEMP/regression" --output "$RUNNER_TEMP/platform-evidence"
+      - name: Check the fixed extraction quality gates
+        shell: bash
+        run: |
+          set -euo pipefail
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/check_waveparse_regression.py --report "$RUNNER_TEMP/regression/report.json" --gates benchmark/suites/waveparse-smoke-gates.json --output "$RUNNER_TEMP/regression/library-gates.json"
-          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/platform_evidence.py pack --first "$RUNNER_TEMP/regression" --output "$RUNNER_TEMP/platform-evidence"
-          node scripts/waveparse-inference-smoke.mjs "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/frozen-fixtures/smoke/cases/clean/image.png" "$RUNNER_TEMP/runtime" "$RUNNER_TEMP/results" > "$RUNNER_TEMP/inference.json"
+      - name: Check review, retention, cancellation and recovery on the completed clean run
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          clean_run_id="$(node -p "require(process.env.RUNNER_TEMP + '/regression/report.json').cases.find(c => c.id.endsWith('__clean')).runId")"
+          node scripts/waveparse-inference-smoke.mjs "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/frozen-fixtures/smoke/cases/clean/image.png" "$RUNNER_TEMP/runtime" "$RUNNER_TEMP/regression/workspace" "$clean_run_id" > "$RUNNER_TEMP/inference.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,6 +125,7 @@ jobs:
             dist/*
             ${{ runner.temp }}/inference.json
             ${{ runner.temp }}/runtime-licences.json
+            ${{ runner.temp }}/regression-resources.json
             ${{ runner.temp }}/regression/*.json
       - uses: actions/upload-artifact@v4
         if: always()

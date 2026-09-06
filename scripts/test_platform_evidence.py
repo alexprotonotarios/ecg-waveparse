@@ -5,10 +5,42 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.platform_evidence import compare
+from scripts.platform_evidence import compare, pack
 
 
 class PlatformEvidenceTests(unittest.TestCase):
+    def test_partial_pack_preserves_quantitative_assets_without_satisfying_equivalence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); regression = root/'regression'
+            run = regression/'workspace/storage/runs/completed'
+            run.mkdir(parents=True)
+            assets = {}
+            for key, name, content in [
+                ('canonicalCsv', 'signal.csv', 'I\n0\n100\n'),
+                ('uncertaintyCsv', 'uncertainty.csv', 'lead,canonical_sample,status,candidate_count,candidate_spread_uv\nI,0,observed,2,10\n'),
+                ('segmentMapJson', 'segments.json', '{"segments":[]}'),
+            ]:
+                path = run/name; path.write_text(content)
+                assets[key] = {'path': str(path.relative_to(regression/'workspace')),
+                               'identity': {'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}}
+            (run/'metadata.json').write_text(json.dumps({'sourceIdentity': {'sha256': 'source'}, 'assets': assets}))
+            case = {'id': 'completed', 'runId': 'completed', 'sourceSha256': 'source', 'truthSha256': 'truth',
+                    'canonicalSha256': assets['canonicalCsv']['identity']['sha256'], 'outcome': 'returned'}
+            report = {'denominator': 2, 'cases': [case], 'package': {}, 'scorer': {}, 'platform': {}}
+            (regression/'report.json').write_text(json.dumps(report))
+            with self.assertRaisesRegex(ValueError, 'Incomplete'): pack(regression, root/'strict')
+            pack(regression, root/'partial', allow_incomplete=True)
+            evidence = json.loads((root/'partial/manifest.json').read_text())
+            self.assertEqual(evidence['denominator'], 2)
+            self.assertEqual(evidence['completedInputs'], 1)
+            self.assertFalse(evidence['complete'])
+            for key, asset in evidence['cases'][0]['assets'].items():
+                self.assertEqual((root/'partial'/asset['path']).read_bytes(), (regression/'workspace'/assets[key]['path']).read_bytes())
+            with self.assertRaisesRegex(ValueError, 'Incomplete'): compare(root/'partial', root/'partial', {'expectedInputs': 2})
+            report['cases'] = [case, case]
+            (regression/'report.json').write_text(json.dumps(report))
+            with self.assertRaisesRegex(ValueError, 'duplicate'): pack(regression, root/'duplicate', allow_incomplete=True)
+
     def test_waveform_missingness_uncertainty_and_tampering_are_independent_failures(self):
         limits = json.loads((Path(__file__).resolve().parents[1]/'benchmark/protocols/platform-parity.v1.json').read_text())
         limits['expectedInputs'] = 1

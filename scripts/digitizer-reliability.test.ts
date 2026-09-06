@@ -3,6 +3,16 @@ import test from "node:test"
 
 import { digitizerTestUtils } from "../src/lib/digitizer"
 
+test("CPU inference bounds the Apple allocation cache only in its own macOS child", () => {
+  const inherited = process.env.MallocLargeCache
+  assert.equal(digitizerTestUtils.subprocessEnvironment("cpu", "darwin").MallocLargeCache, "0")
+  for (const [device, platform] of [["mps", "darwin"], ["cpu", "linux"], [undefined, "darwin"]] as const) {
+    assert.equal(digitizerTestUtils.subprocessEnvironment(device, platform).MallocLargeCache, inherited)
+  }
+  assert.equal(process.env.MallocLargeCache, inherited)
+  assert.equal("CUES_ECG_DIGITIZER_WORKER_SECRET" in digitizerTestUtils.subprocessEnvironment("cpu", "darwin"), false)
+})
+
 const leadOrder = [
   "I",
   "II",

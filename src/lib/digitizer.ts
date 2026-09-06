@@ -303,12 +303,20 @@ type DigitizerExecutionOptions = {
   onStage?: (stage: string, durationMs: number) => void
 }
 
-function subprocessEnvironment(): NodeJS.ProcessEnv {
+function subprocessEnvironment(
+  device?: string,
+  hostPlatform: NodeJS.Platform = process.platform
+): NodeJS.ProcessEnv {
   const environment = { ...process.env }
   delete environment.CUES_ECG_DIGITIZER_WORKER_SECRET
   environment.PYTHONPATH = [RESOURCE_ROOT, environment.PYTHONPATH]
     .filter(Boolean)
     .join(path.delimiter)
+  if (hostPlatform === "darwin" && device === "cpu") {
+    // These short-lived inference processes must release large temporary CPU
+    // matrices instead of retaining them in Apple's allocator cache.
+    environment.MallocLargeCache = "0"
+  }
   return environment
 }
 
@@ -1242,7 +1250,7 @@ async function runCandidate(
         ["-m", "src.digitize", "--config", configPath],
         {
           cwd: openEcgDirPath(),
-          env: subprocessEnvironment(),
+          env: subprocessEnvironment(candidate.device),
           maxBuffer: 32 * 1024 * 1024,
           signal,
           timeout: 180_000,
@@ -7033,6 +7041,7 @@ function relativePath(absolutePath: string) {
 }
 
 export const digitizerTestUtils = {
+  subprocessEnvironment,
   AsyncSemaphore,
   alignSeries,
   annotationRangesByLead,

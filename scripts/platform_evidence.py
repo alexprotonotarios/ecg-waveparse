@@ -15,13 +15,20 @@ from scripts.run_platform_matrix import difference, uncertainty_difference
 def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def pack(regression: Path, output: Path):
-    output.mkdir(parents=True, exist_ok=False)
+def pack(regression: Path, output: Path, *, allow_incomplete: bool = False):
     report = json.loads((regression/'report.json').read_text())
+    completed = len(report['cases'])
+    denominator = report['denominator']
+    if (type(denominator) is not int or denominator < 1 or completed > denominator
+            or len({r['id'] for r in report['cases']}) != completed):
+        raise ValueError('Invalid or duplicate CI denominator.')
+    complete = completed == denominator
+    if not complete and not allow_incomplete:
+        raise ValueError('Incomplete CI denominator.')
+    output.mkdir(parents=True, exist_ok=False)
     manifest = {'version': 1, 'clinicalValidationUse': False, 'reportSha256': sha(regression/'report.json'),
                 'denominator': report['denominator'], 'package': report['package'], 'scorer': report['scorer'],
-                'platform': report['platform'], 'cases': []}
-    if len(report['cases']) != report['denominator'] or len({r['id'] for r in report['cases']}) != report['denominator']: raise ValueError('Incomplete or duplicate CI denominator.')
+                'platform': report['platform'], 'completedInputs': completed, 'complete': complete, 'cases': []}
     for index, case in enumerate(report['cases']):
         row = {key: case.get(key) for key in ('id', 'sourceSha256', 'truthSha256', 'status', 'outcome', 'publicationDecision', 'semanticStatus', 'score')}
         row['assets'] = {}
@@ -42,6 +49,7 @@ def pack(regression: Path, output: Path):
 def compare(first: Path, second: Path, limits: dict):
     manifests = [json.loads((p/'manifest.json').read_text()) for p in (first, second)]
     a, b = manifests
+    if any(manifest.get('complete') is False for manifest in manifests): raise ValueError('Incomplete platform evidence cannot pass equivalence.')
     if a['denominator'] != b['denominator'] or a['denominator'] != limits['expectedInputs']: raise ValueError('Platform denominator mismatch.')
     indexed = [{row['id']: row for row in manifest['cases']} for manifest in manifests]
     if any(len(m['cases'])!=limits['expectedInputs'] for m in manifests) or any(len(rows)!=limits['expectedInputs'] for rows in indexed) or set(indexed[0])!=set(indexed[1]): raise ValueError('Platform membership mismatch.')
@@ -90,9 +98,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('mode', choices=['pack', 'compare'])
     parser.add_argument('--first', type=Path, required=True); parser.add_argument('--second', type=Path)
     parser.add_argument('--limits', type=Path); parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--allow-incomplete', action='store_true', help='Retain partial diagnostic evidence; equivalence still requires every input.')
     args = parser.parse_args()
-    if args.mode=='pack': pack(args.first, args.output)
+    if args.mode=='pack': pack(args.first, args.output, allow_incomplete=args.allow_incomplete)
     else:
+        if args.allow_incomplete: parser.error('--allow-incomplete is only valid for diagnostic packing.')
         if not args.second or not args.limits: parser.error('Comparison requires second and limits.')
         result = compare(args.first, args.second, json.loads(args.limits.read_text())); result['limitsSha256'] = sha(args.limits)
         with args.output.open('x') as handle: json.dump(result, handle, indent=2, allow_nan=False)

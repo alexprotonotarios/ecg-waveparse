@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import sys
 import tempfile
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import torch.nn.functional as functional
 from torch import Tensor
 
 from src.model.inference_wrapper import InferenceWrapper
+from ecg_pipeline.cpu_convolution import bound_cpu_convolutions
 
 
 FEATURE_CACHE_VERSION = 1
@@ -176,6 +178,9 @@ class FidelityInferenceWrapper(InferenceWrapper):
         if isinstance(gain_mm_per_mv, bool) or gain_mm_per_mv not in (5.0, 10.0, 20.0):
             raise ValueError("Unsupported source gain; expected 5, 10 or 20 mm/mV.")
         super().__init__(*args, **kwargs)
+        if sys.platform == "darwin" and torch.device(self.device).type == "cpu":
+            bound_cpu_convolutions(self.segmentation_model)
+            bound_cpu_convolutions(self.identifier.unet)
         self.dark_ink_threshold = dark_ink_threshold
         self.dark_ink_strength = dark_ink_strength
         self.dark_ink_support_radius = dark_ink_support_radius
