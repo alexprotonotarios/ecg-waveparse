@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "checkedAt": "2026-09-06T09:36:34.687197+00:00",
+  "queries": [
+    {
+      "url": "https://github.com/Ahus-AIM/Open-ECG-Digitizer/issues/47",
+      "observedStatus": "open",
+      "maintainerResponseObserved": false
+    },
+    {
+      "url": "https://github.com/RapidAI/RapidOCR/discussions/736",
+      "observedStatus": "unanswered",
+      "commentCount": 0
+    }
+  ],
+  "decision": "No new model mirroring or registry publication decision is established by this implementation campaign. Model-specific rights questions remain unresolved.",
+  "alternativeDecoder": {
+    "url": "https://github.com/dangnh0611/kaggle_ecg_digitization",
+    "repositoryLicenceObserved": "MIT",
+    "modelRightsAndPinnedWeightsVerified": false,
+    "note": "Repository documents CUDA training hardware; those training requirements alone do not establish inference feasibility or model rights.",
+    "repositoryCommit": "8358d5b09a5b9519275e9b54c11716da5752a9d6",
+    "checkpointDataset": "https://www.kaggle.com/datasets/dangnh0611/ecg-checkpoints",
+    "checkpointDatasetVersion": 11,
+    "checkpointLicenceObserved": "Unknown",
+    "weightsDownloaded": false,
+    "performanceClaimMade": false
+  },
+  "messagesPosted": false,
+  "clinicalDataTransmitted": false,
+  "registryLookup": {
+    "checkedOn": "2026-09-06",
+    "npmLatestStatus": 404,
+    "pypiJsonStatus": 404,
+    "reservationOrOwnershipProven": false
+  }
+}

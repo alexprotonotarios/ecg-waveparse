@@ -14,6 +14,8 @@ import {
 } from "../../src/lib/runs"
 import release from "../../config/waveparse-release.json"
 import { runtimeDirectory } from "./runtime-location"
+import { validateSegmentEvidence } from "../../src/lib/digitizer/segment-evidence"
+import { interpreterEvidence } from "../../src/lib/digitizer/interpreter-evidence"
 
 const execute = promisify(execFile)
 const controller = new AbortController()
@@ -39,11 +41,16 @@ function textField(request: Record<string, unknown>, key: string): string {
 async function verifiedResult(run: RunRecord | null) {
   if (!run) return null
   await readVerifiedRunSource(run)
-  const assets: Record<string, unknown> = {}
+  const assets: Partial<Record<RunAssetKey, NonNullable<RunRecord["assets"][RunAssetKey]> & { absolutePath: string }>> = {}
   for (const [key, asset] of Object.entries(run.assets)) {
     if (!asset) continue
     if (key !== "input") await readVerifiedRunAsset(run, key as Exclude<RunAssetKey, "input">)
-    assets[key] = { ...asset, absolutePath: path.resolve(WORKSPACE_ROOT, asset.path) }
+    assets[key as RunAssetKey] = { ...asset, absolutePath: path.resolve(WORKSPACE_ROOT, asset.path) }
+  }
+  if (run.assets.segmentMapJson) {
+    const verified = await readVerifiedRunAsset(run, "segmentMapJson")
+    if (!run.sourceIdentity || !run.assets.canonicalCsv?.identity || !verified) throw new RequestError("invalid_evidence_contract", "Segment map lacks its source or signal identity.")
+    validateSegmentEvidence(JSON.parse(verified.bytes.toString("utf8")), { sourceSha256: run.sourceIdentity.sha256, canonicalSha256: run.assets.canonicalCsv.identity.sha256 })
   }
   let waveparse = { version: release.version, runtimeManifestSha256: runtimeHash, device }
   try { waveparse = JSON.parse(await fs.readFile(path.join(WORKSPACE_ROOT, run.localPath, "waveparse.json"), "utf8")) } catch (error) {
@@ -91,6 +98,7 @@ async function recoverInterruptedRun(current: RunRecord | null) {
 }
 
 async function main() {
+  const stageDurationsMs: Record<string,number> = {}
   let input = ""
   for await (const chunk of process.stdin) {
     input += chunk
@@ -101,11 +109,17 @@ async function main() {
   if (path.resolve(textField(request, "workspaceDir")) !== WORKSPACE_ROOT) throw new RequestError("invalid_request", "Workspace mismatch.")
   if (WORKSPACE_ROOT === RESOURCE_ROOT || WORKSPACE_ROOT.startsWith(RESOURCE_ROOT + path.sep)) throw new RequestError("invalid_request", "Run storage must be outside the installed package.")
   const operation = textField(request, "operation")
-  if (operation === "get" || operation === "review") {
+  if (operation === "get" || operation === "review" || operation === "evidence") {
     const id = textField(request, "runId")
     if (!/^run_[a-zA-Z0-9_-]+$/.test(id)) throw new RequestError("invalid_request", "Invalid WaveParse run ID.")
     const current = await recoverInterruptedRun(await getRun(id))
     if (operation === "get") return verifiedResult(current)
+    if (operation === "evidence") {
+      const verified = await verifiedResult(current)
+      if (!current || !verified) return null
+      const map = current.assets.segmentMapJson ? await readVerifiedRunAsset(current,"segmentMapJson") : undefined
+      return interpreterEvidence(current,verified.assets,map ? JSON.parse(map.bytes.toString("utf8")) : undefined)
+    }
     if (!current) throw new RequestError("not_found", "Run not found.")
     if (current.processing?.state === "running") throw new RequestError("run_busy", "Cannot review a running job.")
     if (request.decision !== "accepted" && request.decision !== "rejected") throw new RequestError("invalid_request", "decision must be accepted or rejected.")
@@ -124,15 +138,21 @@ async function main() {
   const runtimeDir = request.runtimeDir ? path.resolve(textField(request, "runtimeDir")) : runtimeDirectory(RESOURCE_ROOT)
   process.env.OPEN_ECG_DIGITIZER_DIR = path.join(runtimeDir, "engine")
   process.env.ECG_DIGITIZER_DEVICE = device
+  let stageStarted=performance.now()
   await checkRuntime(runtimeDir)
+  stageDurationsMs.runtime_verification=performance.now()-stageStarted
   const source = path.resolve(textField(request, "inputPath"))
   if (![".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"].includes(path.extname(source).toLowerCase())) throw new RequestError("invalid_input", "Unsupported image format.")
   const sourceStat = await fs.stat(source)
   if (!sourceStat.isFile() || sourceStat.size === 0 || sourceStat.size > 50 * 1024 * 1024) throw new RequestError("invalid_input", "Input must be a non-empty image file no larger than 50 MB.")
   const bytes = await fs.readFile(source)
+  stageStarted=performance.now()
   const captureQuality = await preflightCaptureBytes({ fileName: path.basename(source), bytes, captureMethod: "upload" })
+  stageDurationsMs.capture_preflight=performance.now()-stageStarted
   controller.signal.throwIfAborted()
+  stageStarted=performance.now()
   let run = await createStoredRunFromBytes({ id: `run_${randomUUID().replaceAll("-", "")}`, fileName: path.basename(source), bytes, captureQuality })
+  stageDurationsMs.source_admission=performance.now()-stageStarted
   activeId = run.id
   const owner = `waveparse-${process.pid}-${randomUUID()}`
   if (!await tryClaimStoredRunProcessing({ id: run.id, ownerId: owner, staleAfterMs: Number(timeoutMs) + 60_000, now: Date.now() })) throw new RequestError("run_busy", "Another process is using this run.")
@@ -147,12 +167,16 @@ async function main() {
   // Heartbeats update only mtime; metadata is written by a single run owner.
   const heartbeat = setInterval(() => { const now = new Date(); void fs.utimes(path.join(WORKSPACE_ROOT, run.localPath), now, now).catch(() => undefined) }, 5000)
   try {
-    const patch = await digitizeRun(run, { signal: controller.signal })
+    stageStarted=performance.now()
+    const patch = await digitizeRun(run, { signal: controller.signal,onStage:(stage,duration)=>{stageDurationsMs[stage]=duration} })
     if (!controller.signal.aborted) run = { ...run, ...patch, assets: { ...run.assets, ...patch.assets } }
   } catch (error) {
     run.status = "failed"
     run.message = (error as Error).message
   } finally {
+    stageDurationsMs.engine_total=performance.now()-stageStarted
+    run.executionProfile={version:1,stageDurationsMs,runnerMaxRssBytes:process.resourceUsage().maxRSS*1024,
+      scope:"Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."}
     clearTimeout(deadline); clearInterval(heartbeat)
     if (controller.signal.aborted) {
       run.status = timedOut ? "timed_out" : "failed"

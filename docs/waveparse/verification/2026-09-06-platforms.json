@@ -1,0 +1,817 @@
+{
+  "version": 1,
+  "date": "2026-09-06",
+  "clinicalValidationUse": false,
+  "protocol": {
+    "version": 2,
+    "frozenAt": "2026-09-06T11:38:48.426681+00:00",
+    "inputReceipt": "baseline/fixtures/smoke/manifest.json#clean",
+    "packagePayloadSha256": "a6c999ca9719ba4f3c2d2a3d4625052836016812a20192d3cb673dcdf76e1249",
+    "comparisons": [
+      "macOS ARM64 CPU versus MPS",
+      "Linux x64 CPU under Docker emulation versus macOS MPS",
+      "installed Python versus JavaScript"
+    ],
+    "contracts": {
+      "sameSourceAndRuntimeModelHashes": true,
+      "samePolicyOutcome": true,
+      "sameLeadPanelIdentity": true,
+      "strictSemanticsMustPass": true,
+      "maximumRmseRegressionVersusTruthUv": 5,
+      "maximumCorrelationLoss": 0.005,
+      "maximumCoverageLoss": 0.005,
+      "uncertainty": "Every interval is hash-bound and missing locations must remain consistent with the segment map; report mask differences across devices, without requiring byte equality."
+    },
+    "budgets": {
+      "runTimeoutMs": 1800000,
+      "cancellationAfterAdmissionMs": 30000,
+      "maximumConcurrentHeavyEvaluations": 1
+    },
+    "limitations": [
+      "One clean input cannot establish broad cross-platform parity.",
+      "The Linux environment is emulated, not native x64 hardware.",
+      "RSS is sampled and may double-count shared pages; other desktop applications are not controlled."
+    ],
+    "clinicalValidationUse": false,
+    "supersedesProtocolSha256": "9e0efdc2c4e8a1090710ea491d01b01b37e02f5cbe6ccae1ba2732ccec681081",
+    "addendumReason": "Final evidence-validator package D replaces C. Input, numerical gates and resource budgets are unchanged; no CPU or Linux comparison outcomes have been inspected."
+  },
+  "protocolSha256": "cc312dd63fcefe62dc934a557027bcdf00de2f4368b536c040351bea9cf65969",
+  "comparisons": {
+    "linux": {
+      "platform": "linux",
+      "clinicalValidationUse": false,
+      "sourceSha256": "c717830e02f8cda47646296abce342265ace7a24a438d52671ba3399de7d1f6c",
+      "canonicalSha256": "1256bd8ea544a1f348daec51a2860541b00bfb1470d9c11faf62b44d4a28ad50",
+      "scoreSha256": "20ef1eb747a866ccb7083d7cb11d57cacc7f475220a07cb5411d8d5c6a1597a3",
+      "protocolSha256": "cc312dd63fcefe62dc934a557027bcdf00de2f4368b536c040351bea9cf65969",
+      "comparisonAgainst": "final_D_macOS_MPS_clean",
+      "gates": {
+        "sameSource": true,
+        "sameRuntimeManifest": true,
+        "samePolicyOutcome": true,
+        "strictSemantics": true,
+        "rmseNoninferiority": true,
+        "correlationNoninferiority": true,
+        "coverageNoninferiority": true
+      },
+      "passed": true,
+      "perLeadDifference": {
+        "I": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.00034541290418591995,
+          "maxAbsoluteDeltaUv": 0.001621342506723522
+        },
+        "II": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0005043524444065911,
+          "maxAbsoluteDeltaUv": 0.0019989013671875
+        },
+        "III": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0006190210133665368,
+          "maxAbsoluteDeltaUv": 0.0021219242091490287
+        },
+        "aVR": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0015691911167733392,
+          "maxAbsoluteDeltaUv": 0.003514972673792194
+        },
+        "aVL": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0006657297815898739,
+          "maxAbsoluteDeltaUv": 0.0028185911205298453
+        },
+        "aVF": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0007742900469017486,
+          "maxAbsoluteDeltaUv": 0.0029720651383122743
+        },
+        "V1": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 0.00035397590917359955,
+          "maxAbsoluteDeltaUv": 0.003433390110195944
+        },
+        "V2": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0005036567421950848,
+          "maxAbsoluteDeltaUv": 0.0029601409655697353
+        },
+        "V3": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 0.0005965148900952249,
+          "maxAbsoluteDeltaUv": 0.0026605796127086023
+        },
+        "V4": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 0.0016468741821306309,
+          "maxAbsoluteDeltaUv": 0.003907672783621585
+        },
+        "V5": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 0.0006993465269306207,
+          "maxAbsoluteDeltaUv": 0.003597456438626523
+        },
+        "V6": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 0.0008617890501545386,
+          "maxAbsoluteDeltaUv": 0.004462930191607484
+        }
+      },
+      "uncertaintyStatusDifferences": 0,
+      "uncertaintyComparedLocations": 30000,
+      "scoreSummary": {
+        "semanticStatus": "passed",
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "scoredLeadCount": 12,
+        "failedLeadCount": 0,
+        "missingLeads": [],
+        "completeExpectedLeads": true,
+        "complete12Lead": true,
+        "comparedSamples": 29984,
+        "globalRmseUv": 16.209543547262435,
+        "macroMeanRmseUv": 15.672822765212919,
+        "macroMeanVisibleRmseUv": 15.672822765212919,
+        "macroMeanPhysionetSnrDb": 17.056331273150096,
+        "macroMeanCoverage": 0.9994666666666667,
+        "macroMeanCorrelation": 0.9912150950205764,
+        "alignmentLimitHitCount": 0,
+        "morphologyEventCount": 3,
+        "preservedMorphologyEventCount": 3,
+        "morphologyEventRecall": 1.0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "macroMeanSafeUsableFraction": 0.8734333333333333,
+        "macroMeanHighErrorRecall": 0.7240611221191412,
+        "macroMeanUncertaintyScoreAuroc": 0.9640918836911129,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.25006920191248505
+      },
+      "status": "needs_review",
+      "runtimeMs": null,
+      "reviewAccepted": false
+    },
+    "mac-cpu-js": {
+      "platform": "mac-cpu-js",
+      "clinicalValidationUse": false,
+      "sourceSha256": "c717830e02f8cda47646296abce342265ace7a24a438d52671ba3399de7d1f6c",
+      "canonicalSha256": "2c287676be2e60a8e82989429b50ff93df3504b81fc969f2b25d71899f893d76",
+      "scoreSha256": "2658cf3b3fe0301f704b49f4bbdd150d9e4d5a8b5861dc6f5c652e96bd0dc7d3",
+      "protocolSha256": "cc312dd63fcefe62dc934a557027bcdf00de2f4368b536c040351bea9cf65969",
+      "comparisonAgainst": "final_D_macOS_MPS_clean",
+      "gates": {
+        "sameSource": true,
+        "sameRuntimeManifest": true,
+        "samePolicyOutcome": true,
+        "strictSemantics": true,
+        "rmseNoninferiority": true,
+        "correlationNoninferiority": true,
+        "coverageNoninferiority": true
+      },
+      "passed": true,
+      "perLeadDifference": {
+        "I": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 5.629377941234995,
+          "maxAbsoluteDeltaUv": 45.06068482766207
+        },
+        "II": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 8.946863282389256,
+          "maxAbsoluteDeltaUv": 107.20583230849118
+        },
+        "III": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 9.055973054248025,
+          "maxAbsoluteDeltaUv": 100.50458432272855
+        },
+        "aVR": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 7.780853561428024,
+          "maxAbsoluteDeltaUv": 71.71489079334138
+        },
+        "aVL": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 6.14904709793956,
+          "maxAbsoluteDeltaUv": 63.35533949907129
+        },
+        "aVF": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 11.592946974156773,
+          "maxAbsoluteDeltaUv": 133.12570166005833
+        },
+        "V1": {
+          "finiteMaskDifferences": 8,
+          "commonSamples": 2492,
+          "pairwiseRmseUv": 59.41307564793848,
+          "maxAbsoluteDeltaUv": 373.70780832095244
+        },
+        "V2": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 50.09665873887154,
+          "maxAbsoluteDeltaUv": 369.6359832324436
+        },
+        "V3": {
+          "finiteMaskDifferences": 8,
+          "commonSamples": 2492,
+          "pairwiseRmseUv": 52.99755943067262,
+          "maxAbsoluteDeltaUv": 515.753167160463
+        },
+        "V4": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 50.7057579267544,
+          "maxAbsoluteDeltaUv": 430.43831333803644
+        },
+        "V5": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 39.263031440104236,
+          "maxAbsoluteDeltaUv": 353.5183161155119
+        },
+        "V6": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 23.315753970064847,
+          "maxAbsoluteDeltaUv": 239.44280819017303
+        }
+      },
+      "uncertaintyStatusDifferences": 485,
+      "uncertaintyComparedLocations": 30000,
+      "scoreSummary": {
+        "semanticStatus": "passed",
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "scoredLeadCount": 12,
+        "failedLeadCount": 0,
+        "missingLeads": [],
+        "completeExpectedLeads": true,
+        "complete12Lead": true,
+        "comparedSamples": 29977,
+        "globalRmseUv": 20.179074390254495,
+        "macroMeanRmseUv": 19.534974252374123,
+        "macroMeanVisibleRmseUv": 19.534974252374123,
+        "macroMeanPhysionetSnrDb": 16.262286640132213,
+        "macroMeanCoverage": 0.9992333333333333,
+        "macroMeanCorrelation": 0.9862711864498954,
+        "alignmentLimitHitCount": 0,
+        "morphologyEventCount": 3,
+        "preservedMorphologyEventCount": 3,
+        "morphologyEventRecall": 1.0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "macroMeanSafeUsableFraction": 0.8711333333333333,
+        "macroMeanHighErrorRecall": 0.6669339524558514,
+        "macroMeanUncertaintyScoreAuroc": 0.9518762844590515,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.314166063166989
+      },
+      "status": "needs_review",
+      "runtimeMs": 339572.53275,
+      "reviewAccepted": false
+    },
+    "mac-cpu-python": {
+      "platform": "mac-cpu-python",
+      "clinicalValidationUse": false,
+      "sourceSha256": "c717830e02f8cda47646296abce342265ace7a24a438d52671ba3399de7d1f6c",
+      "canonicalSha256": "2c287676be2e60a8e82989429b50ff93df3504b81fc969f2b25d71899f893d76",
+      "scoreSha256": "f6b2edfe08e3d80514d53b1eb1b314089de22b3fa47747cca53bcc62f123a6ca",
+      "protocolSha256": "cc312dd63fcefe62dc934a557027bcdf00de2f4368b536c040351bea9cf65969",
+      "comparisonAgainst": "final_D_macOS_MPS_clean",
+      "gates": {
+        "sameSource": true,
+        "sameRuntimeManifest": true,
+        "samePolicyOutcome": true,
+        "strictSemantics": true,
+        "rmseNoninferiority": true,
+        "correlationNoninferiority": true,
+        "coverageNoninferiority": true
+      },
+      "passed": true,
+      "perLeadDifference": {
+        "I": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 5.629377941234995,
+          "maxAbsoluteDeltaUv": 45.06068482766207
+        },
+        "II": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 8.946863282389256,
+          "maxAbsoluteDeltaUv": 107.20583230849118
+        },
+        "III": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 9.055973054248025,
+          "maxAbsoluteDeltaUv": 100.50458432272855
+        },
+        "aVR": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 7.780853561428024,
+          "maxAbsoluteDeltaUv": 71.71489079334138
+        },
+        "aVL": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 6.14904709793956,
+          "maxAbsoluteDeltaUv": 63.35533949907129
+        },
+        "aVF": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 11.592946974156773,
+          "maxAbsoluteDeltaUv": 133.12570166005833
+        },
+        "V1": {
+          "finiteMaskDifferences": 8,
+          "commonSamples": 2492,
+          "pairwiseRmseUv": 59.41307564793848,
+          "maxAbsoluteDeltaUv": 373.70780832095244
+        },
+        "V2": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 50.09665873887154,
+          "maxAbsoluteDeltaUv": 369.6359832324436
+        },
+        "V3": {
+          "finiteMaskDifferences": 8,
+          "commonSamples": 2492,
+          "pairwiseRmseUv": 52.99755943067262,
+          "maxAbsoluteDeltaUv": 515.753167160463
+        },
+        "V4": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 50.7057579267544,
+          "maxAbsoluteDeltaUv": 430.43831333803644
+        },
+        "V5": {
+          "finiteMaskDifferences": 4,
+          "commonSamples": 2496,
+          "pairwiseRmseUv": 39.263031440104236,
+          "maxAbsoluteDeltaUv": 353.5183161155119
+        },
+        "V6": {
+          "finiteMaskDifferences": 0,
+          "commonSamples": 2500,
+          "pairwiseRmseUv": 23.315753970064847,
+          "maxAbsoluteDeltaUv": 239.44280819017303
+        }
+      },
+      "uncertaintyStatusDifferences": 485,
+      "uncertaintyComparedLocations": 30000,
+      "scoreSummary": {
+        "semanticStatus": "passed",
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "scoredLeadCount": 12,
+        "failedLeadCount": 0,
+        "missingLeads": [],
+        "completeExpectedLeads": true,
+        "complete12Lead": true,
+        "comparedSamples": 29977,
+        "globalRmseUv": 20.179074390254495,
+        "macroMeanRmseUv": 19.534974252374123,
+        "macroMeanVisibleRmseUv": 19.534974252374123,
+        "macroMeanPhysionetSnrDb": 16.262286640132213,
+        "macroMeanCoverage": 0.9992333333333333,
+        "macroMeanCorrelation": 0.9862711864498954,
+        "alignmentLimitHitCount": 0,
+        "morphologyEventCount": 3,
+        "preservedMorphologyEventCount": 3,
+        "morphologyEventRecall": 1.0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "macroMeanSafeUsableFraction": 0.8711333333333333,
+        "macroMeanHighErrorRecall": 0.6669339524558514,
+        "macroMeanUncertaintyScoreAuroc": 0.9518762844590515,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.314166063166989
+      },
+      "status": "needs_review",
+      "runtimeMs": 320973.9570830716,
+      "reviewAccepted": false
+    }
+  },
+  "profiles": {
+    "linux": {
+      "version": 1,
+      "exitCode": 0,
+      "elapsedSeconds": 290.3680463329656,
+      "measurementErrors": [],
+      "memoryMetric": "Docker sampled container memory usage, not process RSS or a hard peak",
+      "clinicalValidationUse": false,
+      "sampleCount": 82,
+      "peakSampledContainerMemoryBytes": 6351182888.96,
+      "networkCountersAllZero": true,
+      "containerWallSeconds": 287.559521
+    },
+    "mac-cpu-js": {
+      "version": 1,
+      "commandName": "sandbox-exec",
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "architecture": "arm64",
+      "exitCode": 0,
+      "elapsedSeconds": 340.55788808409125,
+      "samplingIntervalSeconds": 1,
+      "sampleCount": 323,
+      "peakSampledProcessTreeRssBytes": 8417001472,
+      "peakSampledWorkspaceBytes": 80931303,
+      "measurementErrors": [],
+      "limitations": [
+        "RSS includes shared pages in each process; values are sampled, not an operating-system hard maximum.",
+        "Workspace size excludes the separately installed runtime and package."
+      ],
+      "clinicalValidationUse": false
+    },
+    "mac-cpu-python": {
+      "version": 1,
+      "commandName": "sandbox-exec",
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "architecture": "arm64",
+      "exitCode": 0,
+      "elapsedSeconds": 322.6775795420399,
+      "samplingIntervalSeconds": 1,
+      "sampleCount": 304,
+      "peakSampledProcessTreeRssBytes": 8526757888,
+      "peakSampledWorkspaceBytes": 84801645,
+      "measurementErrors": [],
+      "limitations": [
+        "RSS includes shared pages in each process; values are sampled, not an operating-system hard maximum.",
+        "Workspace size excludes the separately installed runtime and package."
+      ],
+      "clinicalValidationUse": false
+    }
+  },
+  "javascriptPythonParity": {
+    "version": 1,
+    "clinicalValidationUse": false,
+    "checks": {
+      "input": true,
+      "canonicalCsv": true,
+      "segmentsCsv": true,
+      "uncertaintyCsv": false,
+      "diagnostic": true,
+      "paperRender": true
+    },
+    "sameOutcome": true,
+    "sameSource": true,
+    "sameEvidenceStructure": true,
+    "limitation": "One clean synthetic input; segment IDs differ by run, as required.",
+    "uncertaintyDifference": {
+      "comparedRows": 30000,
+      "differentFields": {
+        "candidate_count": 29988
+      },
+      "maximumAbsoluteNumericDelta": {
+        "candidate_count": 1.0
+      }
+    },
+    "uncertaintyStatusesIdentical": true,
+    "canonicalUncertaintyLocationsIdentical": true
+  },
+  "candidateOutcomes": {
+    "mac-cpu-js": [
+      {
+        "id": "labeled-six-by-two-row-local-native-grid-path",
+        "status": "completed",
+        "runtimeMs": 4484.757167,
+        "message": null
+      },
+      {
+        "id": "default",
+        "status": "completed",
+        "runtimeMs": 20114.245542,
+        "message": null
+      },
+      {
+        "id": "geometry-standard-6x2-centroid-1500",
+        "status": "completed",
+        "runtimeMs": 11476.912040999996,
+        "message": null
+      },
+      {
+        "id": "geometry-standard-6x2-path-2200",
+        "status": "failed",
+        "runtimeMs": 180764.100542,
+        "message": "Command failed: /private/tmp/waveparse-runtime-mac-v2/engine/.venv/bin/python -m src.digitize --config /Users/alexandrosprotonotarios/projects/ecg_digitizer/benchmark/results/gpt6pro-20260906/platform/mac-cpu-js-workspace/storage/runs/run_36c3aa27ca45404796c24ea97e6e63bc/candidates/geometry-standard-6x2-path-2200/open_ecg_config.yml\n\r  0%|          | 0/1 [00:00<?, ?it/s]"
+      },
+      {
+        "id": "ink-path-2200",
+        "status": "completed",
+        "runtimeMs": 56667.824082999985,
+        "message": null
+      },
+      {
+        "id": "centroid-2200",
+        "status": "completed",
+        "runtimeMs": 37990.554208000016,
+        "message": null
+      },
+      {
+        "id": "lead-fusion",
+        "status": "completed",
+        "runtimeMs": 0,
+        "message": null
+      }
+    ],
+    "mac-cpu-python": [
+      {
+        "id": "labeled-six-by-two-row-local-native-grid-path",
+        "status": "completed",
+        "runtimeMs": 4153.519458999999,
+        "message": null
+      },
+      {
+        "id": "default",
+        "status": "completed",
+        "runtimeMs": 17891.814833,
+        "message": null
+      },
+      {
+        "id": "geometry-standard-6x2-centroid-1500",
+        "status": "completed",
+        "runtimeMs": 12640.196917000001,
+        "message": null
+      },
+      {
+        "id": "geometry-standard-6x2-path-2200",
+        "status": "completed",
+        "runtimeMs": 158088.90987499998,
+        "message": null
+      },
+      {
+        "id": "ink-path-2200",
+        "status": "completed",
+        "runtimeMs": 64076.82341599997,
+        "message": null
+      },
+      {
+        "id": "centroid-2200",
+        "status": "completed",
+        "runtimeMs": 33967.61983400001,
+        "message": null
+      },
+      {
+        "id": "lead-fusion",
+        "status": "completed",
+        "runtimeMs": 0,
+        "message": null
+      }
+    ]
+  },
+  "linux": {
+    "imageId": "sha256:3092510151bdd2f0c1c813b70dc644376b222b8e740ba429b93efdf57e05906a",
+    "architecture": "amd64",
+    "emulatedOn": "Apple Silicon macOS; aarch64 Docker Desktop Linux VM",
+    "user": "10001:10001",
+    "exitCode": 0,
+    "oomKilled": false,
+    "isolation": {
+      "Memory": 6442450944,
+      "NanoCpus": 4000000000,
+      "PidsLimit": 256,
+      "ReadonlyRootfs": true,
+      "NetworkMode": "none",
+      "CapDrop": [
+        "ALL"
+      ],
+      "SecurityOpt": [
+        "no-new-privileges"
+      ]
+    },
+    "payloadIdentities": {
+      "/usr/local/lib/python3.12/site-packages/ecg_waveparse/runtime/payload-manifest.json": "a6c999ca9719ba4f3c2d2a3d4625052836016812a20192d3cb673dcdf76e1249",
+      "/opt/waveparse/node_modules/ecg-waveparse/runtime/payload-manifest.json": "a6c999ca9719ba4f3c2d2a3d4625052836016812a20192d3cb673dcdf76e1249"
+    },
+    "osPackageInventorySha256": "f55ed5c8303f49a0147af56bb1c44d77d4b27942b49bb49c636242836d20fe24",
+    "osPackageInventory": [
+      "adduser\t3.134",
+      "apt\t2.6.1",
+      "base-files\t12.4+deb12u10",
+      "base-passwd\t3.6.1",
+      "bash\t5.2.15-2+b7",
+      "bsdutils\t1:2.38.1-5+deb12u3",
+      "ca-certificates\t20250419~deb12u1",
+      "coreutils\t9.1-1",
+      "curl\t7.88.1-10+deb12u15",
+      "dash\t0.5.12-2",
+      "debconf\t1.5.82",
+      "debian-archive-keyring\t2023.3+deb12u1",
+      "debianutils\t5.7-0.5~deb12u1",
+      "diffutils\t1:3.8-4",
+      "dpkg\t1.21.22",
+      "e2fsprogs\t1.47.0-2",
+      "findutils\t4.9.0-4",
+      "gcc-12-base:amd64\t12.2.0-14",
+      "gpgv\t2.2.40-1.1",
+      "grep\t3.8-5",
+      "gzip\t1.12-1",
+      "hostname\t3.23+nmu1",
+      "init-system-helpers\t1.65.2",
+      "libacl1:amd64\t2.3.1-3",
+      "libapt-pkg6.0:amd64\t2.6.1",
+      "libattr1:amd64\t1:2.5.1-4",
+      "libaudit-common\t1:3.0.9-1",
+      "libaudit1:amd64\t1:3.0.9-1",
+      "libblkid1:amd64\t2.38.1-5+deb12u3",
+      "libbrotli1:amd64\t1.0.9-2+b6",
+      "libbsd0:amd64\t0.11.7-2",
+      "libbz2-1.0:amd64\t1.0.8-5+b1",
+      "libc-bin\t2.36-9+deb12u10",
+      "libc6:amd64\t2.36-9+deb12u10",
+      "libcap-ng0:amd64\t0.8.3-1+b3",
+      "libcap2:amd64\t1:2.66-4",
+      "libcom-err2:amd64\t1.47.0-2",
+      "libcrypt1:amd64\t1:4.4.33-2",
+      "libcurl4:amd64\t7.88.1-10+deb12u15",
+      "libdb5.3:amd64\t5.3.28+dfsg2-1",
+      "libdebconfclient0:amd64\t0.270",
+      "libdrm-amdgpu1:amd64\t2.4.114-1+b1",
+      "libdrm-common\t2.4.114-1",
+      "libdrm-intel1:amd64\t2.4.114-1+b1",
+      "libdrm-nouveau2:amd64\t2.4.114-1+b1",
+      "libdrm-radeon1:amd64\t2.4.114-1+b1",
+      "libdrm2:amd64\t2.4.114-1+b1",
+      "libedit2:amd64\t3.1-20221030-2",
+      "libelf1:amd64\t0.188-2.1",
+      "libexpat1:amd64\t2.5.0-1+deb12u3",
+      "libext2fs2:amd64\t1.47.0-2",
+      "libffi8:amd64\t3.4.4-1",
+      "libgcc-s1:amd64\t12.2.0-14",
+      "libgcrypt20:amd64\t1.10.1-3",
+      "libgdbm6:amd64\t1.23-3",
+      "libgl1:amd64\t1.6.0-1",
+      "libgl1-mesa-dri:amd64\t22.3.6-1+deb12u2",
+      "libglapi-mesa:amd64\t22.3.6-1+deb12u2",
+      "libglib2.0-0:amd64\t2.74.6-2+deb12u9",
+      "libglvnd0:amd64\t1.6.0-1",
+      "libglx-mesa0:amd64\t22.3.6-1+deb12u2",
+      "libglx0:amd64\t1.6.0-1",
+      "libgmp10:amd64\t2:6.2.1+dfsg1-1.1",
+      "libgnutls30:amd64\t3.7.9-2+deb12u4",
+      "libgpg-error0:amd64\t1.46-1",
+      "libgssapi-krb5-2:amd64\t1.20.1-2+deb12u2",
+      "libhogweed6:amd64\t3.8.1-2",
+      "libicu72:amd64\t72.1-3+deb12u1",
+      "libidn2-0:amd64\t2.3.3-1+b1",
+      "libk5crypto3:amd64\t1.20.1-2+deb12u2",
+      "libkeyutils1:amd64\t1.6.3-2",
+      "libkrb5-3:amd64\t1.20.1-2+deb12u2",
+      "libkrb5support0:amd64\t1.20.1-2+deb12u2",
+      "libldap-2.5-0:amd64\t2.5.13+dfsg-5",
+      "libllvm15:amd64\t1:15.0.6-4+b1",
+      "liblz4-1:amd64\t1.9.4-1",
+      "liblzma5:amd64\t5.4.1-1+deb12u1",
+      "libmd0:amd64\t1.0.4-2",
+      "libmount1:amd64\t2.38.1-5+deb12u3",
+      "libncursesw6:amd64\t6.4-4",
+      "libnettle8:amd64\t3.8.1-2",
+      "libnghttp2-14:amd64\t1.52.0-1+deb12u3",
+      "libnsl2:amd64\t1.3.0-2",
+      "libp11-kit0:amd64\t0.24.1-2",
+      "libpam-modules:amd64\t1.5.2-6+deb12u1",
+      "libpam-modules-bin\t1.5.2-6+deb12u1",
+      "libpam-runtime\t1.5.2-6+deb12u1",
+      "libpam0g:amd64\t1.5.2-6+deb12u1",
+      "libpciaccess0:amd64\t0.17-2",
+      "libpcre2-8-0:amd64\t10.42-1",
+      "libpsl5:amd64\t0.21.2-1",
+      "libreadline8:amd64\t8.2-1.3",
+      "librtmp1:amd64\t2.4+20151223.gitfa8646d.1-2+b2",
+      "libsasl2-2:amd64\t2.1.28+dfsg-10",
+      "libsasl2-modules-db:amd64\t2.1.28+dfsg-10",
+      "libseccomp2:amd64\t2.5.4-1+deb12u1",
+      "libselinux1:amd64\t3.4-1+b6",
+      "libsemanage-common\t3.4-1",
+      "libsemanage2:amd64\t3.4-1+b5",
+      "libsensors-config\t1:3.6.0-7.1",
+      "libsensors5:amd64\t1:3.6.0-7.1",
+      "libsepol2:amd64\t3.4-2.1",
+      "libsmartcols1:amd64\t2.38.1-5+deb12u3",
+      "libsqlite3-0:amd64\t3.40.1-2+deb12u1",
+      "libss2:amd64\t1.47.0-2",
+      "libssh2-1:amd64\t1.10.0-3+deb12u1",
+      "libssl3:amd64\t3.0.15-1~deb12u1",
+      "libstdc++6:amd64\t12.2.0-14",
+      "libsystemd0:amd64\t252.36-1~deb12u1",
+      "libtasn1-6:amd64\t4.19.0-2+deb12u1",
+      "libtinfo6:amd64\t6.4-4",
+      "libtirpc-common\t1.3.3+ds-1",
+      "libtirpc3:amd64\t1.3.3+ds-1",
+      "libudev1:amd64\t252.36-1~deb12u1",
+      "libunistring2:amd64\t1.0-2",
+      "libuuid1:amd64\t2.38.1-5+deb12u3",
+      "libx11-6:amd64\t2:1.8.4-2+deb12u2",
+      "libx11-data\t2:1.8.4-2+deb12u2",
+      "libx11-xcb1:amd64\t2:1.8.4-2+deb12u2",
+      "libxau6:amd64\t1:1.0.9-1",
+      "libxcb-dri2-0:amd64\t1.15-1",
+      "libxcb-dri3-0:amd64\t1.15-1",
+      "libxcb-glx0:amd64\t1.15-1",
+      "libxcb-present0:amd64\t1.15-1",
+      "libxcb-randr0:amd64\t1.15-1",
+      "libxcb-shm0:amd64\t1.15-1",
+      "libxcb-sync1:amd64\t1.15-1",
+      "libxcb-xfixes0:amd64\t1.15-1",
+      "libxcb1:amd64\t1.15-1",
+      "libxdmcp6:amd64\t1:1.1.2-3",
+      "libxext6:amd64\t2:1.3.4-1+b1",
+      "libxfixes3:amd64\t1:6.0.0-2",
+      "libxml2:amd64\t2.9.14+dfsg-1.3~deb12u6",
+      "libxshmfence1:amd64\t1.3-1",
+      "libxxf86vm1:amd64\t1:1.1.4-1+b2",
+      "libxxhash0:amd64\t0.8.1-1",
+      "libz3-4:amd64\t4.8.12-3.1",
+      "libzstd1:amd64\t1.5.4+dfsg2-5",
+      "login\t1:4.13+dfsg1-1+b1",
+      "logsave\t1.47.0-2",
+      "mawk\t1.3.4.20200120-3.1",
+      "mount\t2.38.1-5+deb12u3",
+      "ncurses-base\t6.4-4",
+      "ncurses-bin\t6.4-4",
+      "netbase\t6.4",
+      "openssl\t3.0.15-1~deb12u1",
+      "passwd\t1:4.13+dfsg1-1+b1",
+      "perl-base\t5.36.0-7+deb12u1",
+      "readline-common\t8.2-1.3",
+      "sed\t4.9-1",
+      "sysvinit-utils\t3.06-4",
+      "tar\t1.34+dfsg-1.2+deb12u1",
+      "tzdata\t2025b-0+deb12u1",
+      "usr-is-merged\t37~deb12u1",
+      "util-linux\t2.38.1-5+deb12u3",
+      "util-linux-extra\t2.38.1-5+deb12u3",
+      "xz-utils\t5.4.1-1+deb12u1",
+      "zlib1g:amd64\t1:1.2.13.dfsg-1"
+    ]
+  },
+  "visualAudit": {
+    "linux": "Original, diagnostic and paper overview inspected. Broad row/QRS/T morphology corresponds; quantitative differences versus MPS remain explicitly scored. No acceptance.",
+    "mac-cpu-js": "Original, diagnostic and paper overview inspected. Broad correspondence; sharper pointwise differences and changed missingness prohibit sample-level equivalence claims.",
+    "mac-cpu-python": "Source, diagnostic, paper, compact and canonical bytes identical to visually inspected mac-cpu-js. Uncertainty locations, statuses and spread values identical; candidate counts differ because one JS-run candidate timed out."
+  },
+  "limitations": [
+    "One clean synthetic input per CPU/interface/platform; no broad or clinical platform-equivalence claim.",
+    "The JavaScript macOS CPU run lost one internal geometry path candidate to its existing approximately 180-second budget. Overall output remained needs_review. The Python repeat completed that candidate.",
+    "A passing aggregate gate does not imply identical missing locations or pointwise morphology.",
+    "No extraction parameter or deadline was retuned to remove the observed timeout."
+  ]
+}

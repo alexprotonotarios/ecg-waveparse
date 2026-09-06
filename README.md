@@ -12,6 +12,16 @@ It does not diagnose ECGs. Outputs may require review, be incomplete, or abstain
 Version **0.1.0 has not been published to npm or PyPI**. Build the artifacts below;
 do not assume a registry package with the same name is this project.
 
+The 6 September engineering changes are prepared locally. The public preview
+and the first campaign's archived artifacts precede the
+[continuation evidence](COMPLETION-WORK-2026-09-06.md). The
+[25-patient final evaluation](FINAL-EVALUATION-2026-09-06.md) returned 19 signals,
+abstained on six and qualified four under the fixed engineering gates. Hosted
+verification and the owner's exact-artifact decision remain open in the
+[criteria audit](ACCEPTANCE-AUDIT-2026-09-06.md). Reproduce each recorded
+experiment using its matching source archive and payload identity; the earlier
+receipt does not certify the current working tree.
+
 Model weights and patient ECGs are not included. Explicit runtime setup downloads
 upstream components separately. Model-specific licence clarification remains open;
 see the [licensing evidence](https://github.com/alexprotonotarios/ecg-waveparse/blob/main/docs/waveparse/LICENSING.md)
@@ -130,7 +140,7 @@ except WaveParseError as error:
 ```
 
 For async applications, use `await digitizer.digitize_async("./ecg.png")`.
-`get_run_async` and `review_async` are also available. Async cancellation stops
+`get_run_async`, `get_evidence_async` and `review_async` are also available. Async cancellation stops
 the runner and waits for its cleanup. The Python result is a typed dictionary;
 its JSON keys match JavaScript, including `canonicalCsv` and `publicationDecision`.
 
@@ -180,9 +190,63 @@ as a complete quantitative run.
 
 Workspaces own their `storage/runs/<id>` directories. Inputs are copied and hashed;
 the original file is never modified. Candidate intermediates are compacted at
-terminal completion. Review-only compact/uncertainty artifacts are removed after
-a review decision. Reopen the result after review rather than caching old paths.
-Store permanent references to the canonical CSV and provenance, not working files.
+terminal completion. Retention v2 permanently preserves compact CSV, uncertainty
+CSV and segment map alongside the source, canonical CSV, overlay, provenance and
+review audit. Reopen the result after review rather than caching old paths.
+Historical runs with already-deleted uncertainty explicitly report it unavailable.
+
+`getEvidence(id)` / `get_evidence(id)` returns a verified local source/segment
+bundle. It preserves original-image inspection after abstention and never
+generates missing waveform samples. Segment records distinguish printed panel
+position from unknown acquisition time. See [API.md](API.md) for identity-bound
+measurement references and [examples](#worked-examples-and-evidence).
+
+## Worked examples and evidence
+
+`examples/waveparse.mjs` and `examples/waveparse.py` exercise the installed
+package, then inspect source availability, reconstruction state and segment
+count. Copy the JavaScript example into your installed consumer project; execute
+Python with the environment containing the wheel. Both accept an optional
+existing run ID to inspect a result without reprocessing:
+
+```sh
+node waveparse.mjs INPUT WORKSPACE RUNTIME [EXISTING_RUN_ID]
+python waveparse.py INPUT WORKSPACE RUNTIME [EXISTING_RUN_ID]
+```
+
+The [worked examples](WORKED-EXAMPLES.md) cover a clean input, a difficult
+low-resolution input and an abstention, with source/overlay inspection and
+explicit truth comparisons.
+
+The [baseline](BASELINE-2026-09-06.md) contains **eight attempted images from one
+synthetic signal family**: seven quantitative results requiring review, one
+12x1 abstention, zero overall runtime failures and zero accepted results.
+Conditional pooled RMSE was 28.62 µV, mean case correlation 0.9599 and coverage
+99.32%. That is engineering regression evidence, not independent clinical
+accuracy. Strict scoring and subsequent source/package identities are tracked
+in [the improvement ledger](ENGINEERING-IMPROVEMENTS.md).
+
+| Capability | Evidence boundary |
+| --- | --- |
+| 6x2 synthetic regression | Clean and five degraded variants return signals; low-resolution narrow-feature loss remains documented. |
+| 3x4 synthetic regression | A limited result returned at 74.45 µV RMSE; it still requires source review. |
+| 12x1 synthetic regression | Abstention is preserved; support is input-dependent, not promised by recognizing a layout name. |
+| Physical units | Printed speed/gain OCR, conflicts and pulse/grid evidence are checked. Nondefault settings require physical evidence. Five of eight controlled full-page setting cases return and pass scale/fidelity gates; three refuse. Source acquisition rate is not inferred from printed speed. |
+| Uncertainty and timing | Per-sample missingness, interval lineage and immutable segment maps survive review/compaction. Candidate spread is not calibrated confidence. |
+| PDF, native waveform and vector import | Not exposed by v1; [feasibility decision](SOURCE-IMPORT-FEASIBILITY.md) records admission conditions. |
+| Alternative decoders/local warp | [Current measured experiments and no-adoption decisions](COMPLETION-WORK-2026-09-06.md); local warp remains experimental. |
+| Final public waveform evaluation | [25 patient groups](FINAL-EVALUATION-2026-09-06.md): 19 returned, six abstained, four met all fixed engineering gates. Conditional pooled RMSE 136.47 µV, mean correlation 0.7192, mean coverage 97.5%. Rendered acquired signals; no clinical validation. |
+| Historical public waveform pilot | [Earlier 16 patient groups](PUBLIC-PILOT-2026-09-06.md): 12 returned, four abstained, six qualified. Different patients and payload; not a paired comparison. |
+| Deployment | [Non-root Linux recipe](LINUX-CONTAINER.md), [local safety boundaries](LOCAL-SAFETY.md), explicit model setup. |
+
+The public source checkout installs only the TypeScript/esbuild/tsx toolchain,
+Node type declarations and the YAML parser used to preserve its dependency lock.
+Its lockfile is derived from the application lock
+without changing the toolchain versions. The separate application checkout
+retains its UI dependencies; UI-only helpers are absent from the library source
+export. The installed npm package has zero external JavaScript dependencies,
+and the wheel has no pip runtime dependencies in its package metadata. Both
+use the separately provisioned, locked inference environment.
 
 ## Integration, offline operation and updates
 

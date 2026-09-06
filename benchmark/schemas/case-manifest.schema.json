@@ -183,7 +183,7 @@
             "datasetVersion": { "type": "string" },
             "licenceUrl": { "type": "string", "format": "uri" },
             "acquisition": {
-              "enum": ["synthetic_render", "scan", "photograph", "digital_export"]
+              "enum": ["synthetic_render", "scan", "photograph", "digital_export", "digital_augmentation"]
             },
             "imageOrigin": { "type": "string", "minLength": 1 },
             "waveformPairing": { "type": "string", "minLength": 1 },

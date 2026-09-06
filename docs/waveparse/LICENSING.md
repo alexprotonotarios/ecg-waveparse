@@ -9,7 +9,8 @@ The Python/JS interfaces, local subprocess protocol, setup tooling, TypeScript
 orchestration, policy checks and independently authored deterministic processing
 are MIT. The six layout YAML files listed in `THIRD_PARTY_NOTICES.md` adapt
 Open-ECG-Digitizer's layout configuration and retain CC BY-SA 4.0. The two Python
-subclass extensions are also offered under CC BY-SA 4.0 to avoid representing
+subclass extensions and the probability-path function extracted from one of
+them are also offered under CC BY-SA 4.0 to avoid representing
 that integration as wholly MIT. The corresponding source, notices and full
 licence text accompany the clean release source and both language distributions.
 

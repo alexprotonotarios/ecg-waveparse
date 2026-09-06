@@ -13,6 +13,13 @@ import {
   type CaptureQualitySummary,
 } from "@/lib/digitizer/capture-quality"
 import type { PublicationReasonCode } from "@/lib/digitizer/publication-policy"
+import { validateDurableRun } from "@/lib/digitizer/record-contracts"
+import { describeOutcome } from "@/lib/digitizer/outcome-dimensions"
+import {
+  PERMANENT_EVIDENCE_ASSETS,
+  quantitativeEvidenceAvailability,
+  type QuantitativeEvidenceAvailability,
+} from "@/lib/digitizer/evidence-retention"
 import {
   canAcceptQuantitativeReview,
   hasAllReviewConfirmations,
@@ -39,6 +46,7 @@ export const ASSET_KEYS = [
   "canonicalCsv",
   "segmentsCsv",
   "uncertaintyCsv",
+  "segmentMapJson",
   "metadataCsv",
   "provenanceJson",
   "reviewJson",
@@ -131,6 +139,7 @@ export class RunArtifactIntegrityError extends Error {
 }
 
 export type RunRecord = {
+  executionProfile?: { version: 1; stageDurationsMs: Record<string, number>; runnerMaxRssBytes: number; scope: string }
   id: string
   createdAt: string
   updatedAt: string
@@ -158,12 +167,14 @@ export type RunRecord = {
   processing?: DigitizerJobLifecycle
   storage?: RunStorageAdmission
   retention?: RunRetentionSummary
+  quantitativeEvidence?: QuantitativeEvidenceAvailability
+  outcomeDimensions?: ReturnType<typeof describeOutcome>
   assets: Partial<Record<RunAssetKey, RunAsset>>
 }
 
 export type RunRetentionSummary = {
-  version: 1
-  policy: "lean-final-evidence-v1"
+  version: 1 | 2
+  policy: "lean-final-evidence-v1" | "lean-final-evidence-v2"
   compactedAt: string
   retainedAssets: RunAssetKey[]
   removedAssets: RunAssetKey[]
@@ -375,6 +386,7 @@ export type DigitizerCandidateSummary = {
   workingFilesRetained?: boolean
   selected?: boolean
   leadSources?: Record<string, string>
+  intervalLineage?: Record<string, import("@/lib/digitizer/lineage").IntervalLineage[]>
   leadCorroborators?: Record<string, string[]>
   status: "completed" | "failed"
   parameters: {
@@ -384,6 +396,7 @@ export type DigitizerCandidateSummary = {
     upscaleToMaxDimension?: number
     darkInkEnhancement?: boolean
     darkInkSupportRadius?: number
+    gainMmPerMv?: number
     labelThresh?: number
     layoutConstraint?: string
     geometryConfirmedLayout?: boolean
@@ -562,6 +575,7 @@ export type DigitizerReviewEvent = {
   selectedCandidateId?: string
   sourceSha256?: string
   canonicalSha256?: string
+  evidenceSha256?: Partial<Record<Exclude<RunAssetKey, "input" | "reviewJson">, string>>
   confirmations?: DigitizerReviewConfirmations
 }
 
@@ -1110,6 +1124,7 @@ const DERIVED_ASSET_DIRECTORY: Record<
   canonicalCsv: "exports",
   segmentsCsv: "exports",
   uncertaintyCsv: "exports",
+  segmentMapJson: "exports",
   metadataCsv: "exports",
   provenanceJson: "preprocessing",
   reviewJson: "review",
@@ -1447,6 +1462,9 @@ async function appendRunReviewUnlocked({
     selectedCandidateId: run.selectedCandidateId,
     sourceSha256: verifiedSource.sha256,
     canonicalSha256,
+    evidenceSha256: Object.fromEntries(
+      [...verifiedDerivedAssets].map(([key, asset]) => [key, asset.identity.sha256])
+    ),
     ...(acceptedConfirmations ? { confirmations: acceptedConfirmations } : {}),
   }
   const reviewDir = path.join(runDirectory(id), "review")
@@ -1503,22 +1521,6 @@ async function appendRunReviewUnlocked({
   return run
 }
 
-const LEAN_FINAL_ASSET_KEYS = new Set<RunAssetKey>([
-  "input",
-  "diagnostic",
-  "paperRender",
-  "probability",
-  "canonicalCsv",
-  "metadataCsv",
-  "provenanceJson",
-  "reviewJson",
-])
-
-const LEAN_REVIEW_ASSET_KEYS = new Set<RunAssetKey>([
-  "segmentsCsv",
-  "uncertaintyCsv",
-])
-
 const RUN_WORKING_DIRECTORIES = [
   "candidates",
   "candidate-inputs",
@@ -1532,16 +1534,13 @@ export async function compactStoredRun(id: string) {
     if (run.source !== "upload" || !isTerminalStoredRun(run)) return run
 
     await readVerifiedRunSource(run)
-    const reviewArtifactsRetained = Boolean(
-      run.publicationDecision?.outcome === "needs_review" && !run.review
-    )
     const retainedKeys = ASSET_KEYS.filter((key) => {
       if (!run.assets[key]) return false
-      return (
-        LEAN_FINAL_ASSET_KEYS.has(key) ||
-        (reviewArtifactsRetained && LEAN_REVIEW_ASSET_KEYS.has(key))
-      )
+      return PERMANENT_EVIDENCE_ASSETS.has(key)
     })
+    const reviewArtifactsRetained = retainedKeys.some(
+      (key) => key === "segmentsCsv" || key === "uncertaintyCsv"
+    )
     const retainedKeySet = new Set(retainedKeys)
     const removedAssets = ASSET_KEYS.filter(
       (key) => run.assets[key] && !retainedKeySet.has(key)
@@ -1582,8 +1581,8 @@ export async function compactStoredRun(id: string) {
         : undefined,
       assets: retainedAssets,
       retention: {
-        version: 1,
-        policy: "lean-final-evidence-v1",
+        version: 2,
+        policy: "lean-final-evidence-v2",
         compactedAt,
         retainedAssets: retainedKeys,
         removedAssets: cumulativeRemovedAssets,
@@ -1593,6 +1592,8 @@ export async function compactStoredRun(id: string) {
           run.retention?.cumulativeReclaimedBytes ?? 0,
       },
     }
+    compacted.quantitativeEvidence = quantitativeEvidenceAvailability(compacted)
+    compacted.outcomeDimensions = describeOutcome(compacted)
 
     const runDir = runDirectory(id)
     await atomicWritePrivateFile(
@@ -2434,14 +2435,15 @@ async function listStoredRuns() {
   }
 }
 
-async function readStoredRun(id: string) {
+async function readStoredRun(id: string): Promise<RunRecord | null> {
   if (!isSafeRunId(id)) {
     return null
   }
 
   try {
     const file = await fs.readFile(path.join(runDirectory(id), METADATA_FILE), "utf8")
-    return JSON.parse(file) as RunRecord
+    const run = validateDurableRun(JSON.parse(file))
+    return { ...run, quantitativeEvidence: quantitativeEvidenceAvailability(run), outcomeDimensions: describeOutcome(run) }
   } catch (error) {
     if (isNodeError(error) && error.code === "ENOENT") {
       return null
@@ -2457,6 +2459,7 @@ async function writeRun(run: RunRecord) {
 }
 
 async function writeRunToDirectory(run: RunRecord, dir: string) {
+  validateDurableRun(run)
   const target = path.join(dir, METADATA_FILE)
   await fs.mkdir(dir, { recursive: true, mode: 0o700 })
   await fs.chmod(dir, 0o700)
@@ -2472,7 +2475,8 @@ async function writeRunToDirectory(run: RunRecord, dir: string) {
 async function atomicWritePrivateFile(
   target: string,
   contents: string | Buffer,
-  refuseExisting = false
+  refuseExisting = false,
+  fault?: (point: "opened" | "written" | "synced" | "renamed" | "directory_synced") => void | Promise<void>
 ) {
   const directory = path.dirname(target)
   const temporary = path.join(
@@ -2492,18 +2496,23 @@ async function atomicWritePrivateFile(
     }
     handle = await fs.open(temporary, "wx", 0o600)
     temporaryCreated = true
+    await fault?.("opened")
     if (typeof contents === "string") {
       await handle.writeFile(contents, "utf8")
     } else {
       await handle.writeFile(contents)
     }
+    await fault?.("written")
     await handle.sync()
+    await fault?.("synced")
     await handle.close()
     handle = undefined
     await fs.rename(temporary, target)
     temporaryCreated = false
+    await fault?.("renamed")
     await fs.chmod(target, 0o600)
     await syncDirectory(directory)
+    await fault?.("directory_synced")
   } catch (error) {
     await handle?.close().catch(() => undefined)
     if (temporaryCreated) {
@@ -2745,6 +2754,7 @@ function assetLabel(key: RunAssetKey) {
     canonicalCsv: "Canonical CSV",
     segmentsCsv: "Compact 500 Hz CSV",
     uncertaintyCsv: "Per-sample uncertainty CSV",
+    segmentMapJson: "Segment identity and timing evidence",
     metadataCsv: "Digitizer metadata",
     provenanceJson: "Digitization provenance",
     reviewJson: "Review audit trail",
@@ -2862,6 +2872,7 @@ function parseStorageAdmissionClaim(source: string) {
 }
 
 export const runStorageTestUtils = {
+  atomicWritePrivateFile,
   activeRunReservationBytes,
   createStoredRunFromBytesWithFault: createStoredRunFromBytesInternal,
   reconcileStoredRunIntakesUnlocked,

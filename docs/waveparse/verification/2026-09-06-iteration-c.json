@@ -1,0 +1,1013 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-06T10:48:33.434Z",
+  "clinicalValidationUse": false,
+  "description": "Deterministic engineering regression; one synthetic waveform family, no patient cohort.",
+  "platform": {
+    "os": "darwin",
+    "architecture": "arm64",
+    "release": "25.6.0",
+    "node": "v22.22.2",
+    "device": "mps"
+  },
+  "package": {
+    "version": "0.1.0",
+    "entrySha256": "d0005db8543f06e5d14de3b81b4ee79793be9af3b24e6f33bf8d743134319eed",
+    "payloadManifestSha256": "e76950ceef9fc9bb19fe5a8a449b88ed47eddeebbed2864bd3128358ee825019",
+    "runtimeManifestSha256": "d9465db541f0d2ad0541eb04f36e3fee930a8bbbc1a50135fe2950b63203fc3a"
+  },
+  "scorer": {
+    "version": 6,
+    "scriptSha256": "5666b0dab47e103373325f135ff7ef32b8f0a11e0803d8e200fa3bb6d7f58588",
+    "coordinateContractSha256": "3643ac89024a7f5acdd382a0c4334a75e83b7dec8cd3261711f2213b73f42dd7",
+    "maxAlignmentMs": 40
+  },
+  "manifests": [
+    {
+      "sha256": "3d4f9981590f4066f01fc4f575c87092800180c70d7d702f0893ea4a1125e16c",
+      "suiteId": "smoke"
+    },
+    {
+      "sha256": "8d8e1e233e5d2a000668e25fd1debf65f487e57dd68b948b6b1cbd2164546659",
+      "suiteId": "waveparse-3x4"
+    },
+    {
+      "sha256": "257aca26cf5f1c45c47b759375cdfb442ef084e801322cbfa76c6e586514a03a",
+      "suiteId": "waveparse-12x1"
+    }
+  ],
+  "denominator": 8,
+  "cases": [
+    {
+      "id": "smoke__clean",
+      "layout": "standard_6x2",
+      "degradation": "none",
+      "sourceSha256": "c717830e02f8cda47646296abce342265ace7a24a438d52671ba3399de7d1f6c",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_41c8981b2bd04e0fa333ed58121199cb",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Source-ink fidelity extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 5736.419542
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 15896.819583000004
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 8339.699583000001
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 13567.667208000006
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 11126.82424999999
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 18545.595499999996
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 12676.458417000002
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 5243.951334,
+          "capture_preflight": 6205.861334,
+          "source_admission": 96.13458299999911,
+          "preprocessing": 6401.975541,
+          "ocr_and_layout": 5116.674708999999,
+          "export_and_provenance": 1565.8940000000002,
+          "engine_total": 105328.679042
+        },
+        "runnerMaxRssBytes": 92225536,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "916e38c071c8b7d5cc290589f6ae9bea96ffbfd6aff121468a8231ecc1fbea23",
+      "scoringRuntimeMs": 1806,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29984,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 16.209529105512576,
+        "macroMeanCorrelation": 0.9912151300942806,
+        "macroMeanCoverage": 0.9994666666666667,
+        "macroMeanHighErrorRecall": 0.7240611221191412,
+        "macroMeanPhysionetSnrDb": 17.0563216609209,
+        "macroMeanRmseUv": 15.672803761455986,
+        "macroMeanSafeUsableFraction": 0.8734333333333333,
+        "macroMeanUncertaintyScoreAuroc": 0.9640911898191128,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.25006911380948793,
+        "macroMeanVisibleRmseUv": 15.672803761455986,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 121056
+    },
+    {
+      "id": "smoke__v1_blue_arrow",
+      "layout": "standard_6x2",
+      "degradation": "blue_arrow",
+      "sourceSha256": "fc3393ecc4e9a62c44cfc65af7f8a61fbfe6d2e34c94f923b1ffc06501947ff9",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_85a55375bbf846708c1a2b2c77d10348",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Source-ink fidelity extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4415.188334000002
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 10101.126916999998
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 10050.978833000001
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 15949.597249999999
+        },
+        {
+          "id": "annotation-masked",
+          "status": "completed",
+          "runtimeMs": 9677.614333999998
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 11542.706125000012
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 10723.791624999998
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3813.617625,
+          "capture_preflight": 6188.730958,
+          "source_admission": 74.77983299999869,
+          "preprocessing": 6406.075500000001,
+          "ocr_and_layout": 4859.102584,
+          "export_and_provenance": 1490.4539579999982,
+          "engine_total": 90981.99650000001
+        },
+        "runnerMaxRssBytes": 94502912,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "d3c9db5875eec2926974cca2f944e35a9fcb70efe946b378a832c31d38aad660",
+      "scoringRuntimeMs": 1881,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29655,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 16.10053696942902,
+        "macroMeanCorrelation": 0.9911670750259273,
+        "macroMeanCoverage": 0.9885,
+        "macroMeanHighErrorRecall": 0.6601343189166428,
+        "macroMeanPhysionetSnrDb": 16.89731832541667,
+        "macroMeanRmseUv": 15.639825998564843,
+        "macroMeanSafeUsableFraction": 0.8682333333333334,
+        "macroMeanUncertaintyScoreAuroc": 0.9488195419113756,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.2468250484996588,
+        "macroMeanVisibleRmseUv": 15.639825998564843,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 105309
+    },
+    {
+      "id": "smoke__v3_notch_resolution",
+      "layout": "standard_6x2",
+      "degradation": "notch_resolution",
+      "sourceSha256": "eec59b7bb78efcc2cfebb4219894a87aa121809252f84a655576c76e52cc1c4a",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_2057e641adf74c3eaa82e3d87593199c",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Source-ink fidelity extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 3864.295249999999
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 14166.119040999998
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 10649.139291
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 21188.680667
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 12801.642333999996
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 7853.058250000002
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 10224.104250000004
+        }
+      ],
+      "effectiveSampleRateHz": 150,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3717.892042,
+          "capture_preflight": 2705.802541,
+          "source_admission": 79.69045800000004,
+          "preprocessing": 3042.6720840000007,
+          "ocr_and_layout": 3266.9367079999993,
+          "export_and_provenance": 1471.4569590000028,
+          "engine_total": 94829.556667
+        },
+        "runnerMaxRssBytes": 97206272,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "7bd8d91fd97c7ddd1a16a87aa28a78f7086c6fccf63a8ef108914749a7fc4d01",
+      "scoringRuntimeMs": 1782,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29974,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 15.834547573207924,
+        "macroMeanCorrelation": 0.9919668868526936,
+        "macroMeanCoverage": 0.9991333333333334,
+        "macroMeanHighErrorRecall": 0.7047049270702105,
+        "macroMeanPhysionetSnrDb": 17.991394465329996,
+        "macroMeanRmseUv": 15.145008960403992,
+        "macroMeanSafeUsableFraction": 0.9649333333333333,
+        "macroMeanUncertaintyScoreAuroc": 0.9799145105370601,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.322248552157069,
+        "macroMeanVisibleRmseUv": 15.145008960403992,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 105441
+    },
+    {
+      "id": "smoke__low_resolution",
+      "layout": "standard_6x2",
+      "degradation": "low_resolution",
+      "sourceSha256": "f7aaf12af3594cf0915a4f02970ae416050600da1e718914283eadf176e86e66",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_820e3d96952b4e61b97a11f5f82585aa",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "geometry-standard-6x2-path-2200"
+      },
+      "selectedCandidateId": "geometry-standard-6x2-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Geometry-confirmed 6 \u00d7 2 source-ink extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 3082.2037499999988
+        },
+        {
+          "id": "preprocessed-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 1538.3507910000008
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 6686.494583
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 10269.631666999998
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 22567.562875
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 21410.879958000005
+        },
+        {
+          "id": "upscaled-centroid-2200",
+          "status": "completed",
+          "runtimeMs": 14516.225666999992
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 15260.262667000003
+        },
+        {
+          "id": "stability-geometry-standard-6x2-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 8678.05249999999
+        }
+      ],
+      "effectiveSampleRateHz": 90,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3627.586416,
+          "capture_preflight": 1226.9709579999999,
+          "source_admission": 83.09670800000004,
+          "preprocessing": 1550.8706670000001,
+          "ocr_and_layout": 2813.2309590000004,
+          "export_and_provenance": 1343.9352910000016,
+          "engine_total": 113741.390625
+        },
+        "runnerMaxRssBytes": 102154240,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "2afe35bc5564aec9145eeebfd7b4af86074114ecf4b5d8faa25f3bb8c8aa0e92",
+      "scoringRuntimeMs": 1693,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29997,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 26.382972442289354,
+        "macroMeanCorrelation": 0.9755623325001932,
+        "macroMeanCoverage": 0.9998999999999999,
+        "macroMeanHighErrorRecall": 0.6251017009194327,
+        "macroMeanPhysionetSnrDb": 13.936554005462083,
+        "macroMeanRmseUv": 25.62096454456179,
+        "macroMeanSafeUsableFraction": 0.9582666666666668,
+        "macroMeanUncertaintyScoreAuroc": 0.9866910284471979,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.6149785608445203,
+        "macroMeanVisibleRmseUv": 25.62096454456179,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 122618
+    },
+    {
+      "id": "smoke__blur",
+      "layout": "standard_6x2",
+      "degradation": "blur",
+      "sourceSha256": "c4e3aafdf37322866051a9ce73ac31f7518f1e1cb3d103060f569e34647b9350",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_833a0c07e5084f7095ab37e4c43da594",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "peer_trusted",
+        "candidateId": "ink-path-2200"
+      },
+      "selectedCandidateId": "ink-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Source-ink fidelity extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4086.425415999998
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 7425.018541999998
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 6618.144958000001
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 12155.025125
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9241.740708000005
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 8030.977749999991
+        },
+        {
+          "id": "lead-fusion",
+          "status": "completed",
+          "runtimeMs": 0
+        },
+        {
+          "id": "stability-ink-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 8793.097500000003
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3365.2560829999998,
+          "capture_preflight": 6120.815375,
+          "source_admission": 73.86408399999891,
+          "preprocessing": 6258.830875,
+          "ocr_and_layout": 4362.804540999998,
+          "export_and_provenance": 1347.1764580000017,
+          "engine_total": 72790.23375
+        },
+        "runnerMaxRssBytes": 114753536,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "4b2dd6e2b2caa7cf9a016e20c524d0beb78c6d0aefeb62ef10003603ec743580",
+      "scoringRuntimeMs": 1689,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29987,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 28.26520549431607,
+        "macroMeanCorrelation": 0.9720273339179308,
+        "macroMeanCoverage": 0.9995666666666668,
+        "macroMeanHighErrorRecall": 0.8407396921247114,
+        "macroMeanPhysionetSnrDb": 13.371524742115708,
+        "macroMeanRmseUv": 27.510240143858322,
+        "macroMeanSafeUsableFraction": 0.7957333333333332,
+        "macroMeanUncertaintyScoreAuroc": 0.9381862371179963,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.40647515103682014,
+        "macroMeanVisibleRmseUv": 27.510240143858322,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 86317
+    },
+    {
+      "id": "smoke__perspective",
+      "layout": "standard_6x2",
+      "degradation": "perspective",
+      "sourceSha256": "47cc3d0e725bd493ae763ade3bde8a3bd1de4718d1f3ee55e6b04640e260cd82",
+      "truthSha256": "25bb028b3fdf60da16c8fa9911d97d4241dca13e7cf9191adedaa5c2ec9bd54c",
+      "runId": "run_7c0813e27bc0457bb6954f182fe45f9c",
+      "status": "needs_review",
+      "detectedLayout": "standard_6x2",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "preprocessed-path-2200"
+      },
+      "selectedCandidateId": "preprocessed-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Adaptive colour/grid path extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "labeled-six-by-two-row-local-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 4241.409415999999
+        },
+        {
+          "id": "preprocessed-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 8546.99125
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 7248.864082999997
+        },
+        {
+          "id": "geometry-standard-6x2-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 6661.328667000002
+        },
+        {
+          "id": "geometry-standard-6x2-path-2200",
+          "status": "completed",
+          "runtimeMs": 12752.954333000001
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9851.19625
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 9398.821874999994
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 12867.265832999998
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 10709.373959000004
+        },
+        {
+          "id": "label-thresh-005",
+          "status": "completed",
+          "runtimeMs": 7774.868958999999
+        },
+        {
+          "id": "stability-preprocessed-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 8795.537249999994
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3505.2335000000003,
+          "capture_preflight": 6618.274624999999,
+          "source_admission": 72.04791600000135,
+          "preprocessing": 6881.729375000003,
+          "ocr_and_layout": 4405.038667000001,
+          "export_and_provenance": 1841.7084999999934,
+          "engine_total": 116303.232666
+        },
+        "runnerMaxRssBytes": 105578496,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "ee6f2df8a93759c349b8b984a8b3a2979630afdb8ebe854f103349c15f3d803d",
+      "scoringRuntimeMs": 1638,
+      "score": {
+        "alignmentLimitHitCount": 0,
+        "comparedSamples": 29847,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 18.50637141173065,
+        "macroMeanCorrelation": 0.988228472022105,
+        "macroMeanCoverage": 0.9948999999999999,
+        "macroMeanHighErrorRecall": 0.9616347154053084,
+        "macroMeanPhysionetSnrDb": 16.923222372343712,
+        "macroMeanRmseUv": 18.088338499944907,
+        "macroMeanSafeUsableFraction": 0.7606,
+        "macroMeanUncertaintyScoreAuroc": 0.9462850186370062,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.2686409953348641,
+        "macroMeanVisibleRmseUv": 18.088338499944907,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 1,
+        "preservedMorphologyEventCount": 3,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 130431
+    },
+    {
+      "id": "waveparse-3x4__clean",
+      "layout": "standard_3x4",
+      "degradation": "none",
+      "sourceSha256": "8a347b7b1e47046cd1e7b676305aa0d0f6d76d74b9fa1a2fd05a981a372b0c78",
+      "truthSha256": "ed3c8e8d3f5ade68245f68bb9b5ae713ba38573eef65cd43108bdfad1bec2317",
+      "runId": "run_9d97642de3e14e8f85465aa0d8ab0be0",
+      "status": "needs_review",
+      "detectedLayout": "standard_3x4",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "needs_review",
+        "reasonCode": "reviewable_constrained",
+        "candidateId": "artifact-preprocessed-path-2200"
+      },
+      "selectedCandidateId": "artifact-preprocessed-path-2200",
+      "message": "The ECG Digitizer completed locally. Selected Perspective-corrected source-ink extraction; visual review is required.",
+      "candidateOutcomes": [
+        {
+          "id": "three-by-four-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 7756.055833000002
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 6022.663624999997
+        },
+        {
+          "id": "geometry-standard-3x4-centroid-1500",
+          "status": "completed",
+          "runtimeMs": 6668.9859579999975
+        },
+        {
+          "id": "geometry-standard-3x4-path-2200",
+          "status": "completed",
+          "runtimeMs": 9970.489292000006
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 9950.584708000002
+        },
+        {
+          "id": "artifact-preprocessed-centroid-2200",
+          "status": "completed",
+          "runtimeMs": 9116.409290999996
+        },
+        {
+          "id": "preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 7941.354667000007
+        },
+        {
+          "id": "artifact-preprocessed-path-2200",
+          "status": "completed",
+          "runtimeMs": 7136.812833000004
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 6833.636541
+        },
+        {
+          "id": "stability-artifact-preprocessed-path-2200-mps-repeat",
+          "status": "completed",
+          "runtimeMs": 7011.148832999999
+        }
+      ],
+      "effectiveSampleRateHz": 220,
+      "reviewRequired": true,
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3197.176916,
+          "capture_preflight": 3146.336791,
+          "source_admission": 101.4599589999998,
+          "preprocessing": 3429.4151250000004,
+          "ocr_and_layout": 5272.6587500000005,
+          "export_and_provenance": 1113.336208000008,
+          "engine_total": 94157.42412499999
+        },
+        "runnerMaxRssBytes": 95059968,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "canonicalSha256": "7cd2a9ea0b4c186e4a1d4283ee5f35e3ddc6810cd40bfee3eceed1e18bdd2bb8",
+      "scoringRuntimeMs": 1127,
+      "score": {
+        "alignmentLimitHitCount": 1,
+        "comparedSamples": 14563,
+        "complete12Lead": true,
+        "completeExpectedLeads": true,
+        "expectedLeadCount": 12,
+        "expectedLeads": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ],
+        "failedLeadCount": 0,
+        "falseDeflectionCountInOccludedRanges": 0,
+        "globalRmseUv": 74.45308446593388,
+        "macroMeanCorrelation": 0.8094467514214084,
+        "macroMeanCoverage": 0.9708666666666664,
+        "macroMeanHighErrorRecall": 0.5233422459893048,
+        "macroMeanPhysionetSnrDb": 14.757319141643633,
+        "macroMeanRmseUv": 46.19211202991037,
+        "macroMeanSafeUsableFraction": 0.87,
+        "macroMeanUncertaintyScoreAuroc": 0.83534278254072,
+        "macroMeanUncertaintyScoreAveragePrecision": 0.3486029074995377,
+        "macroMeanVisibleRmseUv": 46.19211202991037,
+        "missingLeads": [],
+        "morphologyEventCount": 3,
+        "morphologyEventRecall": 0.6666666666666666,
+        "preservedMorphologyEventCount": 2,
+        "scoredLeadCount": 12,
+        "semanticStatus": "passed"
+      },
+      "semanticStatus": "passed",
+      "outcome": "quantitative_needs_review",
+      "runtimeMs": 103994
+    },
+    {
+      "id": "waveparse-12x1__clean",
+      "layout": "standard_12x1",
+      "degradation": "none",
+      "sourceSha256": "c2650f457355cc987891e5bf7afb694d0ae933e8f28276d6ee231a3ecde06ae8",
+      "truthSha256": "a3a04e7caab45e8981d08ab2494675e6fdfb0523a4fe8917763df6df120b2588",
+      "runId": "run_689690780c6d43dfbcf74a3b607d25d4",
+      "status": "failed",
+      "publicationDecision": {
+        "policyId": "source-faithful-publication-v2",
+        "policyVersion": 2,
+        "outcome": "failed",
+        "reasonCode": "no_publishable_candidate"
+      },
+      "message": "Open-ECG-Digitizer produced candidate CSVs, but no candidate satisfied the per-lead publication requirements for coverage, gap safety, and cross-candidate agreement. No digitized output was published.",
+      "candidateOutcomes": [
+        {
+          "id": "twelve-row-native-grid-path",
+          "status": "completed",
+          "runtimeMs": 3137.3628329999992
+        },
+        {
+          "id": "default",
+          "status": "completed",
+          "runtimeMs": 13706.378083
+        },
+        {
+          "id": "geometry-standard-12x1-centroid-2200",
+          "status": "completed",
+          "runtimeMs": 43118.590083
+        },
+        {
+          "id": "geometry-standard-12x1-path-2200",
+          "status": "completed",
+          "runtimeMs": 15444.960583000007
+        },
+        {
+          "id": "ink-path-2200",
+          "status": "completed",
+          "runtimeMs": 16300.470750000008
+        },
+        {
+          "id": "centroid-2200",
+          "status": "completed",
+          "runtimeMs": 26429.323542
+        },
+        {
+          "id": "morphology-2200",
+          "status": "completed",
+          "runtimeMs": 18564.330749999994
+        },
+        {
+          "id": "label-thresh-005",
+          "status": "completed",
+          "runtimeMs": 14164.501832999988
+        }
+      ],
+      "executionProfile": {
+        "version": 1,
+        "stageDurationsMs": {
+          "runtime_verification": 3232.879375,
+          "capture_preflight": 9041.56625,
+          "source_admission": 77.28787499999999,
+          "preprocessing": 9263.269417,
+          "ocr_and_layout": 2249.115249999999,
+          "engine_total": 163079.050458
+        },
+        "runnerMaxRssBytes": 64962560,
+        "scope": "Runner RSS excludes subprocesses; candidate times include loading, inference and vectorization. Use the process-tree profiler for sampled combined memory."
+      },
+      "outcome": "abstention",
+      "runtimeMs": 175986
+    }
+  ],
+  "summary": {
+    "quantitative": 7,
+    "abstentions": 1,
+    "failures": 0,
+    "quantitativeYield": 0.875,
+    "comparedSamples": 194007,
+    "semanticPassCount": 7,
+    "semanticFailureCount": 0,
+    "referenceQualifiedYield": null,
+    "globalRmseUv": 28.61593301886997,
+    "meanCaseCorrelation": 0.9599448545477912,
+    "meanCaseCoverage": 0.9931904761904761,
+    "totalRuntimeMs": 951152
+  },
+  "finishedAt": "2026-09-06T11:04:24.649Z",
+  "comparisonToBaseline": {
+    "allEightOutcomesAndAvailableCanonicalHashesIdentical": true,
+    "baselineReportSha256": "b7516c9ed416e689b14e8d3b48045bc8a42cb40162afef5d3081f8928eb052d0"
+  },
+  "sourceTreeSha256": "35e17cb1c4534d670d24e1144da680d0f463eee6c257a7312842526015574d7c",
+  "retainedReportSha256": "d6c437086635e52919e188905ae1258b7b80d35021fe0fbc4858c121e707113b"
+}

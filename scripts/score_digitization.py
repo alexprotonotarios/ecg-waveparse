@@ -6,7 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from ecg_benchmark.io import dump_json
+from ecg_benchmark.io import dump_json, load_json
+from ecg_benchmark.coordinates import contract_for_case
 from ecg_benchmark.scoring import (
     LEADS,
     align_and_score,
@@ -33,6 +34,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--uncertainty", type=Path)
     parser.add_argument("--case-id")
+    parser.add_argument("--coordinate-contract", type=Path, help="Independent expected segment/display support, version 1.")
+    parser.add_argument("--case-metadata", type=Path, help="Independent benchmark case metadata defining the expected layout and duration.")
+    parser.add_argument("--candidate-segments", type=Path, help="Exported segment map; never used as the expected placement.")
     parser.add_argument(
         "--expected-leads",
         help="Comma-separated leads that are visibly present in the source image.",
@@ -51,6 +55,9 @@ def main() -> None:
         annotations_path=args.annotations,
         uncertainty_path=args.uncertainty,
         case_id=args.case_id,
+        coordinate_contract=(load_json(args.coordinate_contract) if args.coordinate_contract else
+                             contract_for_case(load_json(args.case_metadata)) if args.case_metadata else None),
+        candidate_segments=load_json(args.candidate_segments)["segments"] if args.candidate_segments else None,
         expected_leads=(
             [lead.strip() for lead in args.expected_leads.split(",") if lead.strip()]
             if args.expected_leads

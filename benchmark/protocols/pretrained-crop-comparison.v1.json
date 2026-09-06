@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "collection": "development",
+  "frozenBeforeExecution": true,
+  "clinicalValidationUse": false,
+  "membership": "Same sixteen immutable crop images and truth arrays as decoder-experiment.v1.json; one controlled signal family.",
+  "candidate": "Felix ECG-Digitiser M1 fold 0 checkpoint d0e0d4c578d457367d3f78ae3739cf86a8d8524cd4f669c24140184e8cce5355",
+  "adaptation": "For correctly labelled isolated crops, aggregate the thirteen-channel model's non-background probability, then use the same WaveParse ridge vectorizer. Lead identity and physical units are supplied by the controlled crop contract, not inferred from the aggregation.",
+  "variant": {"testTimeMirroring": false, "accumulator": "float32", "device": "cpu", "threads": 2},
+  "foregroundThreshold": 0.5,
+  "requiredMeanRmseImprovementUv": 5,
+  "maximumPerCaseRmseRegressionUv": 10,
+  "maximumCoverageLoss": 0.01,
+  "maximumFabricatedGapSamples": 0,
+  "maximumSecondsPerCrop": 15,
+  "maximumProcessTreeRssGiB": 8,
+  "decision": "No production admission from this development comparison alone. Report domain mismatch and all failures. Keep current backend unless all criteria pass."
+}

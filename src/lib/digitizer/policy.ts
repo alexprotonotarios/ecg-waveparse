@@ -1,10 +1,10 @@
-import policyDocument from "../../../config/digitizer-policy.v2.json"
+import policyDocument from "../../../config/digitizer-policy.v3.json"
 
 type DigitizerPolicyThresholds = typeof policyDocument.thresholds
 
 function validatePolicy(thresholds: DigitizerPolicyThresholds) {
   if (
-    policyDocument.version !== 2 ||
+    policyDocument.version !== 3 ||
     !policyDocument.profileId ||
     !Number.isInteger(policyDocument.selectorCalibrationContractVersion) ||
     policyDocument.selectorCalibrationContractVersion < 1

@@ -4,20 +4,49 @@
   "title": "ECG digitization benchmark morphology and visibility annotations",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "caseId", "highErrorThresholdUv", "leads"],
+  "required": [
+    "version",
+    "caseId",
+    "highErrorThresholdUv",
+    "leads"
+  ],
   "properties": {
-    "version": { "const": 1 },
-    "caseId": { "type": "string", "pattern": "^[a-zA-Z0-9_-]+$" },
-    "highErrorThresholdUv": { "type": "number", "exclusiveMinimum": 0 },
+    "version": {
+      "const": 1
+    },
+    "caseId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "highErrorThresholdUv": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
     "leads": {
       "type": "object",
       "propertyNames": {
-        "enum": ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+        "enum": [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6"
+        ]
       },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["events", "occludedRanges"],
+        "required": [
+          "events",
+          "occludedRanges"
+        ],
         "properties": {
           "events": {
             "type": "array",
@@ -33,13 +62,35 @@
                 "minProminenceUv"
               ],
               "properties": {
-                "id": { "type": "string", "minLength": 1 },
-                "kind": { "type": "string", "minLength": 1 },
-                "sample": { "type": "integer", "minimum": 0 },
-                "direction": { "enum": ["peak", "trough"] },
-                "windowSamples": { "type": "integer", "minimum": 1 },
-                "minProminenceUv": { "type": "number", "minimum": 0 },
-                "requiresTurningPoint": { "type": "boolean" },
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sample": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "direction": {
+                  "enum": [
+                    "peak",
+                    "trough"
+                  ]
+                },
+                "windowSamples": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "minProminenceUv": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "requiresTurningPoint": {
+                  "type": "boolean"
+                },
                 "prominenceWindowSamples": {
                   "type": "integer",
                   "minimum": 1
@@ -63,14 +114,181 @@
                 "falseDeflectionThresholdUv"
               ],
               "properties": {
-                "startSample": { "type": "integer", "minimum": 0 },
-                "endSample": { "type": "integer", "minimum": 1 },
-                "reason": { "type": "string", "minLength": 1 },
+                "startSample": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "endSample": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                },
                 "falseDeflectionThresholdUv": {
                   "type": "number",
                   "exclusiveMinimum": 0
                 }
               }
+            }
+          },
+          "measurements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "labelMethod",
+                "visibility",
+                "referenceValue",
+                "polarity",
+                "baselineRange"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "enum": [
+                    "interval",
+                    "amplitude"
+                  ]
+                },
+                "labelMethod": {
+                  "enum": [
+                    "controlled",
+                    "adjudicated"
+                  ]
+                },
+                "visibility": {
+                  "enum": [
+                    "visible",
+                    "ambiguous",
+                    "unrecoverable"
+                  ]
+                },
+                "referenceValue": {
+                  "type": "number"
+                },
+                "polarity": {
+                  "enum": [
+                    -1,
+                    1
+                  ]
+                },
+                "levelUv": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "baselineRange": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "startSample",
+                    "endSample"
+                  ],
+                  "properties": {
+                    "startSample": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "endSample": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "startRange": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "startSample",
+                    "endSample"
+                  ],
+                  "properties": {
+                    "startSample": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "endSample": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "endRange": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "startSample",
+                    "endSample"
+                  ],
+                  "properties": {
+                    "startSample": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "endSample": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "peakRange": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "startSample",
+                    "endSample"
+                  ],
+                  "properties": {
+                    "startSample": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "endSample": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "interval"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "startRange",
+                      "endRange",
+                      "levelUv"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "amplitude"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "peakRange"
+                    ]
+                  }
+                }
+              ]
             }
           }
         }

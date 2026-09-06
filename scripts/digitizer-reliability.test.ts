@@ -93,6 +93,23 @@ test("configures both Open-ECG-Digitizer neural networks on the selected device"
   assert.doesNotMatch(config, /device: 'cpu'/)
 })
 
+test("nondefault physical gain reaches neural conversion and stability repeats", () => {
+  const options = {inputDir: "/tmp/input", outputDir: "/tmp/output", resampleSize: 1500,
+    vectorizer: "probability-centroid" as const, device: "mps" as const}
+  const historical = digitizerTestUtils.openEcgConfig(options)
+  assert.equal(digitizerTestUtils.openEcgConfig({...options, gainMmPerMv: 10}), historical)
+  for (const gainMmPerMv of [5, 20]) {
+    assert.match(digitizerTestUtils.openEcgConfig({...options, gainMmPerMv}), new RegExp(`gain_mm_per_mv: ${gainMmPerMv}`))
+    const source = {id: "gain-source", label: "Gain source", status: "completed" as const, score: 0,
+      parameters: {...options, gainMmPerMv}}
+    const repeat = digitizerTestUtils.stabilityCandidateConfig(source, "cpu-confirmation", "cpu")
+    assert.equal(repeat.gainMmPerMv, gainMmPerMv)
+  }
+  for (const gainMmPerMv of [0, -10, NaN, Infinity, 7.5]) {
+    assert.throws(() => digitizerTestUtils.openEcgConfig({...options, gainMmPerMv}), /supported physical gain/)
+  }
+})
+
 test("uses the corrected constrained layout profile for 6x2 pages with a rhythm row", () => {
   const config = digitizerTestUtils.openEcgConfig({
     inputDir: "/tmp/input",

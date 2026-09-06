@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "historicalProfileSha256": "73ccacb11f0f564e2a1fa7067dd0af2c380d894bfbb203d823a2d6dd96c8eb38",
+  "numericalProfileReproduced": true,
+  "exactRecordedRunId": "benchmark_multisource_truth_v1_subset_100_digitizer_20260820113112_daa7195a",
+  "extractionPipelineCommit": "6e3910827c617fc0034195eb5c15fa8061c5d6f3-dirty",
+  "extractionSourceSnapshotAvailable": false,
+  "defaultRunReproductionFailed": true,
+  "correctRunReproductionPassed": true,
+  "trainingCases": {
+    "development": 72,
+    "validation": 28
+  },
+  "independentGroups": {
+    "development": 72,
+    "validation": 28
+  },
+  "manifestFileSha256": "526ecbc31b54a14c29f778173e9e3054f555ef59b97ff04404a88ddad74df719",
+  "runFileSha256": "d33e29ca1169ccaabb746b0e9dda318902db390779f7e1239c9725897d4aed15",
+  "scoreFilesSha256": "9f18f899fb61d5ef4f0cbb4fe40ebbfb7851f1bcda1709bb5bd5e9fd84b38288",
+  "scoreFileCount": 698,
+  "productionProfileChanged": false,
+  "clinicalValidationUse": false
+}

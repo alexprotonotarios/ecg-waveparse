@@ -103,6 +103,20 @@ class _ThresholdedLeadIdentifier:
         return self.identifier(*args, **kwargs)  # type: ignore[operator]
 
 
+class _GainCalibratedLeadIdentifier:
+    """Supply source gain at the upstream pixel-to-voltage conversion boundary."""
+
+    def __init__(self, identifier: object, gain_mm_per_mv: float) -> None:
+        if isinstance(gain_mm_per_mv, bool) or gain_mm_per_mv not in (5.0, 10.0, 20.0):
+            raise ValueError("Unsupported source gain; expected 5, 10 or 20 mm/mV.")
+        self.identifier = identifier
+        self.mv_per_mm = 1.0 / gain_mm_per_mv
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        kwargs["mv_per_mm"] = self.mv_per_mm
+        return self.identifier(*args, **kwargs)  # type: ignore[operator]
+
+
 def dark_ink_probability(
     image: Tensor,
     signal_probability: Tensor,
@@ -155,9 +169,12 @@ class FidelityInferenceWrapper(InferenceWrapper):
         dark_ink_support_radius: int = 48,
         forced_layout_substring: str | None = None,
         lead_label_threshold: float = 0.8,
+        gain_mm_per_mv: float = 10.0,
         feature_cache_path: str | None = None,
         **kwargs: object,
     ) -> None:
+        if isinstance(gain_mm_per_mv, bool) or gain_mm_per_mv not in (5.0, 10.0, 20.0):
+            raise ValueError("Unsupported source gain; expected 5, 10 or 20 mm/mV.")
         super().__init__(*args, **kwargs)
         self.dark_ink_threshold = dark_ink_threshold
         self.dark_ink_strength = dark_ink_strength
@@ -173,6 +190,10 @@ class FidelityInferenceWrapper(InferenceWrapper):
                 self.identifier,
                 lead_label_threshold,
             )
+        # The upstream default is 0.1 mV/mm. Keep its exact default path, but
+        # never label a nondefault-gain waveform after converting it at 10 mm/mV.
+        if gain_mm_per_mv != 10.0:
+            self.identifier = _GainCalibratedLeadIdentifier(self.identifier, gain_mm_per_mv)
 
     def _get_feature_maps(self, image: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         if self.feature_cache_path is not None:

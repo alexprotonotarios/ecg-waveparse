@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "collection": "development",
+  "frozenBeforeExecution": true,
+  "clinicalValidationUse": false,
+  "cropExperiment": {
+    "families": ["apex", "notch", "negative", "broad", "low_amplitude", "pacing_mark", "overlap", "occluded"],
+    "pixelsPerMm": [4, 8],
+    "primaryEndpoint": "mean paired RMSE in uV over all available comparable path points",
+    "requiredMeanImprovementUv": 5,
+    "maximumPerCaseRmseRegressionUv": 10,
+    "maximumCoverageLoss": 0.01,
+    "maximumSecondsPerCrop": 5,
+    "segmentationScope": "Identical source-darkness evidence masks and independently known crop identity and calibration; no learned segmentation performance is inferred.",
+    "fullPipelineAdmission": "Only a candidate passing the paired crop criteria and model-rights/runtime checks proceeds to full-image promotion testing. Failure means no production change."
+  },
+  "geometryExperiment": {
+    "gridNodes": "Known synthetic landmarks, not a production grid detector",
+    "maximumRoundTripErrorPixels": 0.000001,
+    "maximumFlatRegressionPixels": 0.1,
+    "maximumCurvedResidualPixels": 0.25,
+    "requiredCurvedErrorReductionFraction": 0.5,
+    "productionAdmission": "Requires independent grid-node detection and image-level evidence beyond this coordinate feasibility experiment."
+  },
+  "verifierExperiment": {
+    "maximumTruePathUnsupportedFraction": 0.02,
+    "maximumTruePathOmittedFraction": 0.02,
+    "minimumFaultFraction": 0.02,
+    "tolerancePixels": 2,
+    "policy": "Advisory evidence; no automatic publication or morphology normalization."
+  }
+}

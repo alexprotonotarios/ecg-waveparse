@@ -2,6 +2,8 @@ import { spawn } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import type { RunRecord, RunAssetKey, RunAsset } from "../../../src/lib/runs"
+import type { InterpreterEvidence } from "../../../src/lib/digitizer/interpreter-evidence"
+export type { InterpreterEvidence, MeasurementEvidenceReference } from "../../../src/lib/digitizer/interpreter-evidence"
 
 declare const __WAVEPARSE_VERSION__: string
 declare const __WAVEPARSE_FORMAT__: string
@@ -53,6 +55,9 @@ export class Digitizer {
   }
   getRun(runId: string): Promise<RunResult | null> {
     return this.request({ operation: "get", runId })
+  }
+  getEvidence(runId: string): Promise<InterpreterEvidence | null> {
+    return this.request({ operation: "evidence", runId })
   }
   review(runId: string, options: ReviewOptions): Promise<RunResult> {
     return this.request({ operation: "review", runId, ...options })

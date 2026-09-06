@@ -2,17 +2,50 @@ name: WaveParse packages
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['packages/**', 'src/lib/**', 'ecg_pipeline/**', 'ecg_benchmark/**', 'benchmark/suites/**', 'config/**', 'docs/waveparse/**', 'LICENSE*', 'LICENSES/**', 'THIRD_PARTY_NOTICES.md', 'requirements*', 'scripts/*waveparse*', '.github/workflows/*waveparse*']
+  push:
+    branches: [main]
 permissions:
   contents: read
 jobs:
+  contracts:
+    name: Fast package contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.9'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.5'
+      - run: pnpm install --frozen-lockfile
+      - run: python -m pip install -r requirements-waveparse-build.txt -r requirements-waveparse-tests.txt
+      - run: pnpm waveparse:build
+      - run: pnpm waveparse:test
+      - run: python -m unittest scripts.test_waveparse_runtime scripts.test_waveparse_release scripts.test_score_digitization scripts.test_scoring_coordinates scripts.test_waveparse_regression_gates scripts.test_evaluation_contract scripts.test_calibrate_candidate_selector scripts.test_engineering_experiments scripts.test_input_boundaries scripts.test_selection_ablation scripts.test_public_engineering_pilot scripts.test_printed_calibration scripts.test_rendered_calibration scripts.test_pmcardio_identity scripts.test_labelled_measurements scripts.test_current_selection_experiment scripts.test_platform_matrix scripts.test_final_engineering_membership scripts.test_physical_settings scripts.test_platform_evidence
+      - name: Freeze identical synthetic inputs for both supported platforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_benchmark.py --suite benchmark/suites/smoke.json --output "$RUNNER_TEMP/frozen-fixtures/smoke"
+          python scripts/generate_benchmark.py --suite benchmark/suites/waveparse-3x4.json --output "$RUNNER_TEMP/frozen-fixtures/three-by-four"
+          python scripts/generate_benchmark.py --suite benchmark/suites/waveparse-12x1.json --output "$RUNNER_TEMP/frozen-fixtures/twelve-by-one"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waveparse-frozen-fixtures
+          path: ${{ runner.temp }}/frozen-fixtures/
   package:
+    needs: contracts
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +66,10 @@ jobs:
       - run: pnpm waveparse:test && python -m unittest scripts.test_waveparse_runtime
       - run: python -m unittest scripts.test_waveparse_release
       - run: WAVEPARSE_PYTHON=$(command -v python) pnpm waveparse:verify
+      - uses: actions/download-artifact@v4
+        with:
+          name: waveparse-frozen-fixtures
+          path: ${{ runner.temp }}/frozen-fixtures/
       - name: Explicit runtime setup and real installed-package inference
         env:
           MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
@@ -45,9 +82,12 @@ jobs:
           python -m ecg_waveparse setup --runtime-dir "$RUNNER_TEMP/runtime"
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/waveparse-runtime-inventory.py --manifest config/waveparse-runtime.json --output "$RUNNER_TEMP/runtime-licences.json"
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" -m unittest scripts.test_native_grid_digitizer
+          PYTHONPATH="$RUNNER_TEMP/runtime/engine" "$RUNNER_TEMP/runtime/engine/.venv/bin/python" -m unittest scripts.test_fidelity_inference_wrapper
           "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/test_waveparse_regression_gates.py
-          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/generate_benchmark.py --suite benchmark/suites/smoke.json --output "$RUNNER_TEMP/synthetic"
-          node scripts/waveparse-inference-smoke.mjs "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/synthetic/cases/clean/image.png" "$RUNNER_TEMP/runtime" "$RUNNER_TEMP/results" > "$RUNNER_TEMP/inference.json"
+          node scripts/waveparse-regression.mjs --consumer "$RUNNER_TEMP/consumer" --runtime "$RUNNER_TEMP/runtime" --python "$RUNNER_TEMP/runtime/engine/.venv/bin/python" --manifest "$RUNNER_TEMP/frozen-fixtures/smoke/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/three-by-four/manifest.json" --manifest "$RUNNER_TEMP/frozen-fixtures/twelve-by-one/manifest.json" --output "$RUNNER_TEMP/regression" --device cpu
+          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/check_waveparse_regression.py --report "$RUNNER_TEMP/regression/report.json" --gates benchmark/suites/waveparse-smoke-gates.json --output "$RUNNER_TEMP/regression/library-gates.json"
+          "$RUNNER_TEMP/runtime/engine/.venv/bin/python" scripts/platform_evidence.py pack --first "$RUNNER_TEMP/regression" --output "$RUNNER_TEMP/platform-evidence"
+          node scripts/waveparse-inference-smoke.mjs "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/frozen-fixtures/smoke/cases/clean/image.png" "$RUNNER_TEMP/runtime" "$RUNNER_TEMP/results" > "$RUNNER_TEMP/inference.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -56,3 +96,39 @@ jobs:
             dist/*
             ${{ runner.temp }}/inference.json
             ${{ runner.temp }}/runtime-licences.json
+            ${{ runner.temp }}/regression/*.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: waveparse-equivalence-evidence-${{ matrix.os }}
+          path: ${{ runner.temp }}/platform-evidence/
+  platform-equivalence:
+    name: Supported platform equivalence
+    if: ${{ always() }}
+    needs: [contracts, package]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Reject missing or failed prerequisites
+        if: ${{ needs.contracts.result != 'success' || needs.package.result != 'success' }}
+        run: exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.9'
+      - run: python -m pip install -r requirements-waveparse-tests.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: waveparse-equivalence-evidence-ubuntu-24.04
+          path: platform-results/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: waveparse-equivalence-evidence-macos-15
+          path: platform-results/macos
+      - name: Compare the same input bytes, waveforms, uncertainty and policy
+        run: python scripts/platform_evidence.py compare --first platform-results/linux --second platform-results/macos --limits benchmark/protocols/platform-parity.v1.json --output platform-results/equivalence.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: waveparse-platform-equivalence
+          path: platform-results/equivalence.json
