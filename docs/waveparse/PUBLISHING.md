@@ -30,7 +30,7 @@ privately; do not put them or API tokens in source files or messages.
 | Protected publication environment | `release` |
 | Initial prepared version | `0.1.0` |
 
-The package repository metadata points to the existing private clean repository.
+The package repository metadata points to the clean source-preview repository.
 Registry ownership, authentication and public visibility remain separate from
 local package verification. The existing data-bearing `ecg_digitizer` repository must stay
 private. Do not copy its git history into the release repository.
@@ -86,7 +86,7 @@ Use GitHub-hosted runners and short-lived OIDC for subsequent releases. npm
 requires CLI 11.5.1 or newer and Node 22.14.0 or newer; the prepared runtime uses
 Node 22.22.2. The publication job pins npm CLI 11.15.0 separately from the inference runtime.
 Automatic npm provenance requires a public source repository as well as a public
-package, so approve clean-source visibility before the actual public release.
+package. Source-preview visibility is separate from the registry-release decision.
 
 After each registry upload, verify that the expected version and owner are
 visible, download the registry archives and compare them with the reviewed
@@ -105,8 +105,8 @@ publication.
    workflow with `target: verify`, its full source commit and four approved
    Ubuntu archive hashes. Earlier CI archives can exercise this verification
    path, but must not be confused with the final release candidate.
-4. Make the clean source repository public, enable the release variable for the
-   approved upload, publish to npm and PyPI, then verify registry downloads and
+4. Confirm public access to the clean source repository, enable the release variable
+   for the approved upload, publish to npm and PyPI, then verify registry downloads and
    fresh installations. Configure npm's trusted publisher after its first upload.
 
 References checked for this preparation:

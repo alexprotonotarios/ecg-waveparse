@@ -1,6 +1,6 @@
 # Native package CI — 5 September 2026
 
-The clean source repository is private:
+The clean source repository was private when these checks ran on 5 September 2026:
 [alexprotonotarios/ecg-waveparse](https://github.com/alexprotonotarios/ecg-waveparse).
 Its initial 110-file source snapshot contains no original ECGs, model files,
 storage or history from the original data-bearing repository. No package has

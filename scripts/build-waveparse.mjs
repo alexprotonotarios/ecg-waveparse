@@ -147,7 +147,7 @@ const sourcePackage = await readJson('package.json');
 sourcePackage.name = 'ecg-waveparse-source';
 sourcePackage.scripts = Object.fromEntries(Object.entries(sourcePackage.scripts).filter(([name]) => name.startsWith('waveparse:')));
 await fs.writeFile(path.join(source, 'package.json'), JSON.stringify(sourcePackage, null, 2) + '\n');
-await fs.writeFile(path.join(source, 'RELEASE-PREPARATION.txt'), 'Registry publishing is disabled. See THIRD_PARTY_NOTICES.md before public distribution.\n');
+await fs.writeFile(path.join(source, 'RELEASE-PREPARATION.txt'), 'Source preview. Registry publishing remains disabled. See THIRD_PARTY_NOTICES.md for code licences and the separately downloaded runtime.\n');
 await fs.writeFile(path.join(source, '.gitignore'), 'node_modules/\nbuild/\ndist/\n.venv/\n__pycache__/\n*.pyc\n*.tsbuildinfo\n.env*\npackages/javascript/dist/\npackages/javascript/runtime/\npackages/python/src/ecg_waveparse/runtime/\npackages/javascript/docs/\npackages/python/docs/\npackages/javascript/README.md\npackages/python/README.md\npackages/javascript/LICENSE\npackages/python/LICENSE\npackages/javascript/LICENSES/\npackages/python/LICENSES/\npackages/javascript/THIRD_PARTY_NOTICES.md\npackages/python/THIRD_PARTY_NOTICES.md\n');
 await fs.writeFile(path.join(root, 'dist/bundle-inputs.json'), JSON.stringify({ externalJavaScriptDependencies: [], inputs: [...bundleInputs].sort() }, null, 2) + '\n');
 execFileSync('tar', ['-czf', path.join(root, 'dist', `${release.name}-${release.version}-source.tar.gz`), '-C', source, '.'], { env: { ...process.env, COPYFILE_DISABLE: '1' } });

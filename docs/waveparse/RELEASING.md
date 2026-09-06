@@ -11,14 +11,16 @@ Run `node scripts/audit-waveparse-source.mjs build/waveparse/source dist/source-
 before transferring clean source. `PUBLISHING.md` records the intended registry
 configuration; `LICENSING.md` records what has and has not been established.
 
-Public distribution is deliberately disabled for this preparation. Before enabling
-it, complete the licensing actions in `THIRD_PARTY_NOTICES.md`, verify ownership of
+The clean library source is shared as a source preview. npm/PyPI publication is
+disabled for this preparation. Before enabling registry uploads, complete the
+licensing actions in `THIRD_PARTY_NOTICES.md`, verify ownership of
 the npm/PyPI names and approve the exact artifacts. A 404 during a registry lookup
 does not reserve a package name. No tokens are required for preparation.
 
-The current repository contains historical ECG data. Release the allowlisted clean
-source artifact into a new public source history; do not expose this repository's
-existing history. Preserve the local originals and evidence.
+The original `ecg_digitizer` development repository contains historical ECG data.
+The separate `ecg-waveparse` repository uses an audited clean source history;
+public contributions belong there. Do not import the original development
+history or private data into it. Preserve the local originals and evidence.
 
 After publication, consumers upgrade through ordinary dependency update PRs and
 redeploy their worker. A tagged release binds package, engine, model and policy

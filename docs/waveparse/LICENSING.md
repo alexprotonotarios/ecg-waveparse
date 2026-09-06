@@ -63,7 +63,12 @@ Evidence links:
 
 ## Clarification prepared for the release owner
 
-Before public publication, obtain an explicit answer from the ECG engine/model
+The clean library source can be shared under the code licences above while these
+questions remain documented. Model weights are not part of that source preview.
+The preview is not an assurance that the separately downloaded runtime has been
+cleared for every intended use.
+
+Before the planned npm/PyPI release, obtain an explicit answer from the ECG engine/model
 maintainers confirming whether CC BY-SA 4.0 covers both named neural weight
 files and their use/distribution in a separately installed commercial runtime.
 Also confirm the three RapidOCR model files' redistribution terms. Ask whether

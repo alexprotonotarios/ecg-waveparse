@@ -1,9 +1,9 @@
 # Version 0.1.0 release verification — 5 September 2026
 
-This records the local preparation baseline. The clean source repository has
-since been created privately at `alexprotonotarios/ecg-waveparse`; the native
-workflow follow-up is recorded in HOSTED-CI.md. Nothing has been published to
-npm/PyPI or made public.
+This records the local preparation baseline. The clean source repository was
+initially created privately at `alexprotonotarios/ecg-waveparse`; the native
+workflow follow-up is recorded in HOSTED-CI.md. Source-preview sharing is separate
+from this historical test record. No package has been published to npm/PyPI.
 
 ## Current package identity and reproducibility
 
@@ -158,7 +158,7 @@ vendor update must retain that boundary in its verification record.
 4. Complete registry publishing configuration using PUBLISHING.md. Both
    `alexprotonotarios` accounts and 2FA were verified on 6 September 2026;
    package ownership and publisher connections are still separate steps.
-5. Approve the exact release artifacts and clean-source public visibility.
+5. Confirm public access to the clean source and approve the exact registry-release artifacts.
 
 The documented 3x4 accuracy limitation and 12x1 abstention must accompany any
 research/developer preview. The saved historical clinical-validation metrics

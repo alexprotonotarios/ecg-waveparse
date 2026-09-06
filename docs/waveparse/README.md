@@ -7,9 +7,16 @@ versioned TypeScript/Python engine. It extracts lead signals and produces CSVs,
 a diagnostic overlay, quality/provenance evidence and a clean ECG-paper render.
 It does not diagnose ECGs. Outputs may require review, be incomplete, or abstain.
 
-Version **0.1.0 is release preparation**. Packages have not been published to
-npm or PyPI. Use the built artifacts below; do not assume a registry package
-with the same name is this project.
+**Source preview:** the library source is available in
+[alexprotonotarios/ecg-waveparse](https://github.com/alexprotonotarios/ecg-waveparse).
+Version **0.1.0 has not been published to npm or PyPI**. Build the artifacts below;
+do not assume a registry package with the same name is this project.
+
+Model weights and patient ECGs are not included. Explicit runtime setup downloads
+upstream components separately. Model-specific licence clarification remains open;
+see the [licensing evidence](https://github.com/alexprotonotarios/ecg-waveparse/blob/main/docs/waveparse/LICENSING.md)
+and [third-party notices](https://github.com/alexprotonotarios/ecg-waveparse/blob/main/THIRD_PARTY_NOTICES.md)
+for the code licences and runtime boundary.
 
 ## Requirements
 
@@ -31,7 +38,26 @@ and an explicitly installed inference runtime. This is a server/local library,
 not browser JavaScript or a hosted API client. Windows, Linux ARM and CUDA are
 outside the initial support matrix.
 
-## Install a prepared package
+## Build from source
+
+With the supported Node/Python versions above and pnpm 10.34.5 installed:
+
+```sh
+git clone https://github.com/alexprotonotarios/ecg-waveparse.git
+cd ecg-waveparse
+python3.12 -m venv .venv
+. .venv/bin/activate
+pnpm install --frozen-lockfile
+python -m pip install -r requirements-waveparse-build.txt
+pnpm waveparse:build
+python -m build --no-isolation packages/python --outdir dist
+```
+
+This creates the npm tarball, Python wheel/sdist and corresponding-source archive
+in `dist/`. Building the packages does not download inference models or process
+ECGs. Install the resulting package into your application as shown below.
+
+## Install a built package
 
 JavaScript/TypeScript, inside your application's backend or worker project:
 
@@ -192,7 +218,7 @@ No registry release silently rewrites stored ECG results.
 
 See `CONTRIBUTING.md`, `API.md` and `RELEASING.md` in the WaveParse documentation
 directory of the clean source archive. See `THIRD_PARTY_NOTICES.md` for licensing
-boundaries and publication blockers. No patient/reference ECGs are distributed.
+boundaries and the remaining registry-release work. No patient/reference ECGs are distributed.
 `VERIFICATION.md` records the tested platforms, synthetic parity results and
 remaining release checks. These documents are also bundled in each package's `docs` directory.
 `REGRESSION.md` describes the installed-package engineering suite;
