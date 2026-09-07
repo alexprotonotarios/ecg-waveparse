@@ -2,8 +2,10 @@
 
 The original Pro report remains the requirement source. The earlier campaign
 receipt records an earlier source snapshot; it does not establish completion
-of the work below. This continuation has not been committed, published or
-clinically validated.
+of the work below. Source-preview delivery is now recorded in the
+[later delivery record](DELIVERY-2026-09-06.md), including draft PR #1 and the
+separately tested macOS CPU correction. Registry publication, model
+redistribution and clinical validation are not claimed.
 
 ## Printed settings and quantitative refusal
 
@@ -314,7 +316,9 @@ remain unchanged. This is regression reproduction, not independent accuracy.
 ## Remaining delivery requirements
 
 The [criteria audit](ACCEPTANCE-AUDIT-2026-09-06.md) remains open for exact-candidate
-hosted release verification and the release owner's exact-artifact decision.
+hosted release verification. The owner has since approved the bounded source
+preview and deferred registry/model distribution; the
+[later delivery record](DELIVERY-2026-09-06.md) records that decision and the draft PR.
 Final report/archive identities are recorded separately from the numerical
 payload so documentation changes do not masquerade as new inference evidence.
 CI now prepares
@@ -325,7 +329,8 @@ are labelled refusal parity. Quantitative drift, altered inputs, duplicates,
 missing cases and evidence tampering fail the local comparison tests. These are
 prepared workflow changes, not observed hosted results.
 
-GitHub currently refuses branch protection on
-the private development repository's plan; the public source-preview repository
-supports the feature but currently has no protection. Neither fact is a passing
-required-check enforcement result.
+Initial inspection found that GitHub refused branch protection on the private
+development repository's plan and that public main had no protection. Following
+owner approval, the two required GitHub Actions checks were enabled on public
+main and reloaded. Administrator enforcement remains unchanged. Hosted native
+inference and comparison are still in progress; configuration is not their result.

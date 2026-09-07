@@ -12,13 +12,18 @@ It does not diagnose ECGs. Outputs may require review, be incomplete, or abstain
 Version **0.1.0 has not been published to npm or PyPI**. Build the artifacts below;
 do not assume a registry package with the same name is this project.
 
-The 6 September engineering changes are prepared locally. The public preview
-and the first campaign's archived artifacts precede the
+The 6 September engineering changes are pushed in
+[draft PR #1](https://github.com/alexprotonotarios/ecg-waveparse/pull/1).
+The first campaign's archived artifacts precede the
 [continuation evidence](COMPLETION-WORK-2026-09-06.md). The
 [25-patient final evaluation](FINAL-EVALUATION-2026-09-06.md) returned 19 signals,
-abstained on six and qualified four under the fixed engineering gates. Hosted
-verification and the owner's exact-artifact decision remain open in the
-[criteria audit](ACCEPTANCE-AUDIT-2026-09-06.md). Reproduce each recorded
+abstained on six and qualified four under the fixed engineering gates. The
+[delivery record](DELIVERY-2026-09-06.md) records the owner's source-preview-only
+approval and the later Mac CPU correction. All required hosted checks now pass
+at `693f6bf`, including eight-case Linux/macOS equivalence independently verified
+from the downloaded artifacts. The [criteria audit](ACCEPTANCE-AUDIT-2026-09-06.md)
+records all 20 engineering dispositions and the remaining accuracy, resource
+and rights limitations. Reproduce each recorded
 experiment using its matching source archive and payload identity; the earlier
 receipt does not certify the current working tree.
 
