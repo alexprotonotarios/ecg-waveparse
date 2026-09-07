@@ -2,6 +2,10 @@ import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import { promises as fs } from "node:fs"
 import path from "node:path"
+import { calibrationEvidence, segmentSourceRegion, sourceTransformChain, transformPoint } from "@/lib/digitizer/geometry-evidence"
+import { directContributor, intervalLineage, type IntervalLineage } from "@/lib/digitizer/lineage"
+import { candidateAncestry } from "@/lib/digitizer/candidate-ancestry"
+import { bindPrintedCalibrationSource, calibrationIsUsable, calibrationPublicationBlock } from "@/lib/digitizer/calibration-settings"
 import { promisify } from "node:util"
 
 import type {
@@ -71,11 +75,13 @@ import {
   selectorCalibrationEvidence,
 } from "@/lib/digitizer/selector-calibration"
 import {
-  applyInputQualityPublicationGate,
+  retainReviewableOutputWithAdvisoryQuality,
   resolvePublicationDecision,
   type PublicationReasonCode,
 } from "@/lib/digitizer/publication-policy"
 import { normalizeSupportedEcgLayout } from "@/lib/ecg-layouts"
+import { EvidenceContractError, sourceTimingEvidenceState } from "@/lib/digitizer/physical-contracts"
+import { buildSegmentEvidence, signalSupport, type SegmentDescriptor } from "@/lib/digitizer/segment-evidence"
 
 const execFileAsync = promisify(execFile)
 
@@ -294,14 +300,23 @@ type PublishedCandidateResult = {
 type DigitizerExecutionOptions = {
   signal?: AbortSignal
   candidateMode?: "production" | "benchmark"
+  onStage?: (stage: string, durationMs: number) => void
 }
 
-function subprocessEnvironment(): NodeJS.ProcessEnv {
+function subprocessEnvironment(
+  device?: string,
+  hostPlatform: NodeJS.Platform = process.platform
+): NodeJS.ProcessEnv {
   const environment = { ...process.env }
   delete environment.CUES_ECG_DIGITIZER_WORKER_SECRET
   environment.PYTHONPATH = [RESOURCE_ROOT, environment.PYTHONPATH]
     .filter(Boolean)
     .join(path.delimiter)
+  if (hostPlatform === "darwin" && device === "cpu") {
+    // These short-lived inference processes must release large temporary CPU
+    // matrices instead of retaining them in Apple's allocator cache.
+    environment.MallocLargeCache = "0"
+  }
   return environment
 }
 
@@ -358,6 +373,7 @@ export async function digitizeRun(
   }
 
   let prepared: PreparedRunInput
+  const preparationStarted = performance.now()
   try {
     prepared = await prepareRunInput(run, inputAsset, options.signal)
     if (prepared.report.sourceSha256 !== verifiedSourceSha256) {
@@ -376,9 +392,30 @@ export async function digitizeRun(
     }
   }
 
+  options.onStage?.("preprocessing",performance.now()-preparationStarted)
   const benchmarkMode = options.candidateMode === "benchmark"
+  const layoutStarted=performance.now()
   const geometry = await detectLayoutGeometry(prepared, options.signal)
+  options.onStage?.("ocr_and_layout",performance.now()-layoutStarted)
   const planning = analyzeCandidatePlanningContext(prepared.report, geometry)
+  const calibrationBlock = calibrationPublicationBlock(geometry.calibration)
+  if (calibrationBlock) {
+    return {
+      status: "failed",
+      publicationDecision: { policyId: DIGITIZER_POLICY_ID, policyVersion: DIGITIZER_POLICY_VERSION,
+        outcome: "failed", reasonCode: calibrationBlock },
+      message: calibrationBlock === "calibration_conflict"
+        ? "Printed speed or gain conflicts with the available calibration evidence. The original image remains available; quantitative extraction requires resolving the settings."
+        : "The ECG speed or gain is unsupported by the available physical calibration evidence. The original image remains available; no quantitative CSV was produced.",
+      digitizer: { engine: "Open-ECG-Digitizer", candidates: [], evidence: buildPipelineEvidence({
+        preprocessing: prepared.report, geometry, planning, primaryPlan: [], candidates: [], selectionCandidates: [],
+        nativeGridCandidates: [], nativeGridStructurallyComplete: false, coreAgreementReached: false,
+        recoveryExpanded: false, reasonCode: calibrationBlock, stability: notRequiredStabilityEvidence(),
+      }) },
+      assets: { ...run.assets, ...await preprocessingRunAssets(prepared) },
+      updatedAt: new Date().toISOString(),
+    }
+  }
   const {
     adaptivePreprocessingEligible,
     lowResolutionNativeUpscaleTarget,
@@ -441,6 +478,7 @@ export async function digitizeRun(
       LEAD_ORDER.every((lead) => candidateHasPublishableLead(candidate, lead))
   )
   const candidates: CandidateResult[] = [...nativeGridCandidates]
+  const sourceCalibration = validatedCalibration(geometry)
   let productionNeuralCandidateCount = 0
   const runProductionCandidate = async (
     candidate: DigitizerCandidateConfig
@@ -458,6 +496,9 @@ export async function digitizeRun(
       prepared,
       {
         ...candidate,
+        ...(sourceCalibration && sourceCalibration.gainMmPerMv !== 10
+          ? { gainMmPerMv: sourceCalibration.gainMmPerMv }
+          : {}),
         planningPhase:
           candidate.planningPhase ?? (benchmarkMode ? "benchmark" : "recovery"),
         scheduleReason:
@@ -882,7 +923,7 @@ export async function digitizeRun(
     hasPrimarySelection || safestCandidate || reviewableCandidate
       ? undefined
       : selectPartialLeadCandidate(selectionCandidates)
-  const decision = applyInputQualityPublicationGate(
+  const decision = retainReviewableOutputWithAdvisoryQuality(
     resolvePublicationDecision({
       sourceVerified: sourceVerifiedCandidate,
       adaptivePreprocessed: adaptivePreprocessedCandidate,
@@ -973,6 +1014,7 @@ export async function digitizeRun(
     stabilityResult.confirmed
       ? decision.reasonCode
       : "unstable_neural_confirmation"
+  const exportStarted=performance.now()
   const published = await publishSelectedCandidate(
     run,
     selected,
@@ -985,6 +1027,7 @@ export async function digitizeRun(
     options.signal
   )
   const preprocessingAssets = await preprocessingRunAssets(prepared)
+  options.onStage?.("export_and_provenance",performance.now()-exportStarted)
   const publicCandidates = candidates.map((candidate) => ({
     ...publicCandidate(candidate),
     selected: candidate.id === selected.id,
@@ -1058,6 +1101,7 @@ function assetsWithoutQuantitativeOutputs(
   delete reviewAssets.canonicalCsv
   delete reviewAssets.segmentsCsv
   delete reviewAssets.uncertaintyCsv
+  delete reviewAssets.segmentMapJson
   delete reviewAssets.paperRender
   return reviewAssets
 }
@@ -1193,6 +1237,7 @@ async function runCandidate(
       device: candidate.device,
       darkInkEnhancement: candidate.darkInkEnhancement,
       darkInkSupportRadius: candidate.darkInkSupportRadius,
+      gainMmPerMv: candidate.gainMmPerMv,
       layoutConstraint: candidate.layoutConstraint,
       featureCachePath,
     })
@@ -1205,7 +1250,7 @@ async function runCandidate(
         ["-m", "src.digitize", "--config", configPath],
         {
           cwd: openEcgDirPath(),
-          env: subprocessEnvironment(),
+          env: subprocessEnvironment(candidate.device),
           maxBuffer: 32 * 1024 * 1024,
           signal,
           timeout: 180_000,
@@ -1392,10 +1437,13 @@ async function runNativeGridCandidate(
   )
   const localPath = relativePath(candidateDir)
   const startedAt = performance.now()
+  const sourceCalibration = validatedCalibration(geometry)
   const parameters: DigitizerCandidateConfig = {
     kind: "native-grid",
     id,
     label,
+    ...(sourceCalibration && sourceCalibration.gainMmPerMv !== 10
+      ? { gainMmPerMv: sourceCalibration.gainMmPerMv } : {}),
     resampleSize:
       prepared.report.workingImage?.width ?? prepared.report.source.width,
     ...(upscaleToMaxDimension ? { upscaleToMaxDimension } : {}),
@@ -1795,7 +1843,7 @@ async function detectLayoutGeometry(
   signal?: AbortSignal
 ): Promise<LayoutGeometryReport> {
   const workingGeometry = {
-    ...(await detectLayoutGeometryAtPath(prepared.preparedPath, signal)),
+    ...(await detectLayoutGeometryAtPath(prepared.preparedPath, signal, prepared.sourcePath, prepared.report.sourceSha256, prepared.report.source)),
     detectedInputVariant:
       prepared.report.annotationMask.maskedPixels > 0
         ? ("annotation-masked" as const)
@@ -1809,7 +1857,10 @@ async function detectLayoutGeometry(
   const correctedGeometry = {
     ...(await detectLayoutGeometryAtPath(
       prepared.geometryCorrectedPath,
-      signal
+      signal,
+      prepared.sourcePath,
+      prepared.report.sourceSha256,
+      prepared.report.source
     )),
     detectedInputVariant: "geometry-corrected" as const,
     coordinateSpace: "geometry-corrected" as const,
@@ -1832,7 +1883,10 @@ async function detectLayoutGeometry(
 
 async function detectLayoutGeometryAtPath(
   inputPath: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  calibrationSourcePath?: string,
+  sourceSha256?: string,
+  sourceSize?: { width: number; height: number },
 ): Promise<LayoutGeometryReport> {
   try {
     const { stdout } = await execFileAsync(
@@ -1841,6 +1895,7 @@ async function detectLayoutGeometryAtPath(
         LAYOUT_DETECTOR_PATH,
         "--input",
         inputPath,
+        ...(calibrationSourcePath ? ["--calibration-source", calibrationSourcePath] : []),
       ],
       {
         cwd: RESOURCE_ROOT,
@@ -1850,8 +1905,13 @@ async function detectLayoutGeometryAtPath(
         timeout: 30_000,
       }
     )
-    return attachSemanticLeadEvidence(parseLayoutGeometryReport(stdout))
+    const geometry = parseLayoutGeometryReport(stdout)
+    if (sourceSha256 && sourceSize) {
+      bindPrintedCalibrationSource(geometry.calibration?.printedSettings, { sha256: sourceSha256, ...sourceSize })
+    }
+    return attachSemanticLeadEvidence(geometry)
   } catch (error) {
+    if (error instanceof EvidenceContractError) throw error
     return {
       detectionFailure: {
         method: "layout-detector-subprocess-v1",
@@ -1935,14 +1995,7 @@ function attachSemanticLeadEvidence(
 
 function validatedCalibration(geometry: LayoutGeometryReport) {
   const calibration = geometry.calibration
-  if (
-    calibration?.detected !== true ||
-    (calibration.confidence ?? 0) < 0.35 ||
-    ![25, 50].includes(calibration.paperSpeedMmPerSecond ?? 0) ||
-    !Number.isFinite(calibration.gainMmPerMv) ||
-    (calibration.gainMmPerMv ?? 0) < 5 ||
-    (calibration.gainMmPerMv ?? 0) > 20
-  ) {
+  if (!calibrationIsUsable(calibration)) {
     return undefined
   }
   return calibration as Required<
@@ -2281,6 +2334,14 @@ async function buildSixByTwoRhythmCompositeCandidate({
         LAYOUT_COLUMNS.standard_6x2[lead] === 0 ? left.id : right.id,
       ])
     ),
+    intervalLineage: Object.fromEntries(LEAD_ORDER.flatMap(lead=>{
+      const source=LAYOUT_COLUMNS.standard_6x2[lead]===0 ? left : right
+      const segment=canonicalLeadSegment(canonical,layout,lead)
+      if (!source.canonical || !segment) return []
+      const sourceCount=source.canonical.rows.length,targetCount=segment.values.length
+      const contributor={...directContributor(source.id,0,sourceCount),alignment:{referenceLength:targetCount,timeScale:(sourceCount-1)/(targetCount-1),shiftSamples:(sourceCount-targetCount)/2,subtractOffsetUv:0}}
+      return [[lead,intervalLineage(segment.values,contributor)]]
+    })),
     status: "completed",
     parameters: parametersForCandidate(parameters),
     layout,
@@ -2660,6 +2721,7 @@ async function publishSelectedCandidate(
   const metadataPath = path.join(exportsDir, "digitization_metadata.csv")
   const segmentsPath = path.join(exportsDir, `${stem}_segments_500hz.csv`)
   const uncertaintyPath = path.join(exportsDir, `${stem}_uncertainty.csv`)
+  const segmentMapPath = path.join(exportsDir, `${stem}_segments.json`)
   const paperRenderPath = path.join(exportsDir, `${stem}_paper_render.png`)
 
   const publishedCanonical = suppressAnnotatedSamples(
@@ -2692,6 +2754,35 @@ async function publishSelectedCandidate(
     await writeCanonicalCsv(publishedCanonical, canonicalPath)
     await writeCompactSegmentsCsv(canonicalPath, segmentsPath, selected.layout)
     await writeUncertaintyCsv(uncertaintyRows, uncertaintyPath)
+    const descriptors: SegmentDescriptor[] = []
+    const normalizedLayout = normalizeQaLayout(selected.layout)
+    const rows = normalizedLayout ? LAYOUT_ROWS[normalizedLayout]?.rows : undefined
+    if (!rows) throw new Error("Cannot export quantitative segment evidence for an unsupported layout.")
+    for (const lead of expectedLayoutLeads(selected.layout)) {
+      const segment = canonicalLeadSegment(publishedCanonical, selected.layout, lead)
+      if (!segment) continue
+      const rowIndex = rows.findIndex(row => row.includes(lead))
+      const panelIndex = rows[rowIndex]?.indexOf(lead) ?? -1
+      const role = lead === "II" && segment.values.length === publishedCanonical.rows.length && rows[0].length > 1 ? "rhythm" : "panel"
+      const sourceId = selected.leadSources?.[lead] ?? selected.id
+      descriptors.push({ lead, panelIndex, rowIndex, canonicalStartSample: segment.start,
+        sampleCount: segment.values.length, role,
+        identityState: candidateHasExplicitSemanticLayoutEvidence(selected) ? "verified" : "inferred",
+        identityMethod: selected.parameters.semanticLeadIdentityMethod ?? "candidate-and-layout-evidence-requires-source-review",
+        candidateId: sourceId, lineageState: selected.intervalLineage?.[lead] || !isDerivedCandidate(selected) ? "interval_recorded" : "candidate_summary_only",
+        ...(selected.intervalLineage?.[lead] || !isDerivedCandidate(selected) ? {
+          intervalLineage: intervalLineage(segment.values,directContributor(sourceId,segment.start,segment.values.length),selected.intervalLineage?.[lead]),
+        } : {}),
+        sourceCrop: segmentSourceRegion(prepared.report, geometry, rowIndex, panelIndex, rows[0].length, role === "rhythm"),
+        ...(lead === "aVR" && (selected.parameters.semanticLeadIdentityOrder === "cabrera" || selected.layout?.startsWith("cabrera")) ? { sourceLabel: "-aVR", polarity: -1 as const } : {}),
+        support: signalSupport(segment.values) })
+    }
+    const segmentMap = buildSegmentEvidence({ runId: run.id, sourceSha256: prepared.report.sourceSha256,
+      canonicalSha256: createHash("sha256").update(await fs.readFile(canonicalPath)).digest("hex"),
+      canonicalSampleCount: publishedCanonical.rows.length, descriptors,
+      omittedSourceSegments: selected.layout?.includes("with_r1")
+        ? [{ lead: "II", role: selected.layout.includes("ignored") ? "rhythm" : "panel", reason: "Separate repeated source segment is not represented by this canonical lead column." }] : [] })
+    await fs.writeFile(segmentMapPath, JSON.stringify(segmentMap, null, 2) + "\n", "utf8")
     await renderPaperFromSegmentsCsv({
       csvPath: segmentsPath,
       outputPath: paperRenderPath,
@@ -2743,6 +2834,7 @@ async function publishSelectedCandidate(
               uncertaintyPath,
               prepared.report.sourceSha256
             ),
+            segmentMapJson: await assetFromAbsolutePath("Segment identity and timing evidence", segmentMapPath, prepared.report.sourceSha256),
           }
         : {}),
       metadataCsv: await assetFromAbsolutePath(
@@ -2970,6 +3062,7 @@ async function buildPeerGapRepairCandidate(
     rows: reference.canonical.rows.map((row) => [...row]),
   }
   const leadSources: Record<string, string> = {}
+  const leadLineage: Record<string, IntervalLineage[]> = {}
   let repairedSamples = 0
 
   for (const lead of LEAD_ORDER) {
@@ -3009,6 +3102,8 @@ async function buildPeerGapRepairCandidate(
           id: peer.id,
           values: alignment.values,
           sourceVerified: peer.sourceFidelity?.passed === true,
+          contributor: {candidateId:peer.id,sourceCanonicalStartSample:peerSegment.start,sourceSampleCount:peerSegment.values.length,
+            alignment:{referenceLength:referenceSegment.values.length,timeScale:alignment.timeScale,shiftSamples:alignment.shift,subtractOffsetUv:alignment.offsetUv}},
         },
       ]
     })
@@ -3020,6 +3115,8 @@ async function buildPeerGapRepairCandidate(
       canonical.rows[outputSegment.start + index][leadIndex] = value
     })
     repairedSamples += repaired.repairedSamples
+    leadLineage[lead] = intervalLineage(repaired.values,directContributor(reference.id,referenceSegment.start,referenceSegment.values.length),
+      repaired.intervals.map(span=>({...span,operation:"aligned_peer_median",contributors:span.candidateIds.map(id=>alignedPeers.find(peer=>peer.id===id)!.contributor)})))
     leadSources[lead] =
       repaired.supportingCandidateIds.length > 0
         ? `${reference.id}+${repaired.supportingCandidateIds.join("+")}`
@@ -3078,6 +3175,7 @@ async function buildPeerGapRepairCandidate(
     label: config.label,
     localPath: relativePath(candidateDir),
     leadSources,
+    intervalLineage: leadLineage,
     status: "completed",
     parameters: parametersForCandidate(config),
     layout: reference.layout,
@@ -3105,6 +3203,7 @@ function repairShortPeerSupportedGaps(
 ) {
   const values = [...reference]
   const supportingCandidateIds = new Set<string>()
+  const intervals: Array<{startSample:number;endSample:number;candidateIds:string[]}> = []
   let repairedSamples = 0
   const gaps = contiguousGaps(reference.map(Number.isFinite)).filter(
     (gap) =>
@@ -3158,6 +3257,7 @@ function repairShortPeerSupportedGaps(
       values[gap.start + offset] = value
     })
     repairedSamples += gap.length
+    intervals.push({startSample:gap.start,endSample:gap.end,candidateIds:supporters.map(peer=>peer.id).sort()})
     supporters.forEach((peer) => supportingCandidateIds.add(peer.id))
   }
 
@@ -3165,6 +3265,7 @@ function repairShortPeerSupportedGaps(
     values,
     repairedSamples,
     supportingCandidateIds: [...supportingCandidateIds].sort(),
+    intervals,
   }
 }
 
@@ -3311,6 +3412,15 @@ async function buildLeadFusionCandidate(
       LEAD_ORDER.map((lead) => [lead, leadSources[lead].id])
     ),
     leadCorroborators,
+    intervalLineage: Object.fromEntries(LEAD_ORDER.flatMap(lead=>{
+      const source=leadSources[lead]
+      const sourceSegment=source.canonical && canonicalLeadSegment(source.canonical,source.layout,lead)
+      const outputSegment=canonicalLeadSegment(canonical,reference.layout,lead)
+      if (!sourceSegment || !outputSegment) return []
+      const contributor=directContributor(source.id,sourceSegment.start,sourceSegment.values.length)
+      contributor.alignment.referenceLength=outputSegment.values.length
+      return [[lead,intervalLineage(outputSegment.values,contributor)]]
+    })),
     status: "completed",
     parameters: parametersForCandidate(fusionConfig),
     layout: reference.layout,
@@ -3716,10 +3826,9 @@ function candidateHasTrustedLead(
 }
 
 function candidateHasQuantitativeTimingEvidence(candidate: CandidateResult) {
-  return (
-    candidate.sourceFidelity?.sourceTimingInference
-      ?.quantitativeCalibrationConfirmed !== false
-  )
+  // Routes without source-span inference still pass their existing independent
+  // calibration checks. A present inference must explicitly confirm its units.
+  return sourceTimingEvidenceState(candidate.sourceFidelity?.sourceTimingInference) !== "unresolved"
 }
 
 function candidatePathsAreIndependent(
@@ -3843,6 +3952,7 @@ function buildPipelineEvidence({
     ? selectorCalibrationEvidence(
         selected.layout,
         {
+          ...selected.parameters,
           id: selected.id,
           kind: selected.parameters.kind,
           capabilities: selected.parameters.capabilities,
@@ -4256,6 +4366,7 @@ function stabilityCandidateConfig(
     id: `stability-${safeOutputStem(source.id)}-${suffix}`,
     label: `${source.label} (${suffix.replaceAll("-", " ")})`,
     resampleSize: parameters.resampleSize,
+    ...(parameters.gainMmPerMv !== undefined ? { gainMmPerMv: parameters.gainMmPerMv } : {}),
     ...(parameters.upscaleToMaxDimension
       ? { upscaleToMaxDimension: parameters.upscaleToMaxDimension }
       : {}),
@@ -4906,6 +5017,12 @@ async function writeDigitizationProvenance({
       selectedLayoutCost: selected.layoutCost,
       selectedEffectiveSampleRateHz: selected.effectiveSampleRateHz,
       selectedComputeDevice: selected.parameters.device,
+      sourceTransforms: candidates.filter(candidate => candidate.status === "completed" && !isDerivedCandidate(candidate)).map(candidate => ({
+        candidateId: candidate.id, ...sourceTransformChain(preprocessing, candidate.parameters),
+        decoderResampling: { targetLongEdgePixels: candidate.parameters.resampleSize ?? null,
+          note: "The transform ends at the candidate input raster; decoder-internal resampling is separate." },
+      })),
+      physicalEvidence: calibrationEvidence(calibration),
       calibration: calibration ?? {
         method: "not-detected",
         detected: false,
@@ -4974,6 +5091,7 @@ async function writeDigitizationProvenance({
       },
       candidates: candidates.map((candidate) => ({
         ...publicCandidate(candidate),
+        ancestry: candidateAncestry(candidate,preprocessing,calibration),
         selected: candidate.id === selected.id,
       })),
     },
@@ -5104,55 +5222,14 @@ function annotationCandidateFrame(
     "inputVariant" | "cropBox"
   >
 ) {
-  const workingWidth =
-    preprocessing.workingImage?.width ?? preprocessing.source.width
-  const workingHeight =
-    preprocessing.workingImage?.height ?? preprocessing.source.height
-  const scaleX = workingWidth / Math.max(preprocessing.source.width, 1)
-  const scaleY = workingHeight / Math.max(preprocessing.source.height, 1)
-  const corrected =
-    (candidateParameters?.inputVariant === "geometry-corrected" ||
-      candidateParameters?.inputVariant === "artifact-preprocessed") &&
-    preprocessing.geometryCorrection?.applied === true
-  const transform = corrected
-    ? preprocessing.geometryCorrection?.transform
-    : undefined
-  const baseWidth = corrected
-    ? preprocessing.geometryCorrection?.outputWidth ?? workingWidth
-    : workingWidth
-  const baseHeight = corrected
-    ? preprocessing.geometryCorrection?.outputHeight ?? workingHeight
-    : workingHeight
+  const chain = sourceTransformChain(preprocessing, { inputVariant: candidateParameters?.inputVariant })
+  const baseWidth = chain.candidateSize.width
+  const baseHeight = chain.candidateSize.height
   const crop = candidateParameters?.cropBox
   const width = crop ? crop.right - crop.left : baseWidth
   const height = crop ? crop.bottom - crop.top : baseHeight
 
-  const mapPoint = (x: number, y: number) => {
-    const workingX = x * scaleX
-    const workingY = y * scaleY
-    if (!transform || transform.length !== 3) {
-      return { x: workingX, y: workingY }
-    }
-    const denominator =
-      transform[2][0] * workingX +
-      transform[2][1] * workingY +
-      transform[2][2]
-    if (!Number.isFinite(denominator) || Math.abs(denominator) < 1e-9) {
-      return { x: workingX, y: workingY }
-    }
-    return {
-      x:
-        (transform[0][0] * workingX +
-          transform[0][1] * workingY +
-          transform[0][2]) /
-        denominator,
-      y:
-        (transform[1][0] * workingX +
-          transform[1][1] * workingY +
-          transform[1][2]) /
-        denominator,
-    }
-  }
+  const mapPoint = (x: number, y: number) => transformPoint(chain.originalToCandidate, { x, y })
 
   return {
     width: Math.max(1, width),
@@ -6581,6 +6658,7 @@ function openEcgConfig({
   device,
   darkInkEnhancement,
   darkInkSupportRadius,
+  gainMmPerMv,
   layoutConstraint,
   featureCachePath,
 }: {
@@ -6592,9 +6670,13 @@ function openEcgConfig({
   device: DigitizerComputeDevice
   darkInkEnhancement?: boolean
   darkInkSupportRadius?: number
+  gainMmPerMv?: number
   layoutConstraint?: string
   featureCachePath?: string
 }) {
+  if (gainMmPerMv !== undefined && ![5, 10, 20].includes(gainMmPerMv)) {
+    throw new EvidenceContractError("unsupported_neural_gain", "Neural extraction requires a supported physical gain.")
+  }
   const signalExtractorKwargs =
     typeof labelThresh === "number"
       ? `\n          label_thresh: ${labelThresh}`
@@ -6632,6 +6714,9 @@ function openEcgConfig({
       : ""
   const featureCacheKwarg = featureCachePath
     ? `\n    feature_cache_path: ${JSON.stringify(featureCachePath)}`
+    : ""
+  const gainKwarg = gainMmPerMv !== undefined && gainMmPerMv !== 10
+    ? `\n    gain_mm_per_mv: ${gainMmPerMv}`
     : ""
 
   return `MODEL:
@@ -6692,7 +6777,7 @@ function openEcgConfig({
     rotate_on_resample: true
     enable_timing: false
     apply_dewarping: false
-    ${fidelityKwargs}${forcedLayoutKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}
+    ${fidelityKwargs}${forcedLayoutKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}${gainKwarg}
 
 DATA:
   images_path: ${JSON.stringify(inputDir)}
@@ -6731,6 +6816,7 @@ function parametersForCandidate(candidate: DigitizerCandidateConfig) {
     kind: candidateKind(candidate),
     capabilities: candidateCapabilities(candidate),
     resampleSize: candidate.resampleSize,
+    ...(candidate.gainMmPerMv !== undefined ? { gainMmPerMv: candidate.gainMmPerMv } : {}),
     ...(candidate.upscaleToMaxDimension
       ? { upscaleToMaxDimension: candidate.upscaleToMaxDimension }
       : {}),
@@ -6870,6 +6956,7 @@ function publicCandidate(candidate: CandidateResult): DigitizerCandidateSummary 
     localPath: candidate.localPath,
     workingFilesRetained: true,
     leadSources: candidate.leadSources,
+    intervalLineage: candidate.intervalLineage,
     leadCorroborators: candidate.leadCorroborators,
     status: candidate.status,
     parameters: candidate.parameters,
@@ -6954,6 +7041,7 @@ function relativePath(absolutePath: string) {
 }
 
 export const digitizerTestUtils = {
+  subprocessEnvironment,
   AsyncSemaphore,
   alignSeries,
   annotationRangesByLead,

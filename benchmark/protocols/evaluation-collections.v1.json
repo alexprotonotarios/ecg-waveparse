@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "frozenOn": "2026-09-06",
+  "clinicalValidationUse": false,
+  "regression": {
+    "receipt": "docs/waveparse/verification/2026-09-06-baseline.json",
+    "caseCount": 8,
+    "independentSignalFamilyCount": 1,
+    "previouslyExposed": true
+  },
+  "development": {
+    "historicalSelectorMembership": "docs/waveparse/verification/2026-09-06-calibration.json",
+    "fittingCases": 72,
+    "validationCases": 28,
+    "previouslyExposed": true,
+    "rule": "Existing accessed corpora and every experimental fixture remain development evidence."
+  },
+  "finalEvaluation": {
+    "status": "awaiting_unexposed_groups_and_frozen_evaluation_protocol",
+    "admittedCaseCount": 0,
+    "membershipSha256": null,
+    "accessLog": [],
+    "pretrainedTrainingOverlap": "unknown",
+    "rule": "No final run or accuracy claim is authorized by this empty reservation."
+  },
+  "frozenPublicEngineeringPilot": {
+    "status": "completed_exposed_engineering_pilot",
+    "patientGroupCount": 16,
+    "dataset": "PTB Diagnostic ECG Database 1.0.0",
+    "protocolSha256": "5f2862f72be4345c9029d54f1b18afeacb45a0b41b4f350d8883f73378aeba90",
+    "pretrainedTrainingOverlap": "unknown",
+    "independentClinicalValidation": false,
+    "rule": "Membership and gates frozen before waveform download. Rendered acquired signals; future tuning after exposure moves these records into development.",
+    "originalManifestSha256": "42406b27d78851ef93a9159f1e9f34a32999403dbb94ccd977cc1d6e9a616c1d",
+    "correctedManifestSha256": "22f21b96dd2e16c803b3fcf79d3703f2ddc6eb352b2ccf72cf8190b9cd7ec48f",
+    "receipt": "docs/waveparse/verification/2026-09-06-public-pilot.json",
+    "returnedCount": 12,
+    "abstentionCount": 4,
+    "referenceQualifiedCount": 6,
+    "accessLog": [
+      {
+        "date": "2026-09-06",
+        "purpose": "Frozen engineering evaluation and source inspection; no extraction tuning",
+        "protocolSha256": "5f2862f72be4345c9029d54f1b18afeacb45a0b41b4f350d8883f73378aeba90",
+        "outcomesExposed": true
+      }
+    ]
+  }
+}

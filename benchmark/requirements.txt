@@ -1,0 +1,6 @@
+numpy==2.4.6
+scipy==1.17.1
+Pillow==12.2.0
+jsonschema==4.26.0
+matplotlib==3.11.0
+remotezip==0.12.3

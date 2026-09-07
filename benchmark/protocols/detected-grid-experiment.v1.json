@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "collection": "development",
+  "frozenBeforeExecution": true,
+  "clinicalValidationUse": false,
+  "source": "Deterministic 12-panel raster with coloured grid, labels, calibration and six controlled morphology families; displacement truth is withheld from the detector.",
+  "amplitudesPixels": [0, 4, 10, 20],
+  "primaryEndpoint": "paired physical waveform RMSE after one image correction and identical crop decoder",
+  "maximumFlatRmseRegressionUv": 5,
+  "requiredCurvedRmseReductionFraction": 0.5,
+  "maximumGeometryResidualPixels": 1,
+  "maximumRoundTripPixels": 0.000001,
+  "maximumSecondsPerImage": 30,
+  "minimumSignalCoverage": 0.98,
+  "refusalCases": ["greyscale_grid", "missing_grid_band", "row_dependent_distortion"],
+  "productionAdmission": "Experimental flag only; this controlled family does not establish general photograph or patient performance. Retain global correction when any promotion criterion fails."
+}

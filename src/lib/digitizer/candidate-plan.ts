@@ -17,6 +17,7 @@ export type DigitizerCandidateConfig = {
   upscaleToMaxDimension?: number
   darkInkEnhancement?: boolean
   darkInkSupportRadius?: number
+  gainMmPerMv?: number
   labelThresh?: number
   layoutConstraint?: string
   geometryConfirmedLayout?: boolean

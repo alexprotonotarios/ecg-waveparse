@@ -54,16 +54,21 @@ export function hasAllReviewConfirmations(
 }
 
 export function canAcceptQuantitativeReview(run: {
+  retention?: { version: number }
   publicationDecision?: { outcome: "needs_review" | "partial" | "failed" }
   assets: {
     canonicalCsv?: unknown
     segmentsCsv?: unknown
+    uncertaintyCsv?: unknown
+    segmentMapJson?: unknown
+    provenanceJson?: unknown
   }
 }) {
   return Boolean(
     run.publicationDecision?.outcome === "needs_review" &&
       run.assets.canonicalCsv &&
-      run.assets.segmentsCsv
+      run.assets.segmentsCsv &&
+      (run.retention?.version !== 2 || (run.assets.uncertaintyCsv && run.assets.segmentMapJson && run.assets.provenanceJson))
   )
 }
 

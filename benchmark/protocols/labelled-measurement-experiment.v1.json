@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "collection": "development",
+  "clinicalValidationUse": false,
+  "family": "controlled_trapezoid_morphology_v1",
+  "membership": [
+    {"caseId": "labelled_6ppm", "pixelsPerMm": 6},
+    {"caseId": "labelled_3ppm", "pixelsPerMm": 3},
+    {"caseId": "labelled_1ppm", "pixelsPerMm": 1}
+  ],
+  "layout": "standard_6x2",
+  "sampleRateHz": 500,
+  "speedMmPerSecond": 25,
+  "gainMmPerMv": 10,
+  "shapeStrata": ["steep_positive", "negative", "broad", "low_amplitude", "clipped", "pacing_like_narrow"],
+  "endpoints": ["signed_peak_amplitude_relative_to_fixed_baseline", "duration_above_frozen_half_height_level"],
+  "landmarks": "Exact piecewise-linear construction. Fixed crossing windows and amplitude windows; no thresholds chosen using predictions.",
+  "recoverability": "Counterfactual source raster omits only the labelled first pulse. Contrast >=32, >=4 changed pixels, horizontal and vertical feature extents >=2 source pixels are required for a visible label. Others are ambiguous or unrecoverable, never visible misses.",
+  "referenceGates": {"amplitudeAbsoluteErrorUv": 75, "intervalAbsoluteErrorMs": 20, "requiredVisibleEndpointCoverage": 0.9},
+  "reporting": "Report the complete input and label denominator, raw/aligned endpoints, detector-on-truth error, reconstruction increment and total label error. Abstentions and unresolved source features remain explicit. These are engineering endpoints, not validated clinical QRS or QT measurements.",
+  "productionPolicyChanged": false
+}

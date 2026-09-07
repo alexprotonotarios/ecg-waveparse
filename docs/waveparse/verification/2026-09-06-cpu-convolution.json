@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "clinicalValidationUse": false,
+  "collection": "development",
+  "inputCount": 1,
+  "signalFamilies": 1,
+  "sourceSha256": "2281d0e324b747641a780da0a5110da5bb5f085d4b9f9c477e9b0f5de6f4638d",
+  "basePayloadManifestSha256": "e84bef376703e8029ac673cfbc1f85d6cbc5fbb1db608367ca221e7e4c22150b",
+  "runtimeManifestSha256": "d9465db541f0d2ad0541eb04f36e3fee930a8bbbc1a50135fe2950b63203fc3a",
+  "convolutionHelperSha256": "2728a7b1f602fa143b7eca417257fefebfc7d5ba35e572a1a7e15e40d817d480",
+  "protocol": {
+    "version": 10,
+    "clinicalValidationUse": false,
+    "collection": "development",
+    "caseId": "hosted_smoke_clean",
+    "sourceSha256": "2281d0e324b747641a780da0a5110da5bb5f085d4b9f9c477e9b0f5de6f4638d",
+    "methods": [
+      "baseline",
+      "row-bounded-convolution"
+    ],
+    "cpuThreads": 3,
+    "resampleSize": 2200,
+    "workspaceBytesPerConvolution": 16777216,
+    "weightsAndNormalizationUnchanged": true,
+    "prototypeSha256": "453c726b13f407c15dcdddc1ea9a45cda2ae075b5ca8f00c7567d7c720f95566",
+    "investigationGates": {
+      "maximumAbsoluteLogitDifference": 0.0001,
+      "maximumCanonicalRmseUv": 0.001,
+      "maximumSpacingDifferenceMm": 1e-06,
+      "missingnessDifferencesAllowed": 0,
+      "sameLayoutRequired": true,
+      "maximumCandidateSeconds": 180,
+      "maximumPeakProcessRssGiB": 5
+    },
+    "scope": "One actual full forward establishes mechanism only. Production adoption requires convolution boundary tests plus installed multi-case regression and fixed hosted platform gates. No final patient evaluation data used.",
+    "change": "Keep3CPUthreads and production row-convolution helper; disable only the child process Apple large-allocation cache at launch. All tensor/model operations unchanged. Previous1threadexperiment5.54GiBfailed and is not adopted. Frozen numerical/time/memory gates unchanged; baseline is the original3thread process with default allocator behavior.",
+    "convolutionHelperSha256": "2728a7b1f602fa143b7eca417257fefebfc7d5ba35e572a1a7e15e40d817d480",
+    "allocatorEnvironment": {
+      "MallocLargeCache": "0"
+    },
+    "allocatorSource": "https://raw.githubusercontent.com/apple-oss-distributions/libmalloc/main/src/malloc.c#L1707"
+  },
+  "attempts": [
+    {
+      "candidateSeconds": 40.6297850839328,
+      "candidatePeakProcessRssGiB": 5.5706939697265625,
+      "canonicalRmseUv": 0.0004541701825057524,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.1961669921875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 1
+    },
+    {
+      "candidateSeconds": 14.025266084005125,
+      "candidatePeakProcessRssGiB": 7.649200439453125,
+      "canonicalRmseUv": 0.0004541701825057524,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.1961669921875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 2
+    },
+    {
+      "candidateSeconds": 16.313012541038916,
+      "candidatePeakProcessRssGiB": 5.5521087646484375,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 3
+    },
+    {
+      "candidateSeconds": 14.777522500022314,
+      "candidatePeakProcessRssGiB": 5.76812744140625,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 4
+    },
+    {
+      "candidateSeconds": 16.605074624996632,
+      "candidatePeakProcessRssGiB": 4.9170379638671875,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": true
+      },
+      "passed": true,
+      "version": 5
+    },
+    {
+      "candidateSeconds": 14.833461625035852,
+      "candidatePeakProcessRssGiB": 5.783050537109375,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 6
+    },
+    {
+      "candidateSeconds": 17.18569108308293,
+      "candidatePeakProcessRssGiB": 4.7536468505859375,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": true
+      },
+      "passed": true,
+      "version": 7
+    },
+    {
+      "candidateSeconds": 15.284994082991034,
+      "candidatePeakProcessRssGiB": 5.3379669189453125,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": false
+      },
+      "passed": false,
+      "version": 8
+    },
+    {
+      "candidateSeconds": 21.425744624924846,
+      "candidatePeakProcessRssGiB": 3.93231201171875,
+      "canonicalRmseUv": 0.0005514761226853944,
+      "missingnessDifferences": 0,
+      "maximumLogitDifference": 4.100799560546875e-05,
+      "sameLayout": true,
+      "maximumSpacingDifferenceMm": 0.0,
+      "gates": {
+        "logits": true,
+        "canonical": true,
+        "missingness": true,
+        "layout": true,
+        "spacing": true,
+        "time": true,
+        "memory": true
+      },
+      "passed": true,
+      "version": 10
+    }
+  ],
+  "oneThreadAttempt": {
+    "version": 9,
+    "seconds": 18.486735208076425,
+    "peakProcessRssGiB": 5.542724609375,
+    "memoryGatePassed": false,
+    "adopted": false,
+    "matchedBaselineNotRun": "Candidate failed resource gate; no paired numerical claim."
+  },
+  "adoptionCandidate": "Version10: supported3x3and2x2convolutions in16MiB row workspaces plus MallocLargeCache=0 in macOS CPU inference child only.",
+  "limitations": [
+    "One clean controlled full forward proves mechanism, not broad regression or clinical validity.",
+    "Installed-package regression and hosted8case equivalence remain separate required checks.",
+    "5GiB is the investigation target, not a universal RSS cap; full model outputs and other stages remain allocated.",
+    "Historical25patient final evaluation is not rerun or retuned.",
+    "No allocator API, normalization mutation, custom U-Net graph or CPU thread limit is adopted."
+  ]
+}

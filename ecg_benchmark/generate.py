@@ -166,7 +166,7 @@ def render_waveforms(
     right_margin_mm = 10.0
     signal_inset_mm = 7.0
     column_gap_mm = float(layout["columnGapMm"])
-    top_margin_mm = float(layout["topMarginMm"])
+    top_margin_mm = max(float(layout["topMarginMm"]), gain_mm_per_mv + 4.0)
     bottom_margin_mm = float(layout["bottomMarginMm"])
     row_step_mm = float(layout["rowStepMm"])
     column_count = max(len(row) for row in rows)
@@ -201,7 +201,7 @@ def render_waveforms(
         pulse_x = 4.0 * pixels_per_mm
         pulse_y = baseline_mm * pixels_per_mm
         pulse_height = gain_mm_per_mv * pixels_per_mm
-        pulse_width = 5.0 * pixels_per_mm
+        pulse_width = .2 * paper_speed_mm_per_second * pixels_per_mm
         draw.line(
             (
                 (pulse_x - 2 * pixels_per_mm, pulse_y),
@@ -394,6 +394,7 @@ def annotations_for_case(
 
 
 def validate_manifest(manifest: dict[str, Any], schema_path: Path) -> None:
+    from .evaluation import validate_independence
     schema = load_json(schema_path)
     Draft202012Validator(schema).validate(manifest)
     case_ids = [str(case["caseId"]) for case in manifest["cases"]]
@@ -405,6 +406,7 @@ def validate_manifest(manifest: dict[str, Any], schema_path: Path) -> None:
     leaked = [group for group, splits in group_splits.items() if len(splits) > 1]
     if leaked:
         raise ValueError(f"Groups span multiple splits: {', '.join(leaked)}")
+    validate_independence(manifest["cases"])
 
 
 def validate_annotations(annotations: dict[str, Any], schema_path: Path) -> None:

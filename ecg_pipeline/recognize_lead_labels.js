@@ -8,12 +8,13 @@ function unwrap(value) {
 // JXA invokes this global entry point; it is not called inside the module.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function run(args) {
-  if (args.length !== 1) {
-    throw new Error('usage: recognize_lead_labels.js CONTACT_SHEET')
+  if (args.length < 1 || args.length > 2 || (args.length === 2 && args[1] !== '--accurate')) {
+    throw new Error('usage: recognize_lead_labels.js CONTACT_SHEET [--accurate]')
   }
 
   const request = $.VNRecognizeTextRequest.alloc.init
-  request.recognitionLevel = 1
+  const accurate = args.length === 2
+  request.recognitionLevel = accurate ? $.VNRequestTextRecognitionLevelAccurate : $.VNRequestTextRecognitionLevelFast
   request.usesLanguageCorrection = false
   request.minimumTextHeight = 0.004
   request.recognitionLanguages = $(['en-US'])
@@ -60,7 +61,7 @@ function run(args) {
   }
 
   return JSON.stringify({
-    engine: 'apple-vision-vnrecognizetextrequest',
+    engine: accurate ? 'apple-vision-vnrecognizetextrequest-accurate' : 'apple-vision-vnrecognizetextrequest',
     revision: Number(request.revision),
     observations,
   })

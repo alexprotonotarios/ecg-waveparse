@@ -8,6 +8,7 @@ import {
 import type { PreprocessingReport } from "@/lib/digitizer/contracts"
 import { normalizeSupportedEcgLayout } from "@/lib/ecg-layouts"
 import type { DigitizerInputVariant, DigitizerVectorizer } from "@/lib/runs"
+import { profileParameterCompatibility, type ProfileParameterIdentity } from "@/lib/digitizer/selector-feature-identity"
 
 type CalibrationEntry = {
   caseCount: number
@@ -43,6 +44,7 @@ type SelectorCalibrationInput = CandidateCapabilityInput & {
 }
 
 export type SelectorCalibrationEvidence = {
+  parameterCompatibility: "compatible" | "incompatible" | "historical_unverified"
   profileId: string
   layout?: string
   artifactContext?: string
@@ -85,6 +87,8 @@ export function selectorCalibrationEvidence(
     calibrationContractVersion ===
     DIGITIZER_SELECTOR_CALIBRATION_CONTRACT_VERSION
   const normalizedLayout = normalizeSupportedEcgLayout(layout)
+  const identity = (calibrationDocument.training as typeof calibrationDocument.training & { reproducibility?: ProfileParameterIdentity }).reproducibility
+  const parameterCompatibility = profileParameterCompatibility(identity, normalizedLayout, candidate)
   const calibration = normalizedLayout ? layouts[normalizedLayout] : undefined
   const artifactContext = preprocessing
     ? selectorArtifactContext(preprocessing)
@@ -92,8 +96,9 @@ export function selectorCalibrationEvidence(
   const contextCalibration = artifactContext
     ? calibration?.contexts?.[artifactContext]
     : undefined
-  if (!calibrationContractCompatible || !normalizedLayout || !calibration) {
+  if (!calibrationContractCompatible || !normalizedLayout || !calibration || parameterCompatibility === "incompatible") {
     return {
+      parameterCompatibility,
       profileId: calibrationDocument.profileId,
       ...(normalizedLayout ? { layout: normalizedLayout } : {}),
       ...(artifactContext ? { artifactContext } : {}),
@@ -118,6 +123,7 @@ export function selectorCalibrationEvidence(
       exactCandidateCalibrated: false,
       calibrationConfidence: "uncalibrated",
       outOfDomainReasons: [
+        ...(parameterCompatibility === "incompatible" ? ["candidate-parameter-contract-mismatch"] : []),
         ...(!calibrationContractCompatible
           ? ["pipeline-calibration-contract-mismatch"]
           : []),
@@ -203,6 +209,7 @@ export function selectorCalibrationEvidence(
         : "layout-only"
 
   return {
+    parameterCompatibility,
     profileId: calibrationDocument.profileId,
     layout: normalizedLayout,
     ...(artifactContext ? { artifactContext } : {}),

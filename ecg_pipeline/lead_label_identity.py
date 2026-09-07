@@ -377,7 +377,7 @@ def _contact_sheet(slots: list[LabelSlot]) -> ContactSheet:
     return ContactSheet(image=sheet, cells=cells, slots=slot_map)
 
 
-def _apple_vision_ocr_runner(sheet: np.ndarray) -> dict[str, Any]:
+def _apple_vision_ocr_runner(sheet: np.ndarray, *, accurate: bool = False) -> dict[str, Any]:
     if sys.platform != "darwin":
         raise RuntimeError("apple-vision-unavailable")
     osascript = shutil.which("osascript")
@@ -397,6 +397,7 @@ def _apple_vision_ocr_runner(sheet: np.ndarray) -> dict[str, Any]:
                 "JavaScript",
                 str(helper),
                 str(sheet_path),
+                *(["--accurate"] if accurate else []),
             ],
             check=False,
             capture_output=True,
@@ -576,15 +577,23 @@ def _rapidocr_ocr_runner(sheet: np.ndarray) -> dict[str, Any]:
     }
 
 
-def _default_ocr_runner(sheet: np.ndarray) -> dict[str, Any]:
+def _default_ocr_runner(sheet: np.ndarray, *, accurate: bool = False) -> dict[str, Any]:
     requested = os.environ.get(LABEL_OCR_ENGINE_ENV, "auto").strip().casefold()
     if requested == "auto":
         requested = "apple-vision" if sys.platform == "darwin" else "rapidocr"
     if requested == "apple-vision":
-        return _apple_vision_ocr_runner(sheet)
+        return _apple_vision_ocr_runner(sheet, accurate=accurate)
     if requested == "rapidocr":
         return _rapidocr_ocr_runner(sheet)
     raise RuntimeError("unsupported-label-ocr-engine")
+
+
+def read_local_text(image: np.ndarray) -> dict[str, Any]:
+    """Use the same explicitly provisioned local recognizer for source evidence."""
+    # Fast Apple Vision observations have coarse confidence (often 0.5).
+    # Printed physical settings need its accurate recognizer; lead-label
+    # contact sheets retain their existing recognizer and decision semantics.
+    return _default_ocr_runner(image, accurate=True)
 
 
 def _top_observations(output: dict[str, Any]) -> list[dict[str, Any]]:

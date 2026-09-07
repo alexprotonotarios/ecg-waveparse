@@ -35,6 +35,7 @@ The following distributed files use CC BY-SA 4.0, whose full text is retained at
 - `ecg_pipeline/lead_layout_standard_12x1.yml`
 - `ecg_pipeline/fidelity_inference_wrapper.py`
 - `ecg_pipeline/reliable_signal_extractor.py`
+- `ecg_pipeline/probability_path.py` (extracted unchanged from the signal-extractor extension)
 
 The layouts adapt `src/config/lead_layouts_all.yml` from Open-ECG-Digitizer by
 selecting supported layouts, constraining geometry, and handling rhythm rows.
@@ -42,7 +43,7 @@ Original attribution: Ahus-AIM / Elias Stenhede, Agnar Martin Bjørnstad and Ari
 Ranjbar. WaveParse changes: Alexandros Protonotarios, 2026. The inference and
 signal-extractor extensions call the upstream interfaces and add source-ink
 support, deterministic seeds, feature caching and ordered ridge extraction.
-These two extension modules are conservatively offered under the same CC BY-SA
+These extension modules and the extracted probability-path module are conservatively offered under the same CC BY-SA
 terms. The language wrappers and setup tools remain under MIT.
 
 The source paths above are under `runtime/` in the npm package and under

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from ecg_pipeline.lead_label_identity import attach_semantic_lead_identity
+from ecg_pipeline.printed_calibration import read_printed_settings, reconcile_printed_settings
 
 
 MIN_THREE_BY_FOUR_PANEL_INK_SUPPORT = 0.015
@@ -1902,6 +1904,31 @@ def detect_ecg_calibration(image: np.ndarray) -> dict[str, Any]:
     return result
 
 
+def refine_horizontal_grid_consensus(calibration: dict[str, Any], scales: list[float]) -> dict[str, Any]:
+    """Prefer repeated, consistent row-grid measurements over a short pulse span.
+
+    A one-pixel error in a 200 ms pulse can bias scale by several percent. The
+    existing row-grid estimates span the traces themselves. Preserve the prior
+    estimate, and do not collapse materially varying local geometry to a scalar.
+    """
+    values = np.asarray(scales, dtype=np.float64)
+    prior = calibration.get("pixelsPerMmX")
+    if (not calibration.get("detected") or calibration.get("gridScaleAmbiguous")
+        or float(calibration.get("confidence", 0.)) < .35
+        or calibration.get("gridScaleMmX", calibration.get("gridScaleMm")) not in (1., 5.)
+        or values.ndim != 1 or values.size not in (6, 12)
+        or not np.isfinite(values).all() or np.any(values < 1.) or np.any(values > 40.)
+        or not isinstance(prior, (int, float)) or not np.isfinite(prior) or prior <= 0):
+        return calibration
+    center = float(np.median(values))
+    spread = float(np.ptp(values)/center)
+    if spread > .02 or abs(center-prior)/max(center, prior) > .15:
+        return calibration
+    return {**calibration, 'pixelsPerMmX': center,
+            'horizontalScaleEvidence': {'version': 1, 'method': 'consistent-row-grid-median-v1',
+                'priorPixelsPerMmX': float(prior), 'rowCount': int(values.size), 'relativeRange': spread}}
+
+
 def horizontal_grid_scale_by_rows(
     image: np.ndarray,
     row_centers: list[int],
@@ -3351,6 +3378,8 @@ def detect_ecg_layout_geometry(
     image: np.ndarray,
     *,
     recognise_semantic_labels: bool = False,
+    calibration_source_image: np.ndarray | None = None,
+    calibration_source_sha256: str | None = None,
 ) -> dict[str, Any]:
     twelve_row = detect_twelve_row_geometry(image)
     if twelve_row.get("layoutHint"):
@@ -3444,24 +3473,36 @@ def detect_ecg_layout_geometry(
     )
     if row_grid_scales is not None:
         result["calibration"]["rowPixelsPerMmX"] = row_grid_scales
+        result["calibration"] = refine_horizontal_grid_consensus(result["calibration"], row_grid_scales)
     if recognise_semantic_labels:
         result = attach_semantic_lead_identity(image, result)
+    if calibration_source_image is not None:
+        printed = read_printed_settings(calibration_source_image)
+        if calibration_source_sha256 is not None:
+            printed["sourceSha256"] = calibration_source_sha256
+        result["calibration"] = reconcile_printed_settings(result["calibration"], printed)
+    result["version"] = 1
+    result["image"] = {"width": int(image.shape[1]), "height": int(image.shape[0])}
     return result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--calibration-source", type=Path)
     args = parser.parse_args()
 
-    image = cv2.imread(str(args.input), cv2.IMREAD_COLOR)
-    if image is None:
-        raise SystemExit(f"Could not read ECG image: {args.input}")
+    from ecg_pipeline.printed_calibration import decode_source_raster
+    image = decode_source_raster(args.input.read_bytes())
+    source_bytes = (args.calibration_source or args.input).read_bytes()
+    calibration_source = decode_source_raster(source_bytes)
     print(
         json.dumps(
             detect_ecg_layout_geometry(
                 image,
                 recognise_semantic_labels=True,
+                calibration_source_image=calibration_source,
+                calibration_source_sha256=hashlib.sha256(source_bytes).hexdigest(),
             )
         )
     )

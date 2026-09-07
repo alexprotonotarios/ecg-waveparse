@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "clinicalValidationUse": false,
+  "description": "Installed package iteration A, identical baseline fixtures and MPS runtime; waveform-preserving evidence changes. Later changes require a fresh verification.",
+  "sourceTreeSha256": "8438b212b97b788fd7835e3688c0923c0b4a9794e0210f8529b8f7ec14c8f816",
+  "reportSha256": "4e358e6c3a033d80a12ad964232a5d723e16ac88384c05a35f72065aa7ed6fea",
+  "summary": {
+    "quantitative": 7,
+    "abstentions": 1,
+    "failures": 0,
+    "quantitativeYield": 0.875,
+    "comparedSamples": 194007,
+    "semanticPassCount": 7,
+    "semanticFailureCount": 0,
+    "referenceQualifiedYield": null,
+    "globalRmseUv": 28.61593301886997,
+    "meanCaseCorrelation": 0.9599448545477912,
+    "meanCaseCoverage": 0.9931904761904761,
+    "totalRuntimeMs": 853084
+  },
+  "cases": [
+    {
+      "caseId": "smoke__clean",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "smoke__v1_blue_arrow",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "smoke__v3_notch_resolution",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "smoke__low_resolution",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "smoke__blur",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "smoke__perspective",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "waveparse-3x4__clean",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": "passed"
+    },
+    {
+      "caseId": "waveparse-12x1__clean",
+      "outcomeUnchanged": true,
+      "canonicalBytesUnchanged": true,
+      "localRmseUnchanged": true,
+      "semanticStatus": null
+    }
+  ]
+}

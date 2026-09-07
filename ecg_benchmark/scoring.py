@@ -10,9 +10,11 @@ from scipy.ndimage import gaussian_filter
 from scipy.signal import fftconvolve
 
 from .io import LEADS, load_json, read_leads
+from .coordinates import local_frames, map_annotations, map_uncertainty, positive_rate, strict_semantics
+from .measurements import score_measurements
 
 
-SCORER_VERSION = 5
+SCORER_VERSION = 7
 PHYSIONET_EVALUATION_REPOSITORY = "https://github.com/physionetchallenges/evaluation-2024"
 PHYSIONET_EVALUATION_COMMIT = "1a5135470e7fd9817633f055f3dadebb58fc89ef"
 
@@ -51,35 +53,8 @@ def comparable_signal_frames(
     support so candidate gaps retain their original time coordinates.
     """
 
-    truth_frame = np.asarray(truth, dtype=np.float64)
-    candidate_frame = np.asarray(candidate, dtype=np.float64)
-
-    def most_supported_panel(values: np.ndarray, panel_size: int) -> np.ndarray:
-        if panel_size <= 0 or values.size % panel_size != 0:
-            return values
-        panel_count = values.size // panel_size
-        if panel_count <= 1 or panel_count > len(LEADS):
-            return values
-        panels = [
-            values[index * panel_size : (index + 1) * panel_size]
-            for index in range(panel_count)
-        ]
-        return max(panels, key=lambda panel: int(np.count_nonzero(np.isfinite(panel))))
-
-    if candidate_frame.size > truth_frame.size and truth_frame.size > 0:
-        candidate_frame = most_supported_panel(candidate_frame, truth_frame.size)
-    elif truth_frame.size > candidate_frame.size and candidate_frame.size > 0:
-        truth_frame = most_supported_panel(truth_frame, candidate_frame.size)
-
-    if truth_frame.size == candidate_frame.size:
-        truth_indices = np.flatnonzero(np.isfinite(truth_frame))
-        if truth_indices.size == 0:
-            return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
-        start = int(truth_indices[0])
-        end = int(truth_indices[-1]) + 1
-        return truth_frame[start:end], candidate_frame[start:end]
-
-    return finite_segment(truth_frame), finite_segment(candidate_frame)
+    truth_frame, candidate_frame, _ = local_frames(truth, candidate, 1.0, 1.0)
+    return truth_frame, candidate_frame
 
 
 def contiguous_true_runs(mask: np.ndarray) -> list[np.ndarray]:
@@ -91,6 +66,8 @@ def contiguous_true_runs(mask: np.ndarray) -> list[np.ndarray]:
 
 
 def resample(values: np.ndarray, source_rate: float, target_rate: float) -> np.ndarray:
+    positive_rate(source_rate)
+    positive_rate(target_rate)
     if values.size == 0 or abs(source_rate - target_rate) < 1e-9:
         return values.copy()
     duration = (values.size - 1) / source_rate
@@ -402,10 +379,17 @@ def read_uncertainty(path: Path | None) -> dict[str, dict[int, dict[str, Any]]]:
                 spread = float(raw_spread)
             except ValueError:
                 spread = np.nan
-            result.setdefault(lead, {})[sample] = {
+            entry = {
                 "status": status,
                 "candidateSpreadUv": spread,
             }
+            raw_canonical = row.get("canonicalSample") or row.get("canonical_sample")
+            if raw_canonical is not None and raw_canonical != "":
+                canonical = int(raw_canonical)
+                if canonical < 0:
+                    raise ValueError("invalid_uncertainty_canonical_sample")
+                entry["canonicalSample"] = canonical
+            result.setdefault(lead, {})[sample] = entry
     return result
 
 
@@ -448,7 +432,7 @@ def score_morphology(
         end = min(truth.size, center + radius + 1)
         truth_window = truth[start:end]
         candidate_window = alignment.candidate_on_truth_grid[start:end]
-        if truth_window.size == 0:
+        if truth_window.size == 0 or not np.any(np.isfinite(truth_window)):
             continue
         baseline_start = max(0, start - radius * 2)
         baseline_end = min(truth.size, end + radius * 2)
@@ -661,7 +645,7 @@ def score_uncertainty(
     status_values: list[str] = []
     uncertainty_scores: list[float] = []
     for sample in range(truth.size):
-        value = statuses.get(sample, "observed")
+        value = statuses.get(sample + alignment.shift_samples, "unavailable")
         if isinstance(value, dict):
             status_values.append(str(value.get("status", "observed")))
             try:
@@ -799,9 +783,22 @@ def align_and_score(
     annotations: dict[str, Any] | None = None,
     uncertainty_statuses: dict[int, Any] | None = None,
     high_error_threshold_uv: float = 75.0,
+    truth_rate: float | None = None,
+    candidate_rate: float | None = None,
 ) -> dict[str, Any]:
-    truth, candidate = comparable_signal_frames(truth, candidate)
-    annotation_value = annotations or {}
+    positive_rate(sample_rate)
+    if not np.isfinite(max_alignment_ms) or max_alignment_ms < 0:
+        raise ValueError("invalid_alignment_bound")
+    truth_rate = sample_rate if truth_rate is None else truth_rate
+    candidate_rate = sample_rate if candidate_rate is None else candidate_rate
+    truth, candidate, mapping = local_frames(truth, candidate, truth_rate, candidate_rate)
+    truth = resample(truth, truth_rate, sample_rate)
+    candidate = resample(candidate, candidate_rate, sample_rate)
+    mapping.update(comparisonRateHz=sample_rate,
+                   truthResampledSamples=int(truth.size), candidateResampledSamples=int(candidate.size),
+                   resampling="linear_within_finite_spans_only", uncertaintyInputFrame="exported_lead_sample")
+    annotation_value = map_annotations(annotations or {}, mapping, sample_rate)
+    uncertainty_statuses = map_uncertainty(uncertainty_statuses or {}, mapping, candidate.size, sample_rate)
     occluded = range_mask(
         truth.size,
         annotation_value.get("occludedRanges", [])
@@ -815,9 +812,21 @@ def align_and_score(
         max_alignment_ms=max_alignment_ms,
         excluded_truth_mask=occluded,
     )
+    unaligned = np.full(truth.size, np.nan)
+    unaligned[:min(truth.size, candidate.size)] = candidate[:truth.size]
+    labelled_measurements = annotation_value.get("measurements", [])
+    measurements = {
+        "unaligned": score_measurements(truth, unaligned, labelled_measurements, sample_rate_hz=sample_rate),
+        "aligned": score_measurements(truth, alignment.candidate_on_truth_grid if alignment else np.full(truth.size, np.nan),
+                                      labelled_measurements, sample_rate_hz=sample_rate),
+        "frames": {"unaligned": "lead_local_unaligned", "aligned": "lead_local_aligned"},
+    }
     if alignment is None:
         return {
             "status": "failed",
+            "frameTransform": mapping,
+            "rawMetricsFrame": "lead_local_unaligned",
+            "alignedMetricsFrame": "lead_local_aligned",
             "failureReason": "no_comparable_samples",
             "comparedSamples": 0,
             "coverage": 0.0,
@@ -834,6 +843,7 @@ def align_and_score(
             **physionet_snr(truth, candidate, sample_rate_hz=sample_rate),
             "visible": None,
             "morphology": None,
+            "measurements": measurements,
             "uncertainty": None,
         }
 
@@ -860,6 +870,11 @@ def align_and_score(
     )
     return {
         "status": "completed",
+        "frameTransform": {**mapping, "alignmentShiftSamples": alignment.shift_samples,
+                           "baselineCorrectionUv": alignment.baseline_bias_uv,
+                           "overlapSamples": int(alignment.truth_indices.size)},
+        "rawMetricsFrame": "lead_local_unaligned",
+        "alignedMetricsFrame": "lead_local_aligned",
         "failureReason": None,
         **metrics,
         "shiftSamples": alignment.shift_samples,
@@ -880,6 +895,7 @@ def align_and_score(
             annotation_value,
             sample_rate_hz=sample_rate,
         ),
+        "measurements": measurements,
         "uncertainty": score_uncertainty(
             truth,
             alignment,
@@ -905,11 +921,18 @@ def score_files(
     uncertainty_path: Path | None = None,
     case_id: str | None = None,
     expected_leads: Iterable[str] | None = None,
+    coordinate_contract: dict | None = None,
+    candidate_segments: list[dict] | None = None,
 ) -> dict[str, Any]:
     truth = read_leads(truth_path)
     candidate = read_leads(candidate_path)
     annotations = load_json(annotations_path) if annotations_path else {}
     uncertainty = read_uncertainty(uncertainty_path)
+    positive_rate(truth_rate)
+    positive_rate(candidate_rate)
+    semantics = strict_semantics(truth, candidate, coordinate_contract,
+                                 truth_rate=truth_rate, candidate_rate=candidate_rate,
+                                 candidate_segments=candidate_segments)
     common_rate = max(truth_rate, candidate_rate)
     per_lead: dict[str, dict[str, Any]] = {}
     missing_leads: list[str] = []
@@ -941,13 +964,17 @@ def score_files(
                 "comparedSamples": 0,
                 "coverage": 0.0,
             }
+            labelled = lead_annotations(annotations, lead).get("measurements", [])
+            unavailable = score_measurements(truth.get(lead, np.empty(0)), np.empty(0), labelled, sample_rate_hz=truth_rate)
+            per_lead[lead]["measurements"] = {"unaligned": unavailable, "aligned": unavailable,
+                                            "frames": {"unaligned": "annotation_truth", "aligned": "annotation_truth"}}
             continue
-        truth_signal = resample(truth[lead], truth_rate, common_rate)
-        candidate_signal = resample(candidate[lead], candidate_rate, common_rate)
         per_lead[lead] = align_and_score(
-            truth_signal,
-            candidate_signal,
+            truth[lead],
+            candidate[lead],
             sample_rate=common_rate,
+            truth_rate=truth_rate,
+            candidate_rate=candidate_rate,
             max_alignment_ms=max_alignment_ms,
             annotations=lead_annotations(annotations, lead),
             uncertainty_statuses=uncertainty.get(lead),
@@ -981,6 +1008,22 @@ def score_files(
         )
         for metrics in completed
     )
+    measurement_summary = {}
+    for frame in ("unaligned", "aligned"):
+        endpoints = [endpoint for lead in expected for endpoint in
+                     per_lead[lead].get("measurements", {}).get(frame, {}).get("endpoints", [])]
+        measurement_summary[frame] = {
+            "annotatedCount": len(endpoints),
+            "sourceVisibleCount": sum(e["visibility"] == "visible" for e in endpoints),
+            "completedCount": sum(e["status"] == "completed" for e in endpoints),
+            "byKind": {kind: {
+                "annotatedCount": sum(e["kind"] == kind for e in endpoints),
+                "completedCount": sum(e["kind"] == kind and e["status"] == "completed" for e in endpoints),
+                **{f"meanAbsolute{field[0].upper()+field[1:]}": _macro_mean(
+                    abs(e[field]) for e in endpoints if e["kind"] == kind and e[field] is not None
+                ) for field in ("detectorOnTruthError", "reconstructionIncrement", "totalErrorAgainstLabel")},
+            } for kind in ("interval", "amplitude")},
+        }
     return {
         "version": SCORER_VERSION,
         "caseId": case_id,
@@ -992,12 +1035,15 @@ def score_files(
         "candidateSampleRateHz": candidate_rate,
         "comparisonSampleRateHz": common_rate,
         "maxAlignmentMs": max_alignment_ms,
+        "semantics": semantics,
+        "measurementSummary": measurement_summary,
         "physionetCompatibility": {
             "repository": PHYSIONET_EVALUATION_REPOSITORY,
             "commit": PHYSIONET_EVALUATION_COMMIT,
             "metric": "mean lead-level SNR after official-style 2D quantized alignment",
         },
         "summary": {
+            "semanticStatus": semantics["status"],
             "expectedLeadCount": len(expected),
             "expectedLeads": list(expected),
             "scoredLeadCount": len(completed),

@@ -15,6 +15,8 @@ test("packaged runner isolates concurrent workspaces and rejects unsafe identifi
     const b = new Digitizer({ workspaceDir: path.join(workspace, "b") })
     assert.deepEqual(await Promise.all([a.getRun("run_absent"), b.getRun("run_absent")]), [null, null])
     await assert.rejects(a.getRun("../../input"), { code: "invalid_request" })
+    assert.equal(await a.getEvidence("run_absent"), null)
+    await assert.rejects(a.getEvidence("../../input"), { code: "invalid_request" })
     await assert.rejects(a.review("run_absent", { decision: "rejected", reviewer: "test", notes: "absent" }), { code: "not_found" })
     await assert.rejects(a.digitize("absent.png", { device: "cuda" }), { code: "invalid_request" })
     await assert.rejects(a.digitize("absent.png", { timeoutMs: 1 }), { code: "invalid_request" })

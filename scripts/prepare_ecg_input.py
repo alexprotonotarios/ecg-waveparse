@@ -13,10 +13,12 @@ from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_THRESHOLDS = json.loads(
-    (ROOT / "config/digitizer-policy.v2.json").read_text(encoding="utf-8")
+    (ROOT / "config/digitizer-policy.v3.json").read_text(encoding="utf-8")
 )["thresholds"]
 MASK_VERSION = 7
 DEFAULT_MAX_WORKING_LONG_EDGE_PX = 3200
+MAX_SOURCE_PIXELS = 80_000_000
+MAX_SOURCE_EDGE_PIXELS = 32768
 MIN_QUANTITATIVE_LONG_EDGE_PX = int(
     POLICY_THRESHOLDS["minimumQuantitativeSourceLongEdgePixels"]
 )
@@ -111,6 +113,7 @@ def inspect_source(path: Path) -> dict[str, int | str | None]:
     """Read image metadata without materializing the source pixel array."""
 
     with Image.open(path) as source:
+        validate_source_header(source)
         width, height = source.size
         return {
             "width": int(width),
@@ -120,6 +123,17 @@ def inspect_source(path: Path) -> dict[str, int | str | None]:
         }
 
 
+def validate_source_header(source: Image.Image) -> None:
+    """Bound decoding and refuse silently selecting one frame from a document."""
+    width,height=source.size
+    if source.format not in {"PNG","JPEG","WEBP","TIFF"}:
+        raise ValueError("invalid_input: unsupported_raster_format")
+    if min(width,height)<1 or max(width,height)>MAX_SOURCE_EDGE_PIXELS or width*height>MAX_SOURCE_PIXELS:
+        raise ValueError("invalid_input: source_dimensions_exceed_budget")
+    if getattr(source,"n_frames",1)!=1:
+        raise ValueError("invalid_input: multiple_frames_require_explicit_selection")
+
+
 def load_working_image(
     path: Path,
     max_long_edge: int,
@@ -127,6 +141,7 @@ def load_working_image(
     """Decode a bounded deterministic working image while preserving source metadata."""
 
     with Image.open(path) as source:
+        validate_source_header(source)
         source_format = source.format
         original_width, original_height = source.size
         if max(original_width, original_height) > max_long_edge:

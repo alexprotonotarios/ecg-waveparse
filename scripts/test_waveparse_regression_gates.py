@@ -5,7 +5,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from check_waveparse_regression import check
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.check_waveparse_regression import check
 
 
 class WaveParseRegressionGatesTest(unittest.TestCase):
@@ -54,7 +57,7 @@ class WaveParseRegressionGatesTest(unittest.TestCase):
             self.assertFalse(evaluate({"cases": []})["passed"])
 
     def test_global_review_requirements_apply_alongside_case_rules(self):
-        from check_waveparse_regression import check_run_safety
+        from scripts.check_waveparse_regression import check_run_safety
         gates = {"suiteId": "smoke", "runSafety": {"reviewRequired": True},
                  "cases": {"low_resolution": {"runSafety": {"maximumEffectiveSampleRateHz": 90}}}}
         count, failures = check_run_safety({"cases": [{"id": "smoke__low_resolution", "effectiveSampleRateHz": 90}]}, gates)

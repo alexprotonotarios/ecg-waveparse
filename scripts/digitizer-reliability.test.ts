@@ -3,6 +3,16 @@ import test from "node:test"
 
 import { digitizerTestUtils } from "../src/lib/digitizer"
 
+test("CPU inference bounds the Apple allocation cache only in its own macOS child", () => {
+  const inherited = process.env.MallocLargeCache
+  assert.equal(digitizerTestUtils.subprocessEnvironment("cpu", "darwin").MallocLargeCache, "0")
+  for (const [device, platform] of [["mps", "darwin"], ["cpu", "linux"], [undefined, "darwin"]] as const) {
+    assert.equal(digitizerTestUtils.subprocessEnvironment(device, platform).MallocLargeCache, inherited)
+  }
+  assert.equal(process.env.MallocLargeCache, inherited)
+  assert.equal("CUES_ECG_DIGITIZER_WORKER_SECRET" in digitizerTestUtils.subprocessEnvironment("cpu", "darwin"), false)
+})
+
 const leadOrder = [
   "I",
   "II",
@@ -91,6 +101,23 @@ test("configures both Open-ECG-Digitizer neural networks on the selected device"
 
   assert.equal(config.match(/device: 'mps'/g)?.length, 2)
   assert.doesNotMatch(config, /device: 'cpu'/)
+})
+
+test("nondefault physical gain reaches neural conversion and stability repeats", () => {
+  const options = {inputDir: "/tmp/input", outputDir: "/tmp/output", resampleSize: 1500,
+    vectorizer: "probability-centroid" as const, device: "mps" as const}
+  const historical = digitizerTestUtils.openEcgConfig(options)
+  assert.equal(digitizerTestUtils.openEcgConfig({...options, gainMmPerMv: 10}), historical)
+  for (const gainMmPerMv of [5, 20]) {
+    assert.match(digitizerTestUtils.openEcgConfig({...options, gainMmPerMv}), new RegExp(`gain_mm_per_mv: ${gainMmPerMv}`))
+    const source = {id: "gain-source", label: "Gain source", status: "completed" as const, score: 0,
+      parameters: {...options, gainMmPerMv}}
+    const repeat = digitizerTestUtils.stabilityCandidateConfig(source, "cpu-confirmation", "cpu")
+    assert.equal(repeat.gainMmPerMv, gainMmPerMv)
+  }
+  for (const gainMmPerMv of [0, -10, NaN, Infinity, 7.5]) {
+    assert.throws(() => digitizerTestUtils.openEcgConfig({...options, gainMmPerMv}), /supported physical gain/)
+  }
 })
 
 test("uses the corrected constrained layout profile for 6x2 pages with a rhythm row", () => {

@@ -20,6 +20,22 @@ const INPUT_PREPARER_PATH = path.join(
 )
 const PREFLIGHT_TIMEOUT_MS = 90_000
 
+export class CaptureInputInvalidError extends Error {
+  readonly code = "invalid_input"
+  constructor(readonly issue: string) {
+    super(`The source image cannot be admitted: ${issue}.`)
+    this.name = "CaptureInputInvalidError"
+  }
+}
+
+export function sourceInputFailure(error: unknown): CaptureInputInvalidError | undefined {
+  const stderr = typeof (error as {stderr?:unknown})?.stderr === "string" ? (error as {stderr:string}).stderr : ""
+  const match = stderr.match(/invalid_input: (unsupported_raster_format|source_dimensions_exceed_budget|multiple_frames_require_explicit_selection)/)
+  if (match) return new CaptureInputInvalidError(match[1])
+  if (/PIL\.(?:UnidentifiedImageError|Image\.DecompressionBombError)/.test(stderr)) return new CaptureInputInvalidError("malformed_or_oversized_raster")
+  return undefined
+}
+
 export class CapturePreflightUnavailableError extends Error {
   readonly code = "capture_preflight_unavailable"
 
@@ -99,6 +115,8 @@ export async function preflightCaptureBytes({
         }
       )
     } catch (error) {
+      const invalid = sourceInputFailure(error)
+      if (invalid) throw invalid
       throw new CapturePreflightUnavailableError(
         `Capture quality verification could not run: ${failureMessage(error)}`
       )

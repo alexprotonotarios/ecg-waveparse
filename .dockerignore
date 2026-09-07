@@ -1,0 +1,6 @@
+**
+!dist/
+!dist/ecg-waveparse-0.1.0.tgz
+!dist/ecg_waveparse-0.1.0-py3-none-any.whl
+!docker/
+!docker/waveparse.Dockerfile

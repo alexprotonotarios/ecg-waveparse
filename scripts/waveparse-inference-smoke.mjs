@@ -6,11 +6,12 @@ import path from 'node:path';
 import os from 'node:os';
 import assert from 'node:assert/strict';
 const [consumer, input, runtimeDir, workspaceDir, existingRunId] = process.argv.slice(2);
-if (!workspaceDir) throw new Error('Usage: node waveparse-inference-smoke.mjs CONSUMER_DIR INPUT RUNTIME_DIR WORKSPACE_DIR');
+if (!workspaceDir) throw new Error('Usage: node waveparse-inference-smoke.mjs CONSUMER_DIR INPUT RUNTIME_DIR WORKSPACE_DIR [EXISTING_RUN_ID]');
 const require = createRequire(path.resolve(consumer, 'package.json'));
 const { Digitizer } = require('ecg-waveparse');
 const digitizer = new Digitizer({ workspaceDir, runtimeDir });
 const result = existingRunId ? await digitizer.getRun(existingRunId) : await digitizer.digitize(input, { device: process.env.WAVEPARSE_SMOKE_DEVICE || 'cpu' });
+assert.equal(result.sourceIdentity.sha256, createHash('sha256').update(await fs.readFile(input)).digest('hex'));
 assert.equal(result.status, 'needs_review', result.message);
 assert.equal(result.layout, 'standard_6x2');
 assert(result.assets.canonicalCsv);
@@ -19,14 +20,22 @@ assert.equal((await digitizer.getRun(result.id)).assets.canonicalCsv.identity.sh
 await assert.rejects(digitizer.review(result.id, { decision: 'accepted', reviewer: 'synthetic-test', notes: 'No visual review performed.' }));
 const rejected = await digitizer.review(result.id, { decision: 'rejected', reviewer: 'synthetic-test', notes: 'Engineering test only; not accepted for quantitative use.' });
 assert.equal(rejected.review.decision, 'rejected');
-assert.equal(rejected.retention.reviewArtifactsRetained, false);
+assert.equal(rejected.retention.policy, 'lean-final-evidence-v2');
+assert.equal(rejected.retention.reviewArtifactsRetained, true);
+for (const key of ['canonicalCsv', 'segmentsCsv', 'uncertaintyCsv', 'segmentMapJson']) {
+  assert.equal(rejected.assets[key].identity.sha256, result.assets[key].identity.sha256);
+}
 const original = await fs.readFile(rejected.assets.input.absolutePath);
 await fs.writeFile(rejected.assets.input.absolutePath, Buffer.from('deliberately corrupted synthetic test copy'));
 try { await assert.rejects(digitizer.getRun(result.id)); }
 finally { await fs.writeFile(rejected.assets.input.absolutePath, original); }
 const controller = new AbortController();
 let cancelledRunId;
-await assert.rejects(digitizer.digitize(input, { signal: controller.signal, onProgress: ({runId}) => { cancelledRunId = runId; controller.abort(); } }), { code: 'cancelled' });
+let cancelRequestedAt;
+await assert.rejects(digitizer.digitize(input, { signal: controller.signal, onProgress: ({runId}) => { cancelledRunId = runId; cancelRequestedAt = performance.now(); controller.abort(); } }), { code: 'cancelled' });
+const cancellationLatencyMs = performance.now() - cancelRequestedAt;
+assert(cancellationLatencyMs < 30_000, 'Post-admission cancellation exceeded the cleanup budget');
+console.log(JSON.stringify({ cancellationLatencyMs, cancellationBoundary: 'immediately_after_source_admission' }));
 assert(cancelledRunId);
 const cancelled = await digitizer.getRun(cancelledRunId);
 assert.equal(cancelled.status, 'failed');

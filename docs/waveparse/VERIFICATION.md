@@ -1,11 +1,16 @@
 # Version 0.1.0 release verification — 5 September 2026
 
+**Historical snapshot.** Current engineering changes and their separately
+versioned evidence are in [the criteria audit](ACCEPTANCE-AUDIT-2026-09-06.md)
+and [final 25-patient evaluation](FINAL-EVALUATION-2026-09-06.md). The identities and test
+counts below describe the earlier artifacts, not the current working tree.
+
 This records the local preparation baseline. The clean source repository was
 initially created privately at `alexprotonotarios/ecg-waveparse`; the native
 workflow follow-up is recorded in HOSTED-CI.md. Source-preview sharing is separate
 from this historical test record. No package has been published to npm/PyPI.
 
-## Current package identity and reproducibility
+## Historical package identity and reproducibility
 
 The tested runtime payload manifest SHA-256 is:
 

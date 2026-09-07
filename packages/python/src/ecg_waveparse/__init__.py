@@ -157,6 +157,13 @@ class Digitizer:
     async def get_run_async(self, run_id: str) -> RunResult | None:
         return await self._request_async("get", runId=run_id)
 
+    def get_evidence(self, run_id: str) -> dict[str, Any] | None:
+        """Verified local source/segment references; works when extraction abstains."""
+        return self._request("evidence", runId=run_id)
+
+    async def get_evidence_async(self, run_id: str) -> dict[str, Any] | None:
+        return await self._request_async("evidence", runId=run_id)
+
     def review(self, run_id: str, *, decision: str, reviewer: str, notes: str, confirmations: dict[str, bool] | None = None) -> RunResult:
         return self._request("review", runId=run_id, decision=decision, reviewer=reviewer, notes=notes, confirmations=confirmations)
 

@@ -9,6 +9,8 @@ export type PublicationReasonCode =
   | "input_quality_insufficient"
   | "unstable_neural_confirmation"
   | "semantic_identity_unconfirmed"
+  | "calibration_conflict"
+  | "unsupported_calibration"
   | "no_publishable_candidate"
 
 export type PublicationDecision<T> =
@@ -24,6 +26,8 @@ export type PublicationDecision<T> =
         | "no_publishable_candidate"
         | "input_quality_insufficient"
         | "semantic_identity_unconfirmed"
+        | "calibration_conflict"
+        | "unsupported_calibration"
       partialLeadSelection: false
     }
 
@@ -107,6 +111,8 @@ function selected<T>(
     | "no_publishable_candidate"
     | "unstable_neural_confirmation"
     | "semantic_identity_unconfirmed"
+    | "calibration_conflict"
+    | "unsupported_calibration"
     | "input_quality_insufficient"
     | "input_quality_review_only"
   >,
@@ -115,7 +121,7 @@ function selected<T>(
   return { outcome, reasonCode, candidate, partialLeadSelection: false } as const
 }
 
-export function applyInputQualityPublicationGate<T>(
+export function retainReviewableOutputWithAdvisoryQuality<T>(
   decision: PublicationDecision<T>,
   _inputQualityOutcome: "acceptable" | "review" | "insufficient" | undefined
 ): PublicationDecision<T> {
@@ -126,3 +132,6 @@ export function applyInputQualityPublicationGate<T>(
   // corroboration requirements remains publishable with review metadata.
   return decision
 }
+
+/** @deprecated Quality classifiers are advisory; this operation is not a gate. */
+export const applyInputQualityPublicationGate = retainReviewableOutputWithAdvisoryQuality

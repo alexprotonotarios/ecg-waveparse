@@ -1,5 +1,18 @@
 # Native package CI — 5 September 2026
 
+The results below are historical. The 6 September Pro continuation is preparing
+a new native package matrix and does not claim that this older successful run
+verifies its changed artifacts. The new workflow removes PR path filters, adds
+fast contracts on every PR and generates one shared set of source/truth bytes
+for Ubuntu and macOS. A separate aggregate compares waveform, missingness,
+uncertainty, semantic and policy results under the fixed
+`benchmark/protocols/platform-parity.v1.json` limits. It runs after failed or
+skipped prerequisites and fails unless both execution tiers succeeded.
+Identical abstentions establish refusal parity only. The recommended required
+checks are `Fast package contracts` and `Supported platform equivalence`.
+Current hosted execution and required-check enforcement remain unverified;
+changing the workflow file alone does not enable branch protection.
+
 The clean source repository was private when these checks ran on 5 September 2026:
 [alexprotonotarios/ecg-waveparse](https://github.com/alexprotonotarios/ecg-waveparse).
 Its initial 110-file source snapshot contains no original ECGs, model files,
