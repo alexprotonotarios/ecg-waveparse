@@ -15,6 +15,27 @@ const scratch = await fs.mkdtemp(path.join(tmpdir(), 'waveparse-consumer-'));
 const python = process.env.WAVEPARSE_PYTHON || 'python3.12';
 const run = (command, args, options = {}) => execFileSync(command, args, { cwd: scratch, stdio: 'inherit', ...options });
 try {
+  run(python, ['-c', String.raw`
+import re, sys, tarfile, zipfile
+from pathlib import Path
+root = Path(sys.argv[1])
+names = ['ecg-waveparse-0.1.0.tgz', 'ecg_waveparse-0.1.0-py3-none-any.whl', 'ecg_waveparse-0.1.0.tar.gz', 'ecg-waveparse-0.1.0-source.tar.gz']
+for name in names:
+    if name.endswith('.whl'):
+        with zipfile.ZipFile(root / name) as archive:
+            files = {p.filename: archive.read(p) for p in archive.infolist() if not p.is_dir()}
+    else:
+        with tarfile.open(root / name) as archive:
+            members = archive.getmembers()
+            assert all(p.isfile() or p.isdir() for p in members), 'Archive link or special file'
+            files = {p.name: archive.extractfile(p).read() for p in members if p.isfile()}
+    for path, data in files.items():
+        assert not Path(path).is_absolute() and '..' not in Path(path).parts, path
+        assert not re.search(r'(^|/)(benchmark|ecg_benchmark|input|storage|\.external|\.git)/|/(decoder_backends|local_grid_warp)\.py$|\.(png|jpe?g|pt|onnx)$', path), path
+        if path.endswith(('.md', '.gitignore', '/PKG-INFO', '/METADATA')):
+            assert not re.search(rb'benchmark|\bARVC\b|SEM-16|FINAL-EVALUATION|multisource_truth', data, re.I), path
+    print('Inspected download:', name, len(files), 'files')
+`, dist]);
   await fs.writeFile(path.join(scratch, 'package.json'), '{"private":true,"type":"module"}');
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--cache', path.join(scratch, 'cache'), path.join(dist, 'ecg-waveparse-0.1.0.tgz')]);
   run(python, ['-m', 'venv', path.join(scratch, 'venv')]);

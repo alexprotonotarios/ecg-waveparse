@@ -70,7 +70,8 @@ async function checkRuntime(runtimeDir: string) {
   const python = path.join(runtimeDir, "engine", ".venv", "bin", "python")
   try {
     await execute(python, [path.join(RESOURCE_ROOT, "runtime_setup.py"), "doctor", "--runtime-dir", runtimeDir, "--resource-root", RESOURCE_ROOT, "--device", device], {
-      env: { ...process.env, WAVEPARSE_NODE: process.execPath },
+      env: { ...process.env, WAVEPARSE_NODE: process.execPath, MPLBACKEND: "Agg",
+        MPLCONFIGDIR: process.env.MPLCONFIGDIR || path.join(WORKSPACE_ROOT, ".cache", "matplotlib") },
       timeout: 360_000, maxBuffer: 1024 * 1024, signal: controller.signal,
     })
   } catch (error) {

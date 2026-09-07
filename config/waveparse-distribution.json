@@ -61,6 +61,7 @@
     "examples/waveparse.mjs",
     "examples/waveparse.py",
     "docker/waveparse.Dockerfile",
-    ".dockerignore"
+    ".dockerignore",
+    "packages/python/.gitignore"
   ]
 }

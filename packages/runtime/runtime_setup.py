@@ -125,12 +125,21 @@ import torch, cv2, numpy, scipy, pandas, rapidocr
 sys.path[:0] = [sys.argv[2], sys.argv[3]]
 from ecg_pipeline.fidelity_inference_wrapper import FidelityInferenceWrapper
 from ecg_pipeline.native_grid_digitizer import trace_path
+import matplotlib
+matplotlib.use("Agg", force=True)
+import matplotlib.pyplot as plt
+figure = plt.figure(figsize=(1, 1))
+figure.canvas.draw()
+plt.close(figure)
+if "matplotlib.backends._macosx" in sys.modules: raise RuntimeError("GUI plotting backend loaded in local runtime")
 if sys.argv[4] == "mps" and not torch.backends.mps.is_available(): raise RuntimeError("MPS is unavailable")
 if platform.python_version() != "3.12.9": raise RuntimeError("Wrong inference Python version")
-print(json.dumps({"rapidocrRoot": str(Path(rapidocr.__file__).parent)}))
+print(json.dumps({"rapidocrRoot": str(Path(rapidocr.__file__).parent), "plottingBackend": matplotlib.get_backend()}))
 '''
-    response = subprocess.check_output([str(python), "-c", probe, str(requirements), str(resources), str(engine), device], text=True, timeout=300, env={**os.environ, "PYTHONNOUSERSITE": "1"})
+    response = subprocess.check_output([str(python), "-c", probe, str(requirements), str(resources), str(engine), device], text=True, timeout=300, env={**os.environ, "PYTHONNOUSERSITE": "1", "MPLBACKEND": "Agg"})
     result = json.loads(response)
+    if result["plottingBackend"].lower() != "agg":
+        raise RuntimeError("Local runtime requires the non-interactive Agg plotting backend.")
     manifest = json.loads((resources / "config/waveparse-runtime.json").read_text())
     for model in manifest["ocrModels"]:
         file = Path(result["rapidocrRoot"]) / model["path"].removeprefix("rapidocr/")
@@ -158,7 +167,7 @@ def doctor(directory: Path, resources: Path, manifest: dict, device: str, *, req
     if digest(requirement) != manifest["platforms"][host_target()]["requirementsSha256"]:
         raise RuntimeError("Packaged requirements lock was modified.")
     verify_dependencies(engine / ".venv/bin/python", requirement, resources, engine, device)
-    return {"ok": True, "target": host_target(), "runtimeDir": str(directory), "manifestSha256": expected_manifest, "device": device}
+    return {"ok": True, "target": host_target(), "runtimeDir": str(directory), "manifestSha256": expected_manifest, "device": device, "plottingBackend": "Agg"}
 
 
 def setup(directory: Path, resources: Path, manifest: dict, device: str) -> dict:

@@ -21,12 +21,12 @@ const js = path.join(root, 'packages/javascript');
 const py = path.join(root, 'packages/python');
 const stage = path.join(root, 'build/waveparse/runtime');
 const digest = (data) => createHash('sha256').update(data).digest('hex');
-async function walk(directory) {
+async function walk(directory, includeHidden = false) {
   const result = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
-    if (entry.name === '__pycache__' || entry.name.startsWith('.')) continue;
+    if (entry.name === '__pycache__' || (!includeHidden && entry.name.startsWith('.'))) continue;
     const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) result.push(...await walk(file));
+    if (entry.isDirectory()) result.push(...await walk(file, includeHidden));
     else if (entry.isFile()) result.push(file);
     else throw new Error(`Symlink/special file excluded: ${file}`);
   }
@@ -202,7 +202,7 @@ const sortedEntries = object => Object.fromEntries(Object.entries(object).sort((
 await fs.writeFile(path.join(source, 'pnpm-lock.yaml'), dumpYaml({ ...sourceLock, importers: { '.': importer }, packages: sortedEntries(packages), snapshots: sortedEntries(snapshots) }, { lineWidth: -1, noRefs: true }));
 await fs.writeFile(path.join(source, '.gitignore'), 'node_modules/\nbuild/\ndist/\n.venv/\n.build-venv/\n__pycache__/\n*.pyc\n*.tsbuildinfo\n.env*\npackages/javascript/dist/\npackages/javascript/runtime/\npackages/python/src/ecg_waveparse/runtime/\npackages/javascript/docs/\npackages/python/docs/\npackages/javascript/README.md\npackages/python/README.md\npackages/javascript/LICENSE\npackages/python/LICENSE\npackages/javascript/LICENSES/\npackages/python/LICENSES/\npackages/javascript/THIRD_PARTY_NOTICES.md\npackages/python/THIRD_PARTY_NOTICES.md\n');
 await fs.writeFile(path.join(dist, 'bundle-inputs.json'), JSON.stringify({ externalJavaScriptDependencies: [], inputs: [...bundleInputs].sort() }, null, 2) + '\n');
-await fs.writeFile(path.join(source, 'source-files.json'), JSON.stringify((await walk(source)).map(file => path.relative(source, file)).concat(['.github/workflows/waveparse-packages.yml', '.gitignore', '.dockerignore']).sort(), null, 2) + '\n');
+await fs.writeFile(path.join(source, 'source-files.json'), JSON.stringify((await walk(source, true)).map(file => path.relative(source, file)).sort(), null, 2) + '\n');
 execFileSync(process.execPath, [path.join(root, 'scripts/audit-waveparse-source.mjs'), source, path.join(dist, 'source-audit.json')], { stdio: 'inherit' });
 execFileSync('tar', ['-czf', path.join(dist, `${release.name}-${release.version}-source.tar.gz`), '-C', source, '.'], { env: { ...process.env, COPYFILE_DISABLE: '1' } });
 console.log(`Prepared ${release.name} ${release.version}; ${Object.keys(manifest).length} shared runtime files. Archives: ${dist}. Build Python distributions with python -m build --no-isolation packages/python --outdir PATH.`);

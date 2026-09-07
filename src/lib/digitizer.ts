@@ -309,6 +309,9 @@ function subprocessEnvironment(
 ): NodeJS.ProcessEnv {
   const environment = { ...process.env }
   delete environment.CUES_ECG_DIGITIZER_WORKER_SECRET
+  // Extraction writes files and must never initialize a desktop GUI backend.
+  environment.MPLBACKEND = "Agg"
+  environment.MPLCONFIGDIR ||= path.join(ROOT_DIR, ".cache", "matplotlib")
   environment.PYTHONPATH = [RESOURCE_ROOT, environment.PYTHONPATH]
     .filter(Boolean)
     .join(path.delimiter)

@@ -48,6 +48,7 @@
   "packages/javascript/package.json",
   "packages/javascript/src/cli.ts",
   "packages/javascript/src/index.ts",
+  "packages/python/.gitignore",
   "packages/python/pyproject.toml",
   "packages/python/src/ecg_waveparse/__init__.py",
   "packages/python/src/ecg_waveparse/__main__.py",
