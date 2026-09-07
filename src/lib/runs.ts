@@ -418,7 +418,7 @@ export type DigitizerCandidateSummary = {
     inputVariant?: DigitizerInputVariant
     vectorizer?: DigitizerVectorizer
     device?: DigitizerComputeDevice
-    planningPhase?: "core" | "recovery" | "benchmark"
+    planningPhase?: "core" | "recovery" | "exhaustive"
     scheduleReason?: string
   }
   layout?: string
@@ -464,7 +464,7 @@ export type DigitizerPipelineEvidence = {
   recoveryExpanded: boolean
   candidatePlan: Array<{
     candidateId: string
-    phase: "core" | "recovery" | "benchmark"
+    phase: "core" | "recovery" | "exhaustive"
     reason: string
     executed: boolean
   }>

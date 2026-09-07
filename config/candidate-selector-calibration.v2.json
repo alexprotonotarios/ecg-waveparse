@@ -5,14 +5,14 @@
         "contextPriorMeanRmseUv": 83.045,
         "enabled": false,
         "layoutPriorMeanRmseUv": 83.045,
-        "meanImprovementUv": 0.0,
+        "meanImprovementUv": 0,
         "validationCaseCount": 1
       },
       "degraded-raster": {
         "contextPriorMeanRmseUv": 149.814,
         "enabled": false,
         "layoutPriorMeanRmseUv": 149.814,
-        "meanImprovementUv": 0.0,
+        "meanImprovementUv": 0,
         "validationCaseCount": 3
       },
       "geometry": {
@@ -49,7 +49,7 @@
         "contextPriorMeanRmseUv": 111.064,
         "enabled": false,
         "layoutPriorMeanRmseUv": 111.064,
-        "meanImprovementUv": 0.0,
+        "meanImprovementUv": 0,
         "validationCaseCount": 3
       },
       "geometry": {
@@ -290,7 +290,7 @@
             "contextPriorMeanRmseUv": 83.045,
             "enabled": false,
             "layoutPriorMeanRmseUv": 83.045,
-            "meanImprovementUv": 0.0,
+            "meanImprovementUv": 0,
             "validationCaseCount": 1
           }
         },
@@ -513,7 +513,7 @@
             "contextPriorMeanRmseUv": 149.814,
             "enabled": false,
             "layoutPriorMeanRmseUv": 149.814,
-            "meanImprovementUv": 0.0,
+            "meanImprovementUv": 0,
             "validationCaseCount": 3
           }
         },
@@ -1556,7 +1556,7 @@
             "contextPriorMeanRmseUv": 111.064,
             "enabled": false,
             "layoutPriorMeanRmseUv": 111.064,
-            "meanImprovementUv": 0.0,
+            "meanImprovementUv": 0,
             "validationCaseCount": 3
           }
         },
@@ -3294,27 +3294,9 @@
   },
   "profileId": "paired-truth-layout-artifact-risk-priors-v2",
   "training": {
-    "artifactContextMethod": "manifest-degradation-family-v1",
-    "benchmarkRunId": "benchmark_multisource_truth_v1_subset_100_digitizer_20260820113112_daa7195a",
-    "clinicalValidationUse": false,
-    "contextSelectionRule": "At least five validation cases and at least 1 uV lower mean RMSE than the layout-only prior",
-    "groupedSplitAudit": {
-      "groupKey": "groupId with sourceId fallback",
-      "groupsBySplit": {
-        "development": 72,
-        "validation": 28
-      },
-      "leakageChecked": true
-    },
-    "heldoutUsed": false,
-    "objective": "macro mean 12-lead RMSE in microvolts",
-    "pipelineCommit": "6e3910827c617fc0034195eb5c15fa8061c5d6f3-dirty",
     "pipelineContractVersion": 3,
-    "riskStatistic": "75% median RMSE + 25% p75 RMSE",
-    "shrinkageReferenceCases": 5,
-    "split": "development",
-    "splitMethod": "manifest-grouped-source-split",
-    "suiteId": "multisource_truth_v1_subset_100"
+    "pipelineCommit": "6e3910827c617fc0034195eb5c15fa8061c5d6f3-dirty",
+    "heldoutUsed": false
   },
   "version": 2
 }

@@ -2,7 +2,7 @@
   "version": 3,
   "profileId": "source-faithful-publication-v3",
   "selectorCalibrationContractVersion": 3,
-  "evidenceBasis": "Version 3 adds source-bound printed-setting reconciliation and quantitative refusal for conflicts/unsupported settings, tested on controlled development images. Numerical selector features, priors and existing thresholds are unchanged. Historical basis: Conservative engineering limits plus paired-truth candidate priors fitted on the multisource development split, with artifact-context activation tuned on its separate validation split, and characterized against the deterministic six-case truth suite and 71-image licensed regression library. Locked heldout truth was not used to fit or activate selector priors. These limits were not clinically calibrated.",
+  "evidenceBasis": "Engineering thresholds; not clinically calibrated. Inspect source, calibration, missingness and uncertainty before quantitative use.",
   "rationale": {
     "agreement": "Source-pixel support is not a morphology oracle. Every published complete lead requires agreement with an independent non-derived extraction path.",
     "coverage": "Scorable, publishable, boundary, and review-only coverage thresholds distinguish quantitative output from explicitly incomplete review output.",
@@ -10,7 +10,7 @@
     "nativeTrace": "Native-grid evidence establishes source support but no longer bypasses cross-candidate morphology agreement.",
     "inputScale": "Dimension thresholds choose between native extraction, deterministic upscale audit views, and model-scale inference without claiming added source resolution.",
     "artifactSafety": "Annotation margins, deterministic geometry correction, background-only moire suppression, boundary masks, amplitude floors, and peer gap limits preserve missingness where artifacts could be mistaken for ECG morphology.",
-    "selectorCalibration": "Layout/candidate risk priors are fitted on paired development truth and shrunk toward a layout reference. Artifact-specific priors are enabled only when a separate validation split has enough cases and improves mean RMSE; locked heldout truth remains untouched. Priors are disabled, rather than applied as a common score offset, when the pipeline contract is stale or the selected context/candidate family is out of domain. Priors apply only after structural safety gates and cannot make an unsafe candidate publishable. Once candidates pass those gates, warning count is down-weighted because missing-sample and gap penalties already quantify the underlying boundary loss.",
+    "selectorCalibration": "Versioned layout and artifact-context risk priors apply only after structural gates. Incompatible parameter contracts and unsupported contexts disable the priors. Priors cannot make an unsafe candidate publishable.",
     "stability": "Borderline complete MPS-backed publication decisions require a repeated inference and may escalate to CPU confirmation; an unconfirmed unstable result abstains. Explicit partial/review-only extraction is not erased by instability in a neural corroborator.",
     "printedSettings": "Numeric printed speed/gain tokens with original-source coordinates corroborate pulse/grid inference. Conflicts and unsupported settings stop all quantitative candidate routes. Missing OCR evidence does not become a detected default; pulse assumptions and unknown acquisition sampling remain explicit."
   },

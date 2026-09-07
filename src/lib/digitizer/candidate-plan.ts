@@ -118,13 +118,13 @@ export function analyzeCandidatePlanningContext(
 export function buildPrimaryCandidatePlan({
   context,
   geometry,
-  benchmarkMode,
+  exhaustiveMode,
   device,
   annotationMasked,
 }: {
   context: CandidatePlanningContext
   geometry: LayoutGeometryReport
-  benchmarkMode: boolean
+  exhaustiveMode: boolean
   device: DigitizerComputeDevice
   annotationMasked: boolean
 }): DigitizerCandidateConfig[] {
@@ -279,7 +279,7 @@ export function buildPrimaryCandidatePlan({
       }
     )
   }
-  if (shouldRunModel && (benchmarkMode || annotationMasked)) {
+  if (shouldRunModel && (exhaustiveMode || annotationMasked)) {
     plan.push({
       kind: "source-model",
       id: "annotation-masked",
@@ -306,7 +306,7 @@ export function buildPrimaryCandidatePlan({
     })
   }
   if (
-    (benchmarkMode ||
+    (exhaustiveMode ||
       context.adaptivePreprocessingEligible ||
       context.geometryCorrectionApplied) &&
     !geometryCorrectedTwelveRow
@@ -381,7 +381,7 @@ export function buildPrimaryCandidatePlan({
     }
   }
   if (
-    (benchmarkMode ||
+    (exhaustiveMode ||
       context.sourceMaxDimension >=
         DIGITIZER_POLICY.minimumNativeModelInputDimension) &&
     !geometryCorrectedTwelveRow
@@ -408,7 +408,7 @@ export function buildPrimaryCandidatePlan({
     )
   }
   if (
-    benchmarkMode ||
+    exhaustiveMode ||
     (context.sourceMaxDimension < MODEL_SCALE_CENTROID_DIMENSION &&
       !geometryCorrectedTwelveRow)
   ) {
@@ -423,7 +423,7 @@ export function buildPrimaryCandidatePlan({
       device,
     })
   }
-  if (benchmarkMode) {
+  if (exhaustiveMode) {
     plan.push(
       {
         kind: "source-model",
@@ -496,7 +496,7 @@ export function semanticLeadIdentityParameters(
   }
 }
 
-export type CandidatePlanningPhase = "core" | "recovery" | "benchmark"
+export type CandidatePlanningPhase = "core" | "recovery" | "exhaustive"
 
 export function candidatePlanningPhase(
   candidate: DigitizerCandidateConfig
@@ -507,7 +507,7 @@ export function candidatePlanningPhase(
     candidate.id === "label-thresh-002" ||
     candidate.id === "label-thresh-001"
   ) {
-    return "benchmark"
+    return "exhaustive"
   }
   if (
     candidate.id.includes("path-2200") ||
@@ -525,8 +525,8 @@ export function candidateScheduleReason(
   context: CandidatePlanningContext
 ) {
   if (candidate.scheduleReason) return candidate.scheduleReason
-  if (candidatePlanningPhase(candidate) === "benchmark") {
-    return "exhaustive benchmark ablation"
+  if (candidatePlanningPhase(candidate) === "exhaustive") {
+    return "exhaustive candidate search"
   }
   if (candidate.inputVariant === "artifact-preprocessed") {
     return context.screenArtifactLikely

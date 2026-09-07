@@ -1,3 +1,0 @@
-# Lightweight contract tests need image operations but no neural weights.
--r benchmark/requirements.txt
-opencv-python-headless==4.13.0.92

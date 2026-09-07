@@ -5,7 +5,6 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "waveparse:build": "node scripts/build-waveparse.mjs",
-    "waveparse:test": "node --import tsx --test scripts/waveparse.test.ts scripts/digitizer-reliability.test.ts scripts/waveparse-ci.test.ts scripts/physical-contracts.test.ts scripts/evidence-retention.test.ts scripts/segment-evidence.test.ts scripts/outcome-contracts.test.ts scripts/geometry-evidence.test.ts scripts/selector-feature-identity.test.ts scripts/lineage.test.ts scripts/interpreter-evidence.test.ts scripts/durable-write-faults.test.ts scripts/input-error-taxonomy.test.ts scripts/evaluation-protocol.test.ts",
     "waveparse:verify": "node scripts/verify-waveparse-packages.mjs"
   },
   "dependencies": {

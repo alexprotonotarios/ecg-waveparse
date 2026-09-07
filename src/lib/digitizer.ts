@@ -299,7 +299,7 @@ type PublishedCandidateResult = {
 
 type DigitizerExecutionOptions = {
   signal?: AbortSignal
-  candidateMode?: "production" | "benchmark"
+  candidateMode?: "production" | "exhaustive"
   onStage?: (stage: string, durationMs: number) => void
 }
 
@@ -393,7 +393,7 @@ export async function digitizeRun(
   }
 
   options.onStage?.("preprocessing",performance.now()-preparationStarted)
-  const benchmarkMode = options.candidateMode === "benchmark"
+  const exhaustiveMode = options.candidateMode === "exhaustive"
   const layoutStarted=performance.now()
   const geometry = await detectLayoutGeometry(prepared, options.signal)
   options.onStage?.("ocr_and_layout",performance.now()-layoutStarted)
@@ -440,7 +440,7 @@ export async function digitizeRun(
             false,
             options.signal
           ),
-          benchmarkMode || adaptivePreprocessingEligible
+          exhaustiveMode || adaptivePreprocessingEligible
             ? runNativeGridCandidate(
                 run,
                 prepared,
@@ -484,7 +484,7 @@ export async function digitizeRun(
     candidate: DigitizerCandidateConfig
   ): Promise<CandidateResult | undefined> => {
     if (
-      !benchmarkMode &&
+      !exhaustiveMode &&
       productionNeuralCandidateCount >=
         DIGITIZER_POLICY.maximumProductionNeuralCandidates
     ) {
@@ -500,11 +500,11 @@ export async function digitizeRun(
           ? { gainMmPerMv: sourceCalibration.gainMmPerMv }
           : {}),
         planningPhase:
-          candidate.planningPhase ?? (benchmarkMode ? "benchmark" : "recovery"),
+          candidate.planningPhase ?? (exhaustiveMode ? "exhaustive" : "recovery"),
         scheduleReason:
           candidate.scheduleReason ??
-          (benchmarkMode
-            ? "exhaustive benchmark candidate"
+          (exhaustiveMode
+            ? "exhaustive candidate"
             : "dynamic specialist recovery within the production budget"),
       },
       options.signal
@@ -513,7 +513,7 @@ export async function digitizeRun(
   const primaryPlan = buildPrimaryCandidatePlan({
     context: planning,
     geometry,
-    benchmarkMode,
+    exhaustiveMode,
     device,
     annotationMasked: prepared.report.annotationMask.maskedPixels > 0,
   })
@@ -532,7 +532,7 @@ export async function digitizeRun(
     if (result) candidates.push(result)
   }
   const coreAgreementReached = hasIndependentCompleteAgreement(candidates)
-  if (benchmarkMode || !coreAgreementReached) {
+  if (exhaustiveMode || !coreAgreementReached) {
     for (const candidate of expandedPlan) {
       const result = await runProductionCandidate({
         ...candidate,
@@ -547,7 +547,7 @@ export async function digitizeRun(
   )
 
   if (
-    benchmarkMode ||
+    exhaustiveMode ||
     (!nativeGridStructurallyComplete &&
       defaultCandidate?.status === "completed" &&
       !defaultCandidate.qa?.passed)
@@ -565,7 +565,7 @@ export async function digitizeRun(
     if (thresholdRetry) candidates.push(thresholdRetry)
   }
 
-  if (!benchmarkMode) {
+  if (!exhaustiveMode) {
     for (const layoutConstraint of LABEL_CONFIRMED_RETRY_LAYOUTS) {
       const hint = candidates
         .filter(
@@ -624,11 +624,11 @@ export async function digitizeRun(
   }
 
   if (
-    benchmarkMode ||
+    exhaustiveMode ||
     !candidates.some(candidateHasAllScorableLeads)
   ) {
     if (geometry.layoutHint === "standard_6x2_with_r1_ignored") {
-      if (benchmarkMode || !nativeGridCandidate?.sourceFidelity?.passed) {
+      if (exhaustiveMode || !nativeGridCandidate?.sourceFidelity?.passed) {
         const cropBoxes = sixByTwoPanelCropBoxes(prepared.report, geometry)
         const fallbackGroups = [
           {
@@ -706,7 +706,7 @@ export async function digitizeRun(
   }
 
   if (
-    !benchmarkMode &&
+    !exhaustiveMode &&
     !candidates.some(candidateHasAllScorableLeads) &&
     geometry.compoundPanels &&
     geometry.compoundPanels.confidence >= 0.08
@@ -831,7 +831,7 @@ export async function digitizeRun(
       nativeGridCandidates,
       nativeGridStructurallyComplete,
       coreAgreementReached,
-      recoveryExpanded: benchmarkMode || !coreAgreementReached,
+      recoveryExpanded: exhaustiveMode || !coreAgreementReached,
       stability: notRequiredStabilityEvidence(),
     })
     return {
@@ -955,7 +955,7 @@ export async function digitizeRun(
       nativeGridCandidates,
       nativeGridStructurallyComplete,
       coreAgreementReached,
-      recoveryExpanded: benchmarkMode || !coreAgreementReached,
+      recoveryExpanded: exhaustiveMode || !coreAgreementReached,
       stability: notRequiredStabilityEvidence(),
     })
     return {
@@ -989,7 +989,7 @@ export async function digitizeRun(
     selectionCandidates,
     decisionOutcome: decision.outcome,
     decisionReasonCode: decision.reasonCode,
-    benchmarkMode,
+    exhaustiveMode,
     signal: options.signal,
   })
   candidates.push(...stabilityResult.candidates)
@@ -1003,7 +1003,7 @@ export async function digitizeRun(
     nativeGridCandidates,
     nativeGridStructurallyComplete,
     coreAgreementReached,
-    recoveryExpanded: benchmarkMode || !coreAgreementReached,
+    recoveryExpanded: exhaustiveMode || !coreAgreementReached,
     selected,
     reasonCode: stabilityResult.confirmed
       ? decision.reasonCode
@@ -4126,7 +4126,7 @@ async function confirmBorderlineMpsSelection({
   selectionCandidates,
   decisionOutcome,
   decisionReasonCode,
-  benchmarkMode,
+  exhaustiveMode,
   signal,
 }: {
   run: RunRecord
@@ -4135,7 +4135,7 @@ async function confirmBorderlineMpsSelection({
   selectionCandidates: CandidateResult[]
   decisionOutcome: "needs_review" | "partial"
   decisionReasonCode: PublicationReasonCode
-  benchmarkMode: boolean
+  exhaustiveMode: boolean
   signal?: AbortSignal
 }): Promise<{
   confirmed: boolean
@@ -4143,7 +4143,7 @@ async function confirmBorderlineMpsSelection({
   evidence: DigitizerStabilityEvidence
 }> {
   if (
-    benchmarkMode ||
+    exhaustiveMode ||
     !selected.canonical ||
     !stabilityRequiredForPublicationOutcome(decisionOutcome)
   ) {

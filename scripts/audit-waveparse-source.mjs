@@ -7,7 +7,7 @@ const [directory, output] = process.argv.slice(2);
 assert(directory && output, 'Usage: node audit-waveparse-source.mjs SOURCE_DIR REPORT_JSON');
 const root = path.resolve(directory);
 const files = [];
-const forbiddenDirectory = /^(input|storage|\.git|\.external|node_modules|generated|results|dist|build)$/;
+const forbiddenDirectory = /^(input|storage|\.git|\.external|node_modules|generated|results|dist|build|benchmark|ecg_benchmark|tests)$/;
 const forbiddenExtension = /\.(png|jpe?g|webp|pdf|dcm|csv|onnx|pth|pt|pkl|pickle|safetensors|pem|key|sqlite|db)$/i;
 const credentialPatterns = [
   /(?:gh[pousr]_|github_pat_)[A-Za-z0-9_]{30,}/,
@@ -15,6 +15,9 @@ const credentialPatterns = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /(?:sk_live_|sk_test_|wos_sk_)[A-Za-z0-9]{20,}/,
 ];
+const expected = new Set(JSON.parse(await fs.readFile(path.join(root, 'source-files.json'), 'utf8')));
+expected.add('source-files.json');
+const distribution = JSON.parse(await fs.readFile(path.join(root, 'config/waveparse-distribution.json'), 'utf8'));
 async function walk(dir) {
   for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
     const absolute = path.join(dir, entry.name);
@@ -25,24 +28,31 @@ async function walk(dir) {
       await walk(absolute);
     } else {
       assert(entry.isFile(), `Special file: ${relative}`);
+      assert(expected.has(relative), `File outside distribution inventory: ${relative}`);
       assert(!entry.name.startsWith('.env') && !forbiddenExtension.test(entry.name), `Data/credential file: ${relative}`);
       const data = await fs.readFile(absolute);
       assert(data.length < 2 * 1024 * 1024, `Unexpected large source file: ${relative}`);
       assert(!data.includes(0), `Binary file: ${relative}`);
       assert(!credentialPatterns.some(pattern => pattern.test(data.toString('utf8'))), `Credential-shaped content in ${relative}`);
+      if (relative.endsWith('.md')) {
+        assert(!/\bARVC\b|SEM-16|benchmark|ecg_benchmark|(?:BASELINE|EVALUATION|EXPERIMENTS|PERFORMANCE|DELIVERY|VERIFICATION)-?\d*\.md/i.test(data.toString('utf8')), `Development reference in user documentation: ${relative}`);
+      }
+      assert(!/\/(decoder_backends|local_grid_warp)\.py$/.test(relative), `Experimental module: ${relative}`);
+      if (relative.startsWith('docs/')) assert(distribution.documentation.includes(relative.slice(5)), `Unlisted user document: ${relative}`);
       files.push({ path: relative, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') });
     }
   }
 }
 await walk(root);
 files.sort((a, b) => a.path.localeCompare(b.path));
+assert.deepEqual(files.map(file => file.path).sort(), [...expected].sort(), 'Distribution inventory differs from source files');
 for (const required of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'LICENSES/Open-ECG-Digitizer-CC-BY-SA-4.0.txt', '.github/workflows/waveparse-packages.yml']) {
   assert(files.some(file => file.path === required), `Missing release source: ${required}`);
 }
 const stub = await fs.readFile(path.join(root, 'src/lib/local-reference.ts'), 'utf8');
 assert(/LOCAL_REFERENCE_DIGITIZATIONS: KnownDigitization\[\] = \[\]/.test(stub), 'Private reference source was not stubbed');
 const report = { schemaVersion: 1, fileCount: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0),
-  checks: { dataFilesAbsent: true, originalGitHistoryAbsent: true, symlinksAbsent: true, knownCredentialPatternsAbsent: true, referenceStubVerified: true, thirdPartyLicenceIncluded: true },
+  checks: { dataFilesAbsent: true, originalGitHistoryAbsent: true, symlinksAbsent: true, knownCredentialPatternsAbsent: true, referenceStubVerified: true, thirdPartyLicenceIncluded: true, developmentMaterialAbsent: true, exactFileInventory: true },
   limitation: 'Allowlist and targeted credential checks; not proof that arbitrary unrecognised secrets cannot exist.', files };
 await fs.mkdir(path.dirname(path.resolve(output)), { recursive: true });
 await fs.writeFile(output, JSON.stringify(report, null, 2) + '\n');
