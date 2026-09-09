@@ -149,6 +149,9 @@ doctor and digitize commands in [Install and run](#install-and-run).
 Building packages does not download the inference models. To verify the built packages, run
 `WAVEPARSE_PYTHON=python corepack pnpm waveparse:verify`.
 
+Build and package checks run locally. This repository does not include GitHub
+Actions workflows; run these checks before submitting source changes.
+
 ## Licence
 
 Independently authored WaveParse code is MIT-licensed. Adapted Open-ECG-Digitizer

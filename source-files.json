@@ -1,6 +1,5 @@
 [
   ".dockerignore",
-  ".github/workflows/waveparse-packages.yml",
   ".gitignore",
   "LICENSE",
   "LICENSES/Open-ECG-Digitizer-CC-BY-SA-4.0.txt",
@@ -44,7 +43,6 @@
   "packages/distribution/API.md",
   "packages/distribution/README.md",
   "packages/distribution/THIRD_PARTY_NOTICES.md",
-  "packages/distribution/workflow.yml",
   "packages/javascript/package.json",
   "packages/javascript/src/cli.ts",
   "packages/javascript/src/index.ts",

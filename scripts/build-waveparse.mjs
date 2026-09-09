@@ -155,8 +155,6 @@ await fs.copyFile(path.join(userDocs, 'README.md'), path.join(source, 'README.md
 await fs.copyFile(path.join(userDocs, 'THIRD_PARTY_NOTICES.md'), path.join(source, 'THIRD_PARTY_NOTICES.md'));
 await fs.mkdir(path.join(source, 'docs'), { recursive: true });
 for (const file of distribution.documentation) await fs.copyFile(path.join(userDocs, file), path.join(source, 'docs', file));
-await fs.mkdir(path.join(source, '.github/workflows'), { recursive: true });
-await fs.copyFile(path.join(userDocs, 'workflow.yml'), path.join(source, '.github/workflows/waveparse-packages.yml'));
 await fs.writeFile(path.join(source, 'tsconfig.json'), JSON.stringify({ compilerOptions: {
   target: 'ES2022', lib: ['esnext', 'dom'], strict: true, noEmit: true, esModuleInterop: true, useDefineForClassFields: false,
   module: 'esnext', moduleResolution: 'bundler', resolveJsonModule: true, skipLibCheck: true,

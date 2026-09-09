@@ -31,7 +31,7 @@ for name in names:
             files = {p.name: archive.extractfile(p).read() for p in members if p.isfile()}
     for path, data in files.items():
         assert not Path(path).is_absolute() and '..' not in Path(path).parts, path
-        assert not re.search(r'(^|/)(benchmark|ecg_benchmark|input|storage|\.external|\.git)/|/(decoder_backends|local_grid_warp)\.py$|\.(png|jpe?g|pt|onnx)$', path), path
+        assert not re.search(r'(^|/)(benchmark|ecg_benchmark|input|storage|\.external|\.git|\.github/workflows)/|/(decoder_backends|local_grid_warp)\.py$|\.(png|jpe?g|pt|onnx)$', path), path
         if path.endswith(('.md', '.gitignore', '/PKG-INFO', '/METADATA')):
             assert not re.search(rb'benchmark|\bARVC\b|SEM-16|FINAL-EVALUATION|multisource_truth', data, re.I), path
     print('Inspected download:', name, len(files), 'files')

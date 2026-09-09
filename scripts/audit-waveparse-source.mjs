@@ -22,6 +22,7 @@ async function walk(dir) {
   for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
     const absolute = path.join(dir, entry.name);
     const relative = path.relative(root, absolute).split(path.sep).join('/');
+    assert(!/^\.github\/workflows(?:\/|$)/.test(relative), `GitHub Actions workflows excluded: ${relative}`);
     assert(!entry.isSymbolicLink(), `Symlink excluded: ${relative}`);
     if (entry.isDirectory()) {
       assert(!forbiddenDirectory.test(entry.name), `Private/generated directory: ${relative}`);
@@ -46,13 +47,13 @@ async function walk(dir) {
 await walk(root);
 files.sort((a, b) => a.path.localeCompare(b.path));
 assert.deepEqual(files.map(file => file.path).sort(), [...expected].sort(), 'Distribution inventory differs from source files');
-for (const required of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'LICENSES/Open-ECG-Digitizer-CC-BY-SA-4.0.txt', '.github/workflows/waveparse-packages.yml']) {
+for (const required of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'LICENSES/Open-ECG-Digitizer-CC-BY-SA-4.0.txt']) {
   assert(files.some(file => file.path === required), `Missing release source: ${required}`);
 }
 const stub = await fs.readFile(path.join(root, 'src/lib/local-reference.ts'), 'utf8');
 assert(/LOCAL_REFERENCE_DIGITIZATIONS: KnownDigitization\[\] = \[\]/.test(stub), 'Private reference source was not stubbed');
 const report = { schemaVersion: 1, fileCount: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0),
-  checks: { dataFilesAbsent: true, originalGitHistoryAbsent: true, symlinksAbsent: true, knownCredentialPatternsAbsent: true, referenceStubVerified: true, thirdPartyLicenceIncluded: true, developmentMaterialAbsent: true, exactFileInventory: true },
+  checks: { dataFilesAbsent: true, originalGitHistoryAbsent: true, symlinksAbsent: true, knownCredentialPatternsAbsent: true, referenceStubVerified: true, thirdPartyLicenceIncluded: true, developmentMaterialAbsent: true, githubActionsWorkflowsAbsent: true, exactFileInventory: true },
   limitation: 'Allowlist and targeted credential checks; not proof that arbitrary unrecognised secrets cannot exist.', files };
 await fs.mkdir(path.dirname(path.resolve(output)), { recursive: true });
 await fs.writeFile(output, JSON.stringify(report, null, 2) + '\n');

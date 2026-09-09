@@ -56,7 +56,6 @@
     "packages/distribution/README.md",
     "packages/distribution/API.md",
     "packages/distribution/THIRD_PARTY_NOTICES.md",
-    "packages/distribution/workflow.yml",
     "LICENSE",
     "examples/waveparse.mjs",
     "examples/waveparse.py",
