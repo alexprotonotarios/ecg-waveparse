@@ -22,6 +22,9 @@ Download the wheel or npm archive from the
 Choose either installation method. Each package includes the shared runner;
 you do not need to install both packages.
 
+Release downloads contain the code from their release tag. To use the code in
+your current Git checkout, follow [Build from source](#build-from-source).
+
 Python, in a virtual environment:
 
 ```sh
@@ -133,8 +136,17 @@ python -m build --no-isolation packages/python --outdir dist
 ```
 
 The `dist` directory contains the npm archive, Python wheel and source archives.
-Install the wheel or npm archive using the commands above. Building packages
-does not download the inference models. To verify the built packages, run
+For example, install the newly built wheel from the checkout root into the active
+virtual environment:
+
+```sh
+python -m pip install ./dist/ecg_waveparse-0.1.0-py3-none-any.whl
+```
+
+For a separate JavaScript application, install the archive at
+`/absolute/path/to/checkout/dist/ecg-waveparse-0.1.0.tgz`. Then run the setup,
+doctor and digitize commands in [Install and run](#install-and-run).
+Building packages does not download the inference models. To verify the built packages, run
 `WAVEPARSE_PYTHON=python corepack pnpm waveparse:verify`.
 
 ## Licence

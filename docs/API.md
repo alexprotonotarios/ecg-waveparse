@@ -33,9 +33,21 @@ Its internal `issue` distinguishes rates, crops, transforms, counts, timing and
 artifact/segment identity. Intentional CSV missingness is an empty cell, never
 a zero-valued reconstruction.
 
-Review requires nonempty reviewer and notes. Acceptance requires all three original
-confirmations and an eligible quantitative output cryptographically bound to its
-source. `getRun` checks available artifact integrity. Review compaction can remove
+Review uses `decision: "accepted"` or `"rejected"` in JavaScript, and
+`decision="accepted"` or `"rejected"` in Python. Both require nonempty reviewer
+and notes. Acceptance also requires an eligible quantitative output
+cryptographically bound to its source and all three `confirmations` fields:
+
+| Field | What the reviewer confirms |
+| --- | --- |
+| `sourceCompared` | The output was compared with the original image. |
+| `leadIdentityVerified` | Lead identities were checked against the source. |
+| `scaleAndGapsReviewed` | Calibration, scale and missing signal were reviewed. |
+
+These keys are camelCase in both the JavaScript object and the Python dictionary.
+Each must be `true` (`True` in Python) for acceptance; set it only after that
+review has taken place. Rejection does not require acceptance confirmations.
+`getRun` checks available artifact integrity. Review compaction can remove
 transient artifact paths from the next returned result.
 
 Retention policy `lean-final-evidence-v2` permanently keeps the compact signal,
