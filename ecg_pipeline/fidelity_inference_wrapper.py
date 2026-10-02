@@ -12,6 +12,7 @@ from torch import Tensor
 
 from src.model.inference_wrapper import InferenceWrapper
 from ecg_pipeline.cpu_convolution import bound_cpu_convolutions
+from ecg_pipeline.cpu_unet_lifetime import release_cpu_unet_tensors
 
 
 FEATURE_CACHE_VERSION = 1
@@ -163,6 +164,17 @@ def dark_ink_probability(
 class FidelityInferenceWrapper(InferenceWrapper):
     """Open-ECG wrapper that retains source-pixel evidence for narrow trace ink."""
 
+    def _load_signal_extractor(self) -> object:
+        extractor = super()._load_signal_extractor()
+        if sys.platform == "linux" and torch.device(self.device).type == "cpu":
+            from src.model.signal_extractor import SignalExtractor
+            from ecg_pipeline.compact_signal_extractor import CroppedCentroidSignalExtractor
+
+            # Preserve specialized extractors and their own vectorization rules.
+            if type(extractor) is SignalExtractor:
+                return CroppedCentroidSignalExtractor(**self.config.SIGNAL_EXTRACTOR.KWARGS)
+        return extractor
+
     def __init__(
         self,
         *args: object,
@@ -173,14 +185,32 @@ class FidelityInferenceWrapper(InferenceWrapper):
         lead_label_threshold: float = 0.8,
         gain_mm_per_mv: float = 10.0,
         feature_cache_path: str | None = None,
+        decoder_coordinate_path: str | None = None,
+        source_rhythm_context_path: str | None = None,
         **kwargs: object,
     ) -> None:
+        if decoder_coordinate_path is not None and (
+            not isinstance(decoder_coordinate_path, str) or not decoder_coordinate_path
+        ):
+            raise ValueError("Decoder coordinate path must be a nonempty string.")
+        if source_rhythm_context_path is not None and (
+            not isinstance(source_rhythm_context_path, str) or not source_rhythm_context_path or not decoder_coordinate_path
+        ):
+            raise ValueError("Source rhythm assignment requires a context path and coordinate capture.")
         if isinstance(gain_mm_per_mv, bool) or gain_mm_per_mv not in (5.0, 10.0, 20.0):
             raise ValueError("Unsupported source gain; expected 5, 10 or 20 mm/mV.")
         super().__init__(*args, **kwargs)
-        if sys.platform == "darwin" and torch.device(self.device).type == "cpu":
+        if sys.platform in {"darwin", "linux"} and torch.device(self.device).type == "cpu":
             bound_cpu_convolutions(self.segmentation_model)
             bound_cpu_convolutions(self.identifier.unet)
+        if sys.platform == "linux" and torch.device(self.device).type == "cpu":
+            release_cpu_unet_tensors(self.segmentation_model)
+            release_cpu_unet_tensors(self.identifier.unet)
+        elif sys.platform == "darwin" and torch.device(self.device).type == "cpu":
+            from ecg_pipeline.cpu_unet_decoder_lifetime import release_cpu_unet_decoder_inputs
+
+            release_cpu_unet_decoder_inputs(self.segmentation_model)
+            release_cpu_unet_decoder_inputs(self.identifier.unet)
         self.dark_ink_threshold = dark_ink_threshold
         self.dark_ink_strength = dark_ink_strength
         self.dark_ink_support_radius = dark_ink_support_radius
@@ -188,6 +218,10 @@ class FidelityInferenceWrapper(InferenceWrapper):
         self.feature_cache_path = (
             Path(feature_cache_path).resolve() if feature_cache_path else None
         )
+        self.decoder_coordinate_path = (
+            Path(decoder_coordinate_path).resolve() if decoder_coordinate_path else None
+        )
+        self.source_rhythm_context_path = source_rhythm_context_path
         if not 0.5 <= lead_label_threshold <= 0.8:
             raise ValueError("Lead label threshold must be between 0.5 and 0.8.")
         if lead_label_threshold < 0.8:
@@ -228,13 +262,34 @@ class FidelityInferenceWrapper(InferenceWrapper):
         # single candidate image; resetting all Torch device generators here
         # makes both extraction and any backend stochasticity reproducible.
         torch.manual_seed(CANDIDATE_RANDOM_SEED)
-        return super().__call__(
-            image,
-            layout_should_include_substring=(
-                self.forced_layout_substring
-                or layout_should_include_substring
-            ),
-        )
+        layout = self.forced_layout_substring or layout_should_include_substring
+        coordinate_path = getattr(self, "decoder_coordinate_path", None)
+        if coordinate_path is None:
+            return super().__call__(image, layout_should_include_substring=layout)
+        if coordinate_path.exists():
+            raise FileExistsError("Refusing to overwrite an earlier decoder-coordinate capture.")
+        from ecg_pipeline.decoder_coordinates import DecoderCoordinateCapture
+
+        capture = DecoderCoordinateCapture(self)
+        rhythm_context = getattr(self, "source_rhythm_context_path", None)
+        if rhythm_context is None:
+            with capture:
+                result = super().__call__(image, layout_should_include_substring=layout)
+        else:
+            from ecg_pipeline.source_rhythm_assignment import SourceRhythmAssignment
+            # Policy hooks first, observer hooks second: every actual assignment
+            # is recorded, and the observer never rewrites a waveform or route.
+            with SourceRhythmAssignment(capture, rhythm_context, image) as policy:
+                with capture:
+                    result = super().__call__(image, layout_should_include_substring=layout)
+            capture.data["sourceRhythmAssignment"] = policy.evidence
+            # Candidate input folders are compacted. Preserve the exact context
+            # bytes as JSON text in the permanent coordinate artifact.
+            capture.data["sourceRhythmContextJson"] = policy.context_json
+        # Save before the upstream export code modifies canonical tensors for
+        # its diagnostic PNG. Failure must not publish a false capture success.
+        capture.save_prepared_input(coordinate_path)
+        return result
 
     def _align_feature_maps(
         self,

@@ -2,10 +2,16 @@ import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import { promises as fs } from "node:fs"
 import path from "node:path"
-import { calibrationEvidence, segmentSourceRegion, sourceTransformChain, transformPoint } from "@/lib/digitizer/geometry-evidence"
-import { directContributor, intervalLineage, type IntervalLineage } from "@/lib/digitizer/lineage"
+import { calibrationEvidence, preferUnmaskedSourceGeometry, preserveCalibratedSourceGeometry, segmentSourceRegion, sourceTransformChain, transformPoint, shouldUseSourceGridNativeMode, shouldInspectUnmaskedSourceGeometry } from "@/lib/digitizer/geometry-evidence"
+import { canCaptureDecoderCoordinates, candidatePreparationMatchesRequest, parseCandidatePreparation, type CandidatePreparationReceipt } from "@/lib/digitizer/candidate-preparation"
+import { canUseSourceRhythmAssignment, SOURCE_RHYTHM_ASSIGNMENT_METHOD, validateSourceRhythmAssignment, type SourceRhythmAssignmentEvidence } from "@/lib/digitizer/source-rhythm-assignment"
+import { directContributor, intervalLineage, validateIntervalLineage, type IntervalLineage } from "@/lib/digitizer/lineage"
 import { candidateAncestry } from "@/lib/digitizer/candidate-ancestry"
 import { bindPrintedCalibrationSource, calibrationIsUsable, calibrationPublicationBlock } from "@/lib/digitizer/calibration-settings"
+import { validateSourceGridEvidence } from "@/lib/digitizer/source-grid-contract"
+import { beginSelectionPredicate, SelectionEvidenceRecorder, type SelectionDiagnostics } from "@/lib/digitizer/selection-evidence"
+import { retainSourcePhotoDiagnostic } from "@/lib/digitizer/source-photo-fallback"
+import { applySourceTimePublication, sourceTimePublicationEligible, type PublicationUncertaintyRow, type SourceTimeManifest } from "@/lib/digitizer/source-time-publication"
 import { promisify } from "node:util"
 
 import type {
@@ -197,6 +203,12 @@ const PREPROCESSING_PERMITS = parseBoundedInteger(
 )
 const PREPROCESSING_ATTEMPTS = [3200, 2400] as const
 const PREPROCESSING_TIMEOUT_MS = 180_000
+// Portable OCR on physical scans can exceed one minute on CPU (D208).
+// Keep layout work bounded and cancellable within the overall job deadline.
+const LAYOUT_DETECTION_TIMEOUT_MS = 180_000
+// Source-label-grid OCR exceeded 60 seconds on the supported Linux CPU path
+// (D212). Other native modes retain their existing one-minute bound.
+const SOURCE_LABEL_GRID_NATIVE_TIMEOUT_MS = 180_000
 
 class AsyncSemaphore {
   private active = 0
@@ -259,6 +271,19 @@ type CanonicalCsv = {
 }
 
 type CandidateResult = DigitizerCandidateSummary & {
+  inputPreparation?: CandidatePreparationReceipt
+  decoderCoordinatePath?: string
+  sourceCoordinatePath?: string
+  sourceCoordinateEvidence?: {
+    sha256: string
+    sourceSha256: string
+    rawCanonicalSha256: string
+    coordinateScope: "original_source_raster"
+    preparationCorrespondenceVerified: true
+    physicalTimingVerified: false
+    waveformChanged: false
+    sourceRhythmAssignment?: SourceRhythmAssignmentEvidence
+  }
   canonicalPath?: string
   diagnosticPath?: string
   metadataPath?: string
@@ -274,23 +299,7 @@ const LEAD_ALIGNMENT_RMSE_CACHE = new WeakMap<
   WeakMap<CandidateResult, Map<string, number>>
 >()
 
-type UncertaintyRow = {
-  lead: string
-  leadSample: number
-  timeSeconds: number
-  canonicalSample: number
-  valueUv: number
-  reviewEstimateUv: number
-  status:
-    | "observed"
-    | "missing"
-    | "uncertain_annotation"
-    | "uncertain_candidate_disagreement"
-    | "uncertain_annotation_and_disagreement"
-  annotationOverlap: boolean
-  candidateCount: number
-  candidateSpreadUv: number
-}
+type UncertaintyRow = PublicationUncertaintyRow
 
 type PublishedCandidateResult = {
   assets: Partial<Record<RunAssetKey, RunAsset>>
@@ -510,7 +519,8 @@ export async function digitizeRun(
             ? "exhaustive candidate"
             : "dynamic specialist recovery within the production budget"),
       },
-      options.signal
+      options.signal,
+      geometry
     )
   }
   const primaryPlan = buildPrimaryCandidatePlan({
@@ -837,7 +847,7 @@ export async function digitizeRun(
       recoveryExpanded: exhaustiveMode || !coreAgreementReached,
       stability: notRequiredStabilityEvidence(),
     })
-    return {
+    const failure: Partial<RunRecord> = {
       status: "failed",
       publicationDecision: {
         policyId: DIGITIZER_POLICY_ID,
@@ -857,17 +867,21 @@ export async function digitizeRun(
       },
       updatedAt: new Date().toISOString(),
     }
+    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options)
   }
 
-  const selectionCandidates = completedCandidates.filter(
-    (candidate) =>
-      candidateEligibleForSelection(candidate) ||
-      hasLowResolutionNativeTraceCorroboration(
-        candidate,
-        completedCandidates,
-        prepared.report
-      )
-  )
+  const selectionRecorder = new SelectionEvidenceRecorder()
+  selectionRecorder.candidates.push(...candidates.filter(candidate => candidate.status !== "completed")
+    .map(candidate => ({ candidateId: candidate.id, status: candidate.status, eligible: false, reason: "not-completed" })))
+  const selectionCandidates = completedCandidates.filter(candidate => {
+    const ineligible = candidateSelectionIneligibility(candidate)
+    const eligible = ineligible === undefined ||
+      hasLowResolutionNativeTraceCorroboration(candidate, completedCandidates, prepared.report)
+    selectionRecorder.candidates.push({ candidateId: candidate.id, status: candidate.status, eligible,
+      reason: ineligible === undefined ? "ordinary-eligibility" : eligible ? "low-resolution-native-corroboration" : ineligible })
+    return eligible
+  })
+  selectionRecorder.observe(selectionCandidates, "publication-selection")
   applyCandidateDisagreementScores(selectionCandidates)
   const gapRepairCandidate = await buildPeerGapRepairCandidate(
     run,
@@ -878,17 +892,22 @@ export async function digitizeRun(
     candidates.push(gapRepairCandidate)
     completedCandidates.push(gapRepairCandidate)
     selectionCandidates.push(gapRepairCandidate)
+    selectionRecorder.candidates.push({ candidateId: gapRepairCandidate.id, status: gapRepairCandidate.status,
+      eligible: true, reason: "constructed-peer-gap-repair" })
     applyCandidateDisagreementScores(selectionCandidates)
   }
   const fusedCandidate = await buildLeadFusionCandidate(
     run,
     selectionCandidates,
-    prepared.report
+    prepared.report,
+    selectionRecorder
   )
   if (fusedCandidate) {
     candidates.push(fusedCandidate)
     completedCandidates.push(fusedCandidate)
     selectionCandidates.push(fusedCandidate)
+    selectionRecorder.candidates.push({ candidateId: fusedCandidate.id, status: fusedCandidate.status,
+      eligible: true, reason: "constructed-lead-fusion" })
   }
   const sourceVerifiedCandidate = selectionCandidates
     .filter(
@@ -903,6 +922,9 @@ export async function digitizeRun(
         candidatePublicationRank(a) - candidatePublicationRank(b) ||
         a.id.localeCompare(b.id)
     )[0]
+  const sourceTimingVerifiedCandidate = selectionCandidates
+    .filter((candidate) => candidateHasTrustedSourceGridTiming(candidate, selectionCandidates))
+    .sort((a, b) => candidatePublicationRank(a) - candidatePublicationRank(b) || a.id.localeCompare(b.id))[0]
   const adaptivePreprocessedCandidate =
     selectAdaptivePreprocessedCandidate(selectionCandidates)
   const publishableFusedCandidate =
@@ -928,6 +950,7 @@ export async function digitizeRun(
       : selectPartialLeadCandidate(selectionCandidates)
   const decision = retainReviewableOutputWithAdvisoryQuality(
     resolvePublicationDecision({
+      sourceTimingVerified: sourceTimingVerifiedCandidate,
       sourceVerified: sourceVerifiedCandidate,
       adaptivePreprocessed: adaptivePreprocessedCandidate,
       fused: publishableFusedCandidate,
@@ -938,6 +961,8 @@ export async function digitizeRun(
     }),
     prepared.report.inputQuality?.outcome
   )
+  const selectionDiagnostics = selectionRecorder.snapshot({ outcome: decision.outcome,
+    reasonCode: decision.reasonCode, ...(decision.outcome === "failed" ? {} : { candidateId: decision.candidate.id }) })
   if (decision.outcome === "failed") {
     const semanticIdentityUnconfirmed = Boolean(
       decision.reasonCode === "no_publishable_candidate" &&
@@ -960,8 +985,9 @@ export async function digitizeRun(
       coreAgreementReached,
       recoveryExpanded: exhaustiveMode || !coreAgreementReached,
       stability: notRequiredStabilityEvidence(),
+      selectionDiagnostics,
     })
-    return {
+    const failure: Partial<RunRecord> = {
       status: "failed",
       publicationDecision: {
         policyId: DIGITIZER_POLICY_ID,
@@ -983,11 +1009,13 @@ export async function digitizeRun(
       },
       updatedAt: new Date().toISOString(),
     }
+    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options)
   }
   const selected = decision.candidate
   const stabilityResult = await confirmBorderlineMpsSelection({
     run,
     prepared,
+    geometry,
     selected,
     selectionCandidates,
     decisionOutcome: decision.outcome,
@@ -1012,6 +1040,7 @@ export async function digitizeRun(
       ? decision.reasonCode
       : "unstable_neural_confirmation",
     stability: stabilityResult.evidence,
+    selectionDiagnostics,
   })
   const publicationReasonCode: PublicationReasonCode =
     stabilityResult.confirmed
@@ -1097,6 +1126,28 @@ export async function digitizeRun(
   }
 }
 
+async function retainFailedRunPhotoDiagnostic(
+  run: RunRecord,
+  prepared: PreparedRunInput,
+  failure: Partial<RunRecord>,
+  options: DigitizerExecutionOptions
+) {
+  const started = performance.now()
+  const result = await retainSourcePhotoDiagnostic(failure, {
+    workingSourcePath: prepared.workingSourcePath,
+    originalSourcePath: prepared.sourcePath,
+    imageSize: [prepared.report.workingImage?.width ?? prepared.report.source.width,
+      prepared.report.workingImage?.height ?? prepared.report.source.height],
+    sourceSha256: prepared.report.sourceSha256,
+    runDirectory: runDirectory(run.id),
+    python: openEcgPythonPath(), resourceRoot: RESOURCE_ROOT,
+    environment: subprocessEnvironment("cpu"), signal: options.signal,
+    acquire: () => nativeExtractionSemaphore.acquire(), asset: assetFromAbsolutePath,
+  })
+  options.onStage?.("source_photo_diagnostic", performance.now() - started)
+  return result
+}
+
 function assetsWithoutQuantitativeOutputs(
   assets: Partial<Record<RunAssetKey, RunAsset>>
 ) {
@@ -1105,6 +1156,8 @@ function assetsWithoutQuantitativeOutputs(
   delete reviewAssets.segmentsCsv
   delete reviewAssets.uncertaintyCsv
   delete reviewAssets.segmentMapJson
+  delete reviewAssets.coordinateEvidence
+  delete reviewAssets.sourceTimeEvidence
   delete reviewAssets.paperRender
   return reviewAssets
 }
@@ -1198,7 +1251,8 @@ async function runCandidate(
   run: RunRecord,
   prepared: PreparedRunInput,
   candidate: DigitizerCandidateConfig,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  geometry?: LayoutGeometryReport,
 ): Promise<CandidateResult> {
   const startedAt = performance.now()
   const inputPath = candidateInputPath(prepared, candidate.inputVariant)
@@ -1231,6 +1285,30 @@ async function runCandidate(
       candidate.device
     )
     const featureCacheHit = await pathExists(featureCachePath)
+    const decoderCoordinatePath = canCaptureDecoderCoordinates(candidate)
+      ? path.join(candidateDir, "decoder-coordinates.npz") : undefined
+    let sourceRhythmContextPath: string | undefined
+    let expectedRhythmIdentity: Parameters<typeof validateSourceRhythmAssignment>[1] | undefined
+    if (canUseSourceRhythmAssignment(candidate, geometry)) {
+      const workingSourceSha256 = createHash("sha256").update(await fs.readFile(prepared.workingSourcePath)).digest("hex")
+      // The upstream exporter clears candidateDir; keep the input context beside
+      // the prepared image until inference completes, then retain a copy.
+      sourceRhythmContextPath = path.join(candidateInputDir, "source-rhythm-context.json")
+      const context = JSON.stringify({
+        version: 1, method: SOURCE_RHYTHM_ASSIGNMENT_METHOD,
+        originalSource: { path: prepared.sourcePath, sha256: prepared.report.sourceSha256 },
+        workingSource: { path: prepared.workingSourcePath, sha256: workingSourceSha256 },
+        preparedInput: { path: preparedInput.inputPath, sha256: preparedInput.preparation.preparedSha256 },
+        geometry, preparation: preparedInput.preparation,
+        workingToCandidateEdges: preparedInput.preparation.inputToPreparedEdges,
+      }, null, 2) + "\n"
+      await fs.writeFile(sourceRhythmContextPath, context, "utf8")
+      expectedRhythmIdentity = {
+        contextSha256: createHash("sha256").update(context).digest("hex"),
+        sourceSha256: prepared.report.sourceSha256, workingSourceSha256,
+        preparedInputSha256: preparedInput.preparation.preparedSha256,
+      }
+    }
     const configText = openEcgConfig({
       inputDir: preparedInput.inputDir,
       outputDir: candidateDir,
@@ -1243,6 +1321,8 @@ async function runCandidate(
       gainMmPerMv: candidate.gainMmPerMv,
       layoutConstraint: candidate.layoutConstraint,
       featureCachePath,
+      decoderCoordinatePath,
+      sourceRhythmContextPath,
     })
 
     await fs.writeFile(configPath, configText, "utf8")
@@ -1263,6 +1343,10 @@ async function runCandidate(
       releaseNeuralInference()
     }
     await fs.writeFile(configPath, configText, "utf8")
+    await fs.writeFile(path.join(candidateDir, "input-preparation.json"), JSON.stringify(preparedInput.preparation, null, 2) + "\n", "utf8")
+    if (sourceRhythmContextPath) {
+      await fs.copyFile(sourceRhythmContextPath, path.join(candidateDir, "source-rhythm-context.json"))
+    }
 
     const canonicalPath = path.join(
       /* turbopackIgnore: true */ candidateDir,
@@ -1278,6 +1362,39 @@ async function runCandidate(
     )
 
     const rawCanonical = await readCanonicalCsv(canonicalPath)
+    if (decoderCoordinatePath && !(await pathExists(decoderCoordinatePath))) {
+      throw new Error("The requested decoder-coordinate capture was not produced.")
+    }
+    let sourceCoordinatePath: string | undefined
+    let sourceCoordinateEvidence: CandidateResult["sourceCoordinateEvidence"]
+    if (decoderCoordinatePath) {
+      const chain = sourceTransformChain(prepared.report, candidate, preparedInput.preparation)
+      const transformPath = path.join(candidateDir, "source-transform.json")
+      await fs.writeFile(transformPath, JSON.stringify(chain, null, 2) + "\n", "utf8")
+      sourceCoordinatePath = path.join(candidateDir, "decoder-source-coordinates.npz")
+      const { stdout } = await execFileAsync(openEcgPythonPath(), [
+        "-m", "ecg_pipeline.decoder_correspondence", "--capture", decoderCoordinatePath,
+        "--transform", transformPath, "--canonical", canonicalPath,
+        "--prepared-input", preparedInput.inputPath, "--original-source", prepared.sourcePath,
+        "--output", sourceCoordinatePath,
+      ], { env: subprocessEnvironment(), signal, timeout: 60_000, maxBuffer: 4 * 1024 * 1024 })
+      const evidence = JSON.parse(stdout)
+      if (evidence.version !== 1 || evidence.method !== "observed-decoder-preparation-correspondence-v1" ||
+          evidence.coordinateScope !== "original_source_raster" || evidence.preparationCorrespondenceVerified !== true ||
+          evidence.physicalTimingVerified !== false || evidence.waveformChanged !== false ||
+          evidence.sourceInkVerified !== false || evidence.productionSelectionLineageTransported !== false ||
+          evidence.sourceSha256 !== prepared.report.sourceSha256 ||
+          evidence.captureSha256 !== createHash("sha256").update(await fs.readFile(decoderCoordinatePath)).digest("hex") ||
+          evidence.sha256 !== createHash("sha256").update(await fs.readFile(sourceCoordinatePath)).digest("hex") ||
+          evidence.rawCanonicalSha256 !== createHash("sha256").update(await fs.readFile(canonicalPath)).digest("hex")) {
+        throw new EvidenceContractError("decoder_correspondence_identity_mismatch", "Decoder correspondence does not match this source and candidate.")
+      }
+      sourceCoordinateEvidence = evidence
+      if (expectedRhythmIdentity) validateSourceRhythmAssignment(evidence.sourceRhythmAssignment, expectedRhythmIdentity)
+      else if (evidence.sourceRhythmAssignment !== undefined) {
+        throw new EvidenceContractError("unexpected_source_rhythm_assignment", "An unrequested rhythm assignment was reported.")
+      }
+    }
     const metadata = await readDigitizerMetadata(metadataPath)
     const minimumGeometryConfidence =
       candidate.layoutConstraint === "standard_6x2" ||
@@ -1360,6 +1477,10 @@ async function runCandidate(
       score,
       scoreBreakdown,
       featureCacheHit,
+      inputPreparation: preparedInput.preparation,
+      decoderCoordinatePath,
+      sourceCoordinatePath,
+      sourceCoordinateEvidence,
     }
   } catch (error) {
     return {
@@ -1478,6 +1599,14 @@ async function runNativeGridCandidate(
       inputVariant === "geometry-corrected"
         ? prepared.geometryCorrectedPath
         : prepared.workingSourcePath
+    const sourceGridMode = layoutConstraint === "standard_3x4_with_r1" &&
+      shouldUseSourceGridNativeMode(geometry, inputVariant, usePreparedEvidence, upscaleToMaxDimension)
+    const expectedSourceIdentity = sourceGridMode ? {
+      sourceRasterFileSha256: createHash("sha256").update(await fs.readFile(fidelitySourcePath)).digest("hex"),
+      calibrationSourceSha256: prepared.report.sourceSha256,
+      annotationMaskFileSha256: createHash("sha256").update(await fs.readFile(prepared.exclusionMaskPath)).digest("hex"),
+      imageSize: geometry.sourceLabelGrid!.imageSize,
+    } : undefined
     const commandArguments = [
       NATIVE_GRID_DIGITIZER_PATH,
       "--input",
@@ -1486,7 +1615,13 @@ async function runNativeGridCandidate(
       fidelitySourcePath,
       "--output-dir",
       candidateDir,
+      "--expected-layout",
+      publishedLayoutConstraint,
     ]
+    if (sourceGridMode) {
+      commandArguments.push("--source-label-grid", "--calibration-source", prepared.sourcePath,
+        "--source-annotation-mask", prepared.exclusionMaskPath)
+    }
     if (usePreparedEvidence) {
       commandArguments.push("--evidence", prepared.traceProbabilityPath)
     }
@@ -1515,7 +1650,7 @@ async function runNativeGridCandidate(
           env: subprocessEnvironment(),
           maxBuffer: 4 * 1024 * 1024,
           signal,
-          timeout: 60_000,
+          timeout: sourceGridMode ? SOURCE_LABEL_GRID_NATIVE_TIMEOUT_MS : 60_000,
         }
       )
       stdout = result.stdout
@@ -1524,7 +1659,8 @@ async function runNativeGridCandidate(
     }
     const result = parseNativeExtractionReport(
       stdout.trim(),
-      publishedLayoutConstraint
+      publishedLayoutConstraint,
+      expectedSourceIdentity
     )
     const sourceFidelity = prepared.report.workingImage
       ? {
@@ -1567,7 +1703,8 @@ async function runNativeGridCandidate(
       )
       await writeCanonicalCsv(canonical, canonicalPath)
     }
-    const qa = evaluateQa(canonical, result.layout)
+    const qa = evaluateQa(canonical, result.layout,
+      candidateHasSourceGridTiming({ layout: result.layout, parameters, sourceFidelity }))
     const scoreBreakdown = scoreCandidate(
       qa,
       result.layout,
@@ -1613,7 +1750,7 @@ async function runNativeGridCandidate(
       runtimeMs: performance.now() - startedAt,
       message:
         error instanceof Error
-          ? error.message
+          ? boundedSubprocessFailureDetail(error)
           : "Native grid extraction could not be inspected.",
       score: Number.POSITIVE_INFINITY,
     }
@@ -1841,17 +1978,40 @@ function preprocessingFailureDetail(error: unknown) {
     .join("; ")
 }
 
+function boundedSubprocessFailureDetail(error: unknown) {
+  if (!error || typeof error !== "object") return String(error).slice(0, 2_000)
+  const record = error as { message?: unknown; code?: unknown; signal?: unknown; killed?: unknown; stderr?: unknown }
+  // execFile puts stderr in its message too. Preserve termination information
+  // and the diagnostic tail before long OCR startup logs consume the limit.
+  return [
+    record.code !== undefined ? `code=${String(record.code)}` : "",
+    record.signal !== undefined ? `signal=${String(record.signal)}` : "",
+    record.killed !== undefined ? `killed=${String(record.killed)}` : "",
+    typeof record.message === "string" ? record.message.split("\n", 1)[0].slice(0, 500) : "subprocess failed",
+    typeof record.stderr === "string" && record.stderr.trim()
+      ? `stderr=${record.stderr.trim().slice(-1_200)}` : "",
+  ].filter(Boolean).join("; ").slice(0, 2_000)
+}
+
 async function detectLayoutGeometry(
   prepared: PreparedRunInput,
   signal?: AbortSignal
 ): Promise<LayoutGeometryReport> {
-  const workingGeometry = {
+  let workingGeometry: LayoutGeometryReport = {
     ...(await detectLayoutGeometryAtPath(prepared.preparedPath, signal, prepared.sourcePath, prepared.report.sourceSha256, prepared.report.source)),
     detectedInputVariant:
       prepared.report.annotationMask.maskedPixels > 0
         ? ("annotation-masked" as const)
         : ("original" as const),
     coordinateSpace: "working" as const,
+  }
+  if (shouldInspectUnmaskedSourceGeometry(workingGeometry) && prepared.report.annotationMask.maskedPixels > 0) {
+    const sourceGeometry: LayoutGeometryReport = {
+      ...(await detectLayoutGeometryAtPath(prepared.workingSourcePath, signal, prepared.sourcePath, prepared.report.sourceSha256, prepared.report.source)),
+      detectedInputVariant: "original",
+      coordinateSpace: "working",
+    }
+    if (preferUnmaskedSourceGeometry(workingGeometry, sourceGeometry)) workingGeometry = sourceGeometry
   }
   if (prepared.report.geometryCorrection?.applied !== true) {
     return workingGeometry
@@ -1868,6 +2028,7 @@ async function detectLayoutGeometry(
     detectedInputVariant: "geometry-corrected" as const,
     coordinateSpace: "geometry-corrected" as const,
   }
+  if (preserveCalibratedSourceGeometry(workingGeometry, correctedGeometry)) return workingGeometry
   const sourceConfidence = workingGeometry.confidence ?? 0
   const correctedConfidence = correctedGeometry.confidence ?? 0
   const correctedIsUsable = Boolean(
@@ -1905,7 +2066,7 @@ async function detectLayoutGeometryAtPath(
         env: subprocessEnvironment(),
         maxBuffer: 1024 * 1024,
         signal,
-        timeout: 30_000,
+        timeout: LAYOUT_DETECTION_TIMEOUT_MS,
       }
     )
     const geometry = parseLayoutGeometryReport(stdout)
@@ -1918,7 +2079,7 @@ async function detectLayoutGeometryAtPath(
     return {
       detectionFailure: {
         method: "layout-detector-subprocess-v1",
-        message: preprocessingFailureDetail(error).slice(0, 2_000),
+        message: boundedSubprocessFailureDetail(error),
       },
     }
   }
@@ -2574,47 +2735,17 @@ async function prepareCandidateInput(
 ) {
   const extension = path.extname(inputPath).toLowerCase()
   const stem = safeOutputStem(path.parse(inputPath).name)
-
   await fs.rm(inputDir, { force: true, recursive: true })
   await fs.mkdir(inputDir, { recursive: true })
-
-  if (upscaleToMaxDimension || cropBox) {
-    const fileName = `${stem}.png`
-    const preparedInputPath = path.join(
-      /* turbopackIgnore: true */ inputDir,
-      fileName
-    )
-    await convertImageToPng(
-      inputPath,
-      preparedInputPath,
-      signal,
-      upscaleToMaxDimension,
-      cropBox
-    )
-    return { inputDir, stem, inputPath: preparedInputPath }
+  const direct = DIRECT_DIGITIZER_EXTENSIONS.includes(extension)
+  if (!direct && !CONVERTIBLE_DIGITIZER_EXTENSIONS.includes(extension)) {
+    throw new Error(`Unsupported ECG image extension for digitization: ${extension}`)
   }
-
-  if (DIRECT_DIGITIZER_EXTENSIONS.includes(extension)) {
-    const fileName = `${stem}${extension}`
-    const preparedInputPath = path.join(
-      /* turbopackIgnore: true */ inputDir,
-      fileName
-    )
-    await fs.copyFile(inputPath, preparedInputPath)
-    return { inputDir, stem, inputPath: preparedInputPath }
-  }
-
-  if (CONVERTIBLE_DIGITIZER_EXTENSIONS.includes(extension)) {
-    const fileName = `${stem}.png`
-    const preparedInputPath = path.join(
-      /* turbopackIgnore: true */ inputDir,
-      fileName
-    )
-    await convertImageToPng(inputPath, preparedInputPath, signal)
-    return { inputDir, stem, inputPath: preparedInputPath }
-  }
-
-  throw new Error(`Unsupported ECG image extension for digitization: ${extension}`)
+  const mode = upscaleToMaxDimension || cropBox || !direct ? "png" : "copy"
+  const preparedInputPath = path.join(inputDir, `${stem}${mode === "png" ? ".png" : extension}`)
+  const preparation = await prepareCandidateRaster(inputPath, preparedInputPath, mode, signal, upscaleToMaxDimension, cropBox)
+  await fs.writeFile(path.join(inputDir, "preparation.json"), JSON.stringify(preparation, null, 2) + "\n", "utf8")
+  return { inputDir, stem, inputPath: preparedInputPath, preparation }
 }
 
 async function neuralFeatureCachePath(
@@ -2642,53 +2773,27 @@ async function pathExists(filePath: string) {
   }
 }
 
-async function convertImageToPng(
+async function prepareCandidateRaster(
   inputPath: string,
   outputPath: string,
+  mode: "copy" | "png",
   signal?: AbortSignal,
   upscaleToMaxDimension?: number,
   cropBox?: RasterCropBox
 ) {
-  const script = [
-    "from PIL import Image",
-    "import sys",
-    "with Image.open(sys.argv[1]) as image:",
-    "    image = image.convert('RGB')",
-    "    target = int(sys.argv[3]) if len(sys.argv) > 3 else 0",
-    "    crop = tuple(map(int, sys.argv[4:8])) if len(sys.argv) >= 8 else None",
-    "    if crop:",
-    "        image = image.crop(crop)",
-    "    if target > 0 and max(image.size) < target:",
-    "        scale = target / max(image.size)",
-    "        size = tuple(max(1, round(value * scale)) for value in image.size)",
-    "        image = image.resize(size, Image.Resampling.LANCZOS)",
-    "    image.save(sys.argv[2], format='PNG')",
-  ].join("\n")
-
-  await execFileAsync(
-    openEcgPythonPath(),
-    [
-      "-c",
-      script,
-      inputPath,
-      outputPath,
-      String(upscaleToMaxDimension ?? 0),
-      ...(cropBox
-        ? [
-            String(cropBox.left),
-            String(cropBox.top),
-            String(cropBox.right),
-            String(cropBox.bottom),
-          ]
-        : []),
-    ],
-    {
-      env: subprocessEnvironment(),
-      maxBuffer: 4 * 1024 * 1024,
-      signal,
-      timeout: 60_000,
-    }
-  )
+  const { stdout } = await execFileAsync(openEcgPythonPath(), [
+    "-m", "ecg_pipeline.candidate_preparation", "--input", inputPath, "--output", outputPath,
+    "--mode", mode, "--target", String(upscaleToMaxDimension ?? 0),
+    ...(cropBox ? ["--crop", String(cropBox.left), String(cropBox.top), String(cropBox.right), String(cropBox.bottom)] : []),
+  ], { env: subprocessEnvironment(), maxBuffer: 4 * 1024 * 1024, signal, timeout: 60_000 })
+  const receipt = parseCandidatePreparation(JSON.parse(stdout))
+  const [input, prepared] = await Promise.all([fs.readFile(inputPath), fs.readFile(outputPath)])
+  if (receipt.mode !== mode || !candidatePreparationMatchesRequest(receipt, upscaleToMaxDimension, cropBox) ||
+      createHash("sha256").update(input).digest("hex") !== receipt.inputSha256 ||
+      createHash("sha256").update(prepared).digest("hex") !== receipt.preparedSha256) {
+    throw new EvidenceContractError("candidate_preparation_identity_mismatch", "Prepared candidate image does not match its preparation receipt.")
+  }
+  return receipt
 }
 
 async function publishSelectedCandidate(
@@ -2726,66 +2831,69 @@ async function publishSelectedCandidate(
   const uncertaintyPath = path.join(exportsDir, `${stem}_uncertainty.csv`)
   const segmentMapPath = path.join(exportsDir, `${stem}_segments.json`)
   const paperRenderPath = path.join(exportsDir, `${stem}_paper_render.png`)
+  const coordinateEvidencePath = selected.sourceCoordinatePath && selected.sourceCoordinateEvidence
+    ? path.join(exportsDir, "decoder-source-coordinates.npz") : undefined
 
-  const publishedCanonical = suppressAnnotatedSamples(
+  const sanitizedCanonical =
     suppressNearFlatLeads(
       sanitizeCanonicalForLayout(selected.canonical, selected.layout),
       selected.layout
-    ),
-    prepared.report,
-    selected.layout,
-    selected.panelTimingCorrections,
-    selected.parameters
-  )
-  const uncertaintyRows = buildUncertaintyRows(
+    )
+  let publishedCanonical = publishWithAnnotationEvidence(selected, prepared.report, sanitizedCanonical)
+  let uncertaintyRows = buildUncertaintyRows(
     selected,
     candidates,
     prepared.report,
-    publishedCanonical
+    publishedCanonical,
+    { forPublication: true }
   )
-  updateQaWithUncertainty(selected, uncertaintyRows)
-  const reliability = reliabilitySummary(
-    selected,
-    uncertaintyRows,
-    prepared.report,
-    publicationReasonCode
-  )
+  let sourceTimeEvidencePath: string | undefined
+  let sourceTimePublication: (SourceTimeManifest & { evidenceFile: string; evidenceSha256: string; selectionQa?: DigitizerQa }) | undefined
 
   await fs.copyFile(selected.diagnosticPath, diagnosticPath)
   await writePublishedDigitizerMetadata(selected, metadataPath)
   if (quantitativeOutput) {
+    if (coordinateEvidencePath && selected.sourceCoordinatePath) {
+      await fs.copyFile(selected.sourceCoordinatePath, coordinateEvidencePath)
+    }
     await writeCanonicalCsv(publishedCanonical, canonicalPath)
     await writeCompactSegmentsCsv(canonicalPath, segmentsPath, selected.layout)
     await writeUncertaintyCsv(uncertaintyRows, uncertaintyPath)
-    const descriptors: SegmentDescriptor[] = []
-    const normalizedLayout = normalizeQaLayout(selected.layout)
-    const rows = normalizedLayout ? LAYOUT_ROWS[normalizedLayout]?.rows : undefined
-    if (!rows) throw new Error("Cannot export quantitative segment evidence for an unsupported layout.")
-    for (const lead of expectedLayoutLeads(selected.layout)) {
-      const segment = canonicalLeadSegment(publishedCanonical, selected.layout, lead)
-      if (!segment) continue
-      const rowIndex = rows.findIndex(row => row.includes(lead))
-      const panelIndex = rows[rowIndex]?.indexOf(lead) ?? -1
-      const role = lead === "II" && segment.values.length === publishedCanonical.rows.length && rows[0].length > 1 ? "rhythm" : "panel"
-      const sourceId = selected.leadSources?.[lead] ?? selected.id
-      descriptors.push({ lead, panelIndex, rowIndex, canonicalStartSample: segment.start,
-        sampleCount: segment.values.length, role,
-        identityState: candidateHasExplicitSemanticLayoutEvidence(selected) ? "verified" : "inferred",
-        identityMethod: selected.parameters.semanticLeadIdentityMethod ?? "candidate-and-layout-evidence-requires-source-review",
-        candidateId: sourceId, lineageState: selected.intervalLineage?.[lead] || !isDerivedCandidate(selected) ? "interval_recorded" : "candidate_summary_only",
-        ...(selected.intervalLineage?.[lead] || !isDerivedCandidate(selected) ? {
-          intervalLineage: intervalLineage(segment.values,directContributor(sourceId,segment.start,segment.values.length),selected.intervalLineage?.[lead]),
-        } : {}),
-        sourceCrop: segmentSourceRegion(prepared.report, geometry, rowIndex, panelIndex, rows[0].length, role === "rhythm"),
-        ...(lead === "aVR" && (selected.parameters.semanticLeadIdentityOrder === "cabrera" || selected.layout?.startsWith("cabrera")) ? { sourceLabel: "-aVR", polarity: -1 as const } : {}),
-        support: signalSupport(segment.values) })
-    }
+    const descriptors = buildSelectedSegmentDescriptors(selected, candidates, prepared.report, geometry, publishedCanonical)
     const segmentMap = buildSegmentEvidence({ runId: run.id, sourceSha256: prepared.report.sourceSha256,
       canonicalSha256: createHash("sha256").update(await fs.readFile(canonicalPath)).digest("hex"),
       canonicalSampleCount: publishedCanonical.rows.length, descriptors,
       omittedSourceSegments: selected.layout?.includes("with_r1")
         ? [{ lead: "II", role: selected.layout.includes("ignored") ? "rhythm" : "panel", reason: "Separate repeated source segment is not represented by this canonical lead column." }] : [] })
     await fs.writeFile(segmentMapPath, JSON.stringify(segmentMap, null, 2) + "\n", "utf8")
+    if (selected.sourceCoordinatePath && selected.sourceCoordinateEvidence && sourceTimePublicationEligible(selected, isDerivedCandidate(selected),
+      [prepared.report.source.width, prepared.report.source.height])) {
+      const converted = await applySourceTimePublication({
+        sourcePath: prepared.sourcePath, sourceSha256: prepared.report.sourceSha256,
+        coordinatePath: selected.sourceCoordinatePath, coordinateSha256: selected.sourceCoordinateEvidence.sha256,
+        canonicalPath, uncertaintyPath, segmentPath: segmentMapPath,
+        directory: path.join(runDirectory(run.id), "candidates", "source-time-publication"),
+        python: openEcgPythonPath(), resourceRoot: RESOURCE_ROOT, environment: subprocessEnvironment("cpu"), signal,
+        acquire: () => nativeExtractionSemaphore.acquire(),
+      })
+      sourceTimeEvidencePath = path.join(exportsDir, "source-time-evidence.zip")
+      await fs.copyFile(converted.bundlePath, sourceTimeEvidencePath)
+      if (createHash("sha256").update(await fs.readFile(sourceTimeEvidencePath)).digest("hex") !== converted.bundleSha256) {
+        throw new EvidenceContractError("source_time_retention_mismatch", "Source timing evidence changed during retention.")
+      }
+      sourceTimePublication = { ...converted.manifest, evidenceFile: "exports/source-time-evidence.zip", evidenceSha256: converted.bundleSha256 }
+      if (converted.manifest.state === "converted") {
+        publishedCanonical = await readCanonicalCsv(converted.canonicalPath!)
+        uncertaintyRows = converted.uncertaintyRows!
+        sourceTimePublication.selectionQa = selected.qa
+        selected.qa = evaluateQa(publishedCanonical, selected.layout, true)
+        await fs.copyFile(converted.canonicalPath!, canonicalPath)
+        await fs.copyFile(converted.uncertaintyPath!, uncertaintyPath)
+        await fs.copyFile(converted.segmentPath!, segmentMapPath)
+        await fs.copyFile(converted.diagnosticPath!, diagnosticPath)
+        await writeCompactSegmentsCsv(canonicalPath, segmentsPath, selected.layout)
+      }
+    }
     await renderPaperFromSegmentsCsv({
       csvPath: segmentsPath,
       outputPath: paperRenderPath,
@@ -2798,6 +2906,12 @@ async function publishSelectedCandidate(
       signal,
     })
   }
+  updateQaWithUncertainty(selected, uncertaintyRows)
+  const reliability = reliabilitySummary(selected, uncertaintyRows, prepared.report, publicationReasonCode)
+  if (sourceTimePublication?.state === "converted") {
+    reliability.confidence = "lower"
+    reliability.confidenceReasons = [...(reliability.confidenceReasons ?? []), "Time coordinates use source-grid observations. Compare the remapped source overlay and timing evidence with the original; source trace and lead identities still require review."]
+  }
   await writeDigitizationProvenance({
     path: prepared.reportPath,
     preprocessing: prepared.report,
@@ -2806,12 +2920,14 @@ async function publishSelectedCandidate(
     reliability,
     calibration: geometry.calibration,
     pipelineEvidence,
+    coordinateEvidenceFile: quantitativeOutput && coordinateEvidencePath ? "exports/decoder-source-coordinates.npz" : undefined,
+    sourceTimePublication,
   })
 
   return {
     assets: {
       diagnostic: await assetFromAbsolutePath(
-        "Diagnostic overlay",
+        diagnosticAssetLabel(selected),
         diagnosticPath,
         prepared.report.sourceSha256
       ),
@@ -2838,6 +2954,8 @@ async function publishSelectedCandidate(
               prepared.report.sourceSha256
             ),
             segmentMapJson: await assetFromAbsolutePath("Segment identity and timing evidence", segmentMapPath, prepared.report.sourceSha256),
+            ...(coordinateEvidencePath ? { coordinateEvidence: await assetFromAbsolutePath("Decoder coordinate evidence", coordinateEvidencePath, prepared.report.sourceSha256) } : {}),
+            ...(sourceTimeEvidencePath ? { sourceTimeEvidence: await assetFromAbsolutePath("Source timing and sample lineage", sourceTimeEvidencePath, prepared.report.sourceSha256) } : {}),
           }
         : {}),
       metadataCsv: await assetFromAbsolutePath(
@@ -2848,6 +2966,56 @@ async function publishSelectedCandidate(
     },
     reliability,
   }
+}
+
+function buildSelectedSegmentDescriptors(
+  selected: CandidateResult,
+  candidates: CandidateResult[],
+  preprocessing: PreprocessingReport,
+  geometry: LayoutGeometryReport,
+  publishedCanonical: CanonicalCsv
+): SegmentDescriptor[] {
+  const descriptors: SegmentDescriptor[] = []
+  const sourceSupportedRhythm = candidateHasSourceGridTiming(selected)
+  const timing = sourceSupportedRhythm ? selected.sourceFidelity?.sourcePanelTiming : undefined
+  const normalizedLayout = normalizeQaLayout(selected.layout)
+  const rows = normalizedLayout ? LAYOUT_ROWS[normalizedLayout]?.rows : undefined
+  if (!rows) throw new Error("Cannot export quantitative segment evidence for an unsupported layout.")
+  for (const lead of expectedLayoutLeads(selected.layout)) {
+    // The CSV already contains the full rhythm column. Its evidence must describe
+    // every sample even when the source identity/timing has not been verified.
+    const segment = canonicalLeadSegment(publishedCanonical, selected.layout, lead, true)
+    if (!segment) continue
+    const role = lead === "II" && segment.values.length === publishedCanonical.rows.length && rows[0].length > 1 ? "rhythm" : "panel"
+    const rowIndex = role === "rhythm" ? 3 : rows.findIndex(row => row.includes(lead))
+    const panelIndex = role === "rhythm" ? 0 : rows[rowIndex]?.indexOf(lead) ?? -1
+    const sourceId = selected.leadSources?.[lead] ?? selected.id
+    const identity = role === "rhythm" && !sourceSupportedRhythm
+      ? { state: "inferred" as const, method: "full-width-candidate-rhythm-requires-source-review" }
+      : exportedLeadIdentity(selected, candidates, lead)
+    let recordedLineage = selected.intervalLineage?.[lead]
+    if (recordedLineage) {
+      try {
+        validateIntervalLineage(recordedLineage, segment.values.length)
+      } catch {
+        // A quarter-length derivation cannot establish the full rhythm's origin.
+        recordedLineage = undefined
+      }
+    }
+    const hasIntervalLineage = Boolean(recordedLineage) || !isDerivedCandidate(selected)
+    descriptors.push({ lead, panelIndex, rowIndex, canonicalStartSample: segment.start,
+      sampleCount: segment.values.length, role,
+      identityState: identity.state,
+      identityMethod: identity.method,
+      candidateId: sourceId, lineageState: hasIntervalLineage ? "interval_recorded" : "candidate_summary_only",
+      ...(hasIntervalLineage ? {
+        intervalLineage: intervalLineage(segment.values,directContributor(sourceId,segment.start,segment.values.length),recordedLineage),
+      } : {}),
+      sourceCrop: segmentSourceRegion(preprocessing, geometry, rowIndex, panelIndex, rows[0].length, role === "rhythm", role === "rhythm" ? timing?.rhythmRange : (timing?.version === 4 || timing?.version === 5) ? timing.rowPanelRanges[rowIndex]?.[panelIndex] : timing?.panelRanges[panelIndex]),
+      ...(lead === "aVR" && (selected.parameters.semanticLeadIdentityOrder === "cabrera" || selected.layout?.startsWith("cabrera")) ? { sourceLabel: "-aVR", polarity: -1 as const } : {}),
+      support: signalSupport(segment.values) })
+  }
+  return descriptors
 }
 
 function sanitizeCanonicalForLayout(
@@ -3279,9 +3447,11 @@ function isDerivedCandidate(candidate: CandidateResult) {
 async function buildLeadFusionCandidate(
   run: RunRecord,
   candidates: CandidateResult[],
-  preprocessing: PreprocessingReport
+  preprocessing: PreprocessingReport,
+  recorder?: SelectionEvidenceRecorder
 ): Promise<CandidateResult | undefined> {
   const compatible = largestCompatibleCandidateGroup(candidates)
+  recorder?.observe(compatible, "fusion-compatible-pool")
   if (compatible.length === 0) return undefined
 
   const reference = [...compatible].sort((a, b) => {
@@ -3336,6 +3506,19 @@ async function buildLeadFusionCandidate(
     leadSources,
     fullWidthRhythmLeads
   )
+  if (recorder) {
+    recorder.fusion = {
+      referenceCandidateId: reference.id,
+      diagnostic: { kind: "copied-reference-candidate", candidateId: reference.id, representsFinalFusion: false },
+      leads: LEAD_ORDER.flatMap(lead => {
+        const source = leadSources[lead]
+        const fullWidthRhythm = fullWidthRhythmLeads.has(lead)
+        const segment = source.canonical && canonicalLeadSegment(source.canonical, source.layout, lead, fullWidthRhythm)
+        return segment ? [{ lead, sourceCandidateId: source.id, fullWidthRhythm,
+          sourceStartSample: segment.start, sourceSampleCount: segment.values.length }] : []
+      }),
+    }
+  }
   const qa = evaluateQa(canonical, reference.layout)
   const sourceCandidates = [...new Set(Object.values(leadSources))]
   const device =
@@ -3699,6 +3882,75 @@ function candidateHasExplicitSemanticLayoutEvidence(
   return false
 }
 
+// Export-only evidence propagation. This must not become a selection heuristic:
+// matching waveform shape or an agreeing peer cannot verify a printed lead name.
+function exportedLeadIdentity(
+  candidate: CandidateResult,
+  candidates: CandidateResult[],
+  lead: string
+): { state: "verified" | "inferred"; method: string } {
+  const inferred = {
+    state: "inferred" as const,
+    method: "candidate-and-layout-evidence-requires-source-review",
+  }
+  if (candidateKind(candidate.parameters) !== "lead-fusion") {
+    return {
+      state: candidateHasExplicitSemanticLayoutEvidence(candidate) ? "verified" : "inferred",
+      method: candidate.parameters.semanticLeadIdentityMethod ?? inferred.method,
+    }
+  }
+
+  const sourceId = candidate.leadSources?.[lead]
+  const sources = candidates.filter(source => source.id === sourceId)
+  const source = sources[0]
+  const layout = normalizeQaLayout(candidate.layout)
+  // Repeated rhythm panels and nested/averaged derivations need their own proof
+  // rules. This contract covers direct, unchanged panel copies only.
+  if (!layout || candidate.layout?.includes("with_r1") || !candidate.canonical ||
+      sources.length !== 1 || source.id === candidate.id || source.status !== "completed" ||
+      isDerivedCandidate(source) || !source.canonical ||
+      normalizeQaLayout(source.layout) !== layout ||
+      source.layout?.includes("with_r1") ||
+      candidateCropKey(source) !== candidateCropKey(candidate) ||
+      !candidateHasExplicitSemanticLayoutEvidence(source)) return inferred
+
+  const output = canonicalLeadSegment(candidate.canonical, candidate.layout, lead)
+  const input = canonicalLeadSegment(source.canonical, source.layout, lead)
+  const lineage = candidate.intervalLineage?.[lead]
+  if (!output || !input || !lineage || output.start !== input.start ||
+      output.values.length !== input.values.length ||
+      candidate.canonical.rows.length !== source.canonical.rows.length) return inferred
+  try {
+    validateIntervalLineage(lineage, output.values.length)
+  } catch {
+    return inferred
+  }
+  let observed = 0
+  for (const span of lineage) {
+    if (span.operation === "missing") {
+      if (output.values.slice(span.startSample, span.endSample).some(Number.isFinite)) return inferred
+      continue
+    }
+    if (span.operation !== "selected_samples" || span.contributors.length !== 1) return inferred
+    const contributor = span.contributors[0]
+    const alignment = contributor.alignment
+    if (contributor.candidateId !== source.id ||
+        contributor.sourceCanonicalStartSample !== input.start ||
+        contributor.sourceSampleCount !== input.values.length ||
+        alignment.timeScale !== 1 || alignment.shiftSamples !== 0 ||
+        alignment.subtractOffsetUv !== 0) return inferred
+    for (let index = span.startSample; index < span.endSample; index += 1) {
+      if (!Number.isFinite(output.values[index]) || output.values[index] !== input.values[index]) return inferred
+      observed += 1
+    }
+  }
+  if (!observed) return inferred
+  return {
+    state: "verified",
+    method: `direct-copy-interval-lineage-v1:${source.parameters.semanticLeadIdentityMethod ?? "source-lead-order-validation"}`,
+  }
+}
+
 function candidateHasProvisionalLayoutLeadIdentity(
   candidate: CandidateResult
 ) {
@@ -3772,60 +4024,95 @@ function candidateInheritsProvisionalGeometryLeadIdentity(
   )
 }
 
+function candidateHasSourceGridTiming(
+  candidate: Pick<CandidateResult, "layout" | "parameters" | "sourceFidelity">
+) {
+  const fidelity = candidate.sourceFidelity
+  if (candidate.layout !== "standard_3x4_with_r1" ||
+      candidate.parameters.inputVariant !== "original" || candidate.parameters.cropBox ||
+      !candidateCapabilities(candidate.parameters).nativeGrid ||
+      fidelity?.passed !== true || !["source-label-separator-local-grid-supported-ink-v1", "source-label-separator-local-grid-supported-ink-v2", "source-label-separator-local-grid-supported-ink-v3", "source-label-joint-row-grid-supported-ink-v4", "source-label-endpoint-family-row-grid-supported-ink-v5"].includes(fidelity.method) ||
+      !fidelity.sourcePanelTiming || !fidelity.sourceInkEvidence) return false
+  try {
+    validateSourceGridEvidence({ ...fidelity })
+    return true
+  } catch {
+    return false
+  }
+}
+
+function candidateHasTrustedSourceGridTiming(candidate: CandidateResult, peers: CandidateResult[]) {
+  const observation = beginSelectionPredicate(peers, candidate.id, "all", "source-grid-trust")
+  const gate = (name: string, passed: boolean) => observation?.check(name, passed) ?? passed
+  const passed = gate("source-grid-timing", candidateHasSourceGridTiming(candidate)) &&
+    LEAD_ORDER.every(lead => gate("trusted-lead:" + lead, candidateHasTrustedLead(candidate, peers, lead))) &&
+    gate("full-rhythm-corroboration", candidateHasCorroboratedFullWidthRhythmLead(candidate, peers, "II"))
+  return observation?.finish(passed) ?? passed
+}
+
+function diagnosticAssetLabel(candidate: CandidateResult) {
+  return candidateKind(candidate.parameters) === "lead-fusion"
+    ? "Reference candidate diagnostic (before fusion)" : "Diagnostic overlay"
+}
+
+function candidateHasPixelAnnotationExclusion(candidate: CandidateResult) {
+  return candidateHasSourceGridTiming(candidate) &&
+    candidate.sourceFidelity?.sourceInkEvidence?.annotationExclusion?.pixelExclusionApplied === true
+}
+
+function publishWithAnnotationEvidence(candidate: CandidateResult, preprocessing: PreprocessingReport, canonical: CanonicalCsv) {
+  // This path has already excluded the exact mask pixels before vectorization,
+  // with identical gaps used for source validation and the diagnostic overlay.
+  return candidateHasPixelAnnotationExclusion(candidate) ? canonical : suppressAnnotatedSamples(
+    canonical, preprocessing, candidate.layout, candidate.panelTimingCorrections, candidate.parameters)
+}
+
 function candidateHasTrustedLead(
   candidate: CandidateResult,
   peers: CandidateResult[],
   lead: string
 ) {
-  const candidateCapabilitiesSummary = candidateCapabilities(
-    candidate.parameters
-  )
-  if (
-    !candidate.canonical ||
-    !candidateHasQuantitativeTimingEvidence(candidate) ||
-    (candidateCapabilitiesSummary.nativeGrid &&
-      candidate.sourceFidelity?.passed !== true) ||
-    !candidateHasPublishableLead(candidate, lead) ||
-    !candidateHasSemanticLeadIdentity(candidate, peers, lead)
-  ) {
-    return false
-  }
-  const reference = canonicalLeadSegment(
-    candidate.canonical,
-    candidate.layout,
-    lead
-  )
-  if (!reference) return false
-  const candidateIsPermissive =
-    typeof candidate.parameters.labelThresh === "number" &&
-    candidate.parameters.labelThresh < 0.1
-
-  return peers.some((peer) => {
-    const peerCapabilitiesSummary = candidateCapabilities(peer.parameters)
-    const peerIsPermissive =
-      typeof peer.parameters.labelThresh === "number" &&
-      peer.parameters.labelThresh < 0.1
-    if (
-      peer.id === candidate.id ||
-      isDerivedCandidate(peer) ||
-      !candidateHasQuantitativeTimingEvidence(peer) ||
-      !candidatePathsAreIndependent(candidate, peer) ||
-      (peerCapabilitiesSummary.nativeGrid &&
-        peer.sourceFidelity?.passed !== true) ||
-      !peer.canonical ||
-      candidateCropKey(peer) !== candidateCropKey(candidate) ||
-      normalizeQaLayout(peer.layout) !== normalizeQaLayout(candidate.layout) ||
-      (candidateIsPermissive && peerIsPermissive) ||
-      !candidateHasStructurallyCompleteLead(peer, lead) ||
-      !candidateHasSemanticLeadIdentity(peer, peers, lead)
-    ) {
-      return false
-    }
-    return (
-      candidateLeadAlignmentRmse(candidate, peer, lead) <=
-      DISAGREEMENT_THRESHOLD_UV
-    )
-  })
+  const observation = beginSelectionPredicate(peers, candidate.id, lead, "lead-trust")
+  const gate = (name: string, passed: boolean, measurements?: Record<string, number | null>) =>
+    observation?.check(name, passed, measurements) ?? passed
+  const finish = (passed: boolean) => observation?.finish(passed) ?? passed
+  const capabilities = candidateCapabilities(candidate.parameters)
+  if (!gate("canonical-present", Boolean(candidate.canonical)) ||
+      !gate("quantitative-timing", candidateHasQuantitativeTimingEvidence(candidate)) ||
+      !gate("native-fidelity", !capabilities.nativeGrid || candidate.sourceFidelity?.passed === true) ||
+      !gate("publishable-lead", candidateHasPublishableLead(candidate, lead), {
+        expectedSamples: candidate.qa?.leads[lead]?.expectedSamples ?? null,
+        finiteSamples: candidate.qa?.leads[lead]?.finiteSamples ?? null,
+        outsideSegmentSamples: candidate.qa?.leads[lead]?.outsideSegmentSamples ?? null,
+      }) ||
+      !gate("semantic-identity", candidateHasSemanticLeadIdentity(candidate, peers, lead))) return finish(false)
+  const reference = canonicalLeadSegment(candidate.canonical!, candidate.layout, lead)
+  if (!gate("canonical-panel", Boolean(reference))) return finish(false)
+  const permissive = typeof candidate.parameters.labelThresh === "number" && candidate.parameters.labelThresh < 0.1
+  return finish(peers.some(peer => {
+    const peerObservation = observation?.peer(peer.id)
+    const peerGate = (name: string, passed: boolean) => peerObservation?.check(name, passed) ?? passed
+    const peerFinish = (passed: boolean) => peerObservation?.finish(passed) ?? passed
+    const peerCapabilities = candidateCapabilities(peer.parameters)
+    const peerPermissive = typeof peer.parameters.labelThresh === "number" && peer.parameters.labelThresh < 0.1
+    if (!peerGate("different-candidate", peer.id !== candidate.id) ||
+        !peerGate("direct-candidate", !isDerivedCandidate(peer)) ||
+        !peerGate("quantitative-timing", candidateHasQuantitativeTimingEvidence(peer)) ||
+        !peerGate("independent-path", candidatePathsAreIndependent(candidate, peer)) ||
+        !peerGate("native-fidelity", !peerCapabilities.nativeGrid || peer.sourceFidelity?.passed === true) ||
+        !peerGate("canonical-present", Boolean(peer.canonical)) ||
+        !peerGate("same-crop", candidateCropKey(peer) === candidateCropKey(candidate)) ||
+        !peerGate("compatible-layout", normalizeQaLayout(peer.layout) === normalizeQaLayout(candidate.layout)) ||
+        !peerGate("not-both-permissive", !(permissive && peerPermissive)) ||
+        !peerGate("structurally-complete-lead", candidateHasStructurallyCompleteLead(peer, lead)) ||
+        !peerGate("semantic-identity", candidateHasSemanticLeadIdentity(peer, peers, lead))) return peerFinish(false)
+    const rmseUv = candidateLeadAlignmentRmse(candidate, peer, lead)
+    const passed = rmseUv <= DISAGREEMENT_THRESHOLD_UV
+    peerObservation?.check("panel-alignment", passed, {
+      rmseUv: Number.isFinite(rmseUv) ? rmseUv : null, maximumRmseUv: DISAGREEMENT_THRESHOLD_UV,
+    })
+    return peerFinish(passed)
+  }))
 }
 
 function candidateHasQuantitativeTimingEvidence(candidate: CandidateResult) {
@@ -3900,6 +4187,7 @@ function buildPipelineEvidence({
   selected,
   reasonCode,
   stability,
+  selectionDiagnostics,
 }: {
   preprocessing: PreprocessingReport
   geometry: LayoutGeometryReport
@@ -3914,6 +4202,7 @@ function buildPipelineEvidence({
   selected?: CandidateResult
   reasonCode?: PublicationReasonCode
   stability: DigitizerStabilityEvidence
+  selectionDiagnostics?: SelectionDiagnostics
 }): DigitizerPipelineEvidence {
   const executedIds = new Set(candidates.map((candidate) => candidate.id))
   const escalationReasons = [
@@ -3969,7 +4258,16 @@ function buildPipelineEvidence({
 
   return {
     version: 1,
+    ...(selectionDiagnostics ? { selectionDiagnostics } : {}),
     selectorCalibrationProfileId: SELECTOR_CALIBRATION_PROFILE_ID,
+    // Retain the source-bound physical decision even when publication stops
+    // before any candidate or quantitative provenance can be produced.
+    ...(geometry.calibration ? { physicalCalibration: geometry.calibration } : {}),
+    ...(geometry.sourceLabelGrid ? { sourceLabelGeometry: {
+      sourceSha256: preprocessing.sourceSha256,
+      coordinateSpace: geometry.coordinateSpace ?? "working",
+      grid: geometry.sourceLabelGrid,
+    } } : {}),
     neuralEscalated: primaryPlan.some(
       (candidate) =>
         candidatePlanningPhase(candidate) === "core" &&
@@ -4030,7 +4328,10 @@ function buildPipelineEvidence({
                 )
               ),
               explicitlyAnchored:
-                candidateHasExplicitSemanticLayoutEvidence(selected),
+                expectedLayoutLeads(selected.layout).length > 0 &&
+                expectedLayoutLeads(selected.layout).every(lead =>
+                  exportedLeadIdentity(selected, selectionCandidates, lead).state === "verified"
+                ),
               inferredFromLayout:
                 candidateHasProvisionalLayoutLeadIdentity(selected),
               requiresManualVerification:
@@ -4125,6 +4426,7 @@ function buildPipelineEvidence({
 async function confirmBorderlineMpsSelection({
   run,
   prepared,
+  geometry,
   selected,
   selectionCandidates,
   decisionOutcome,
@@ -4134,6 +4436,7 @@ async function confirmBorderlineMpsSelection({
 }: {
   run: RunRecord
   prepared: PreparedRunInput
+  geometry?: LayoutGeometryReport
   selected: CandidateResult
   selectionCandidates: CandidateResult[]
   decisionOutcome: "needs_review" | "partial"
@@ -4229,7 +4532,8 @@ async function confirmBorderlineMpsSelection({
       run,
       prepared,
       stabilityCandidateConfig(source, "mps-repeat", "mps"),
-      signal
+      signal,
+      geometry
     )
     repeatedCandidates.push(repeat)
     if (!repeat.canonical) continue
@@ -4274,7 +4578,8 @@ async function confirmBorderlineMpsSelection({
       run,
       prepared,
       stabilityCandidateConfig(source, "cpu-confirmation", "cpu"),
-      signal
+      signal,
+      geometry
     )
     cpuCandidates.push(cpu)
     if (!cpu.canonical) continue
@@ -4650,64 +4955,64 @@ function candidateHasCorroboratedFullWidthRhythmLead(
   peers: CandidateResult[],
   lead: string
 ) {
-  if (
-    candidate.layout !== "standard_3x4_with_r1" ||
-    lead !== "II" ||
-    !candidate.canonical ||
-    !candidateHasTrustedLead(candidate, peers, lead)
-  ) {
-    return false
-  }
-  const leadIndex = candidate.canonical.leads.indexOf(lead)
-  if (leadIndex === -1 || candidate.canonical.rows.length === 0) return false
-  const values = candidate.canonical.rows.map((row) => row[leadIndex])
-  if (
-    values.filter(Number.isFinite).length <
-    Math.ceil(values.length * MIN_PUBLISHABLE_LEAD_COVERAGE)
-  ) {
-    return false
-  }
+  const observation = beginSelectionPredicate(peers, candidate.id, lead, "full-rhythm")
+  const gate = (name: string, passed: boolean, measurements?: Record<string, number | null>) =>
+    observation?.check(name, passed, measurements) ?? passed
+  const finish = (passed: boolean) => observation?.finish(passed) ?? passed
+  if (!gate("rhythm-layout", candidate.layout === "standard_3x4_with_r1") ||
+      !gate("rhythm-lead-II", lead === "II") ||
+      !gate("canonical-present", Boolean(candidate.canonical)) ||
+      !gate("trusted-panel", candidateHasTrustedLead(candidate, peers, lead))) return finish(false)
+  const canonical = candidate.canonical!
+  const leadIndex = canonical.leads.indexOf(lead)
+  if (!gate("nonempty-rhythm-column", leadIndex !== -1 && canonical.rows.length > 0)) return finish(false)
+  const values = canonical.rows.map(row => row[leadIndex])
+  const finiteSamples = values.filter(Number.isFinite).length
+  const minimumSamples = Math.ceil(values.length * MIN_PUBLISHABLE_LEAD_COVERAGE)
+  if (!gate("full-rhythm-coverage", finiteSamples >= minimumSamples,
+    { finiteSamples, expectedSamples: values.length, minimumSamples })) return finish(false)
 
-  return peers.some((peer) => {
-    if (
-      peer.id === candidate.id ||
-      isDerivedCandidate(peer) ||
-      !candidatePathsAreIndependent(candidate, peer) ||
-      !candidateHasQuantitativeTimingEvidence(peer) ||
-      !peer.canonical ||
-      peer.layout !== candidate.layout ||
-      candidateCropKey(peer) !== candidateCropKey(candidate) ||
-      !candidateHasSemanticLeadIdentity(peer, peers, lead)
-    ) {
-      return false
-    }
-    const peerCapabilities = candidateCapabilities(peer.parameters)
-    if (peerCapabilities.nativeGrid && peer.sourceFidelity?.passed !== true) {
-      return false
-    }
-    const peerLeadIndex = peer.canonical.leads.indexOf(lead)
-    if (peerLeadIndex === -1 || peer.canonical.rows.length !== values.length) {
-      return false
-    }
-    const peerValues = peer.canonical.rows.map((row) => row[peerLeadIndex])
-    if (
-      peerValues.filter(Number.isFinite).length <
-      Math.ceil(peerValues.length * MIN_PUBLISHABLE_LEAD_COVERAGE)
-    ) {
-      return false
-    }
-    return alignSeries(values, peerValues).rmseUv <= DISAGREEMENT_THRESHOLD_UV
-  })
+  return finish(peers.some(peer => {
+    const peerObservation = observation?.peer(peer.id)
+    const peerGate = (name: string, passed: boolean, measurements?: Record<string, number | null>) =>
+      peerObservation?.check(name, passed, measurements) ?? passed
+    const peerFinish = (passed: boolean) => peerObservation?.finish(passed) ?? passed
+    if (!peerGate("different-candidate", peer.id !== candidate.id) ||
+        !peerGate("direct-candidate", !isDerivedCandidate(peer)) ||
+        !peerGate("independent-path", candidatePathsAreIndependent(candidate, peer)) ||
+        !peerGate("quantitative-timing", candidateHasQuantitativeTimingEvidence(peer)) ||
+        !peerGate("canonical-present", Boolean(peer.canonical)) ||
+        !peerGate("same-rhythm-layout", peer.layout === candidate.layout) ||
+        !peerGate("same-crop", candidateCropKey(peer) === candidateCropKey(candidate)) ||
+        !peerGate("semantic-identity", candidateHasSemanticLeadIdentity(peer, peers, lead))) return peerFinish(false)
+    const capabilities = candidateCapabilities(peer.parameters)
+    if (!peerGate("native-fidelity", !capabilities.nativeGrid || peer.sourceFidelity?.passed === true)) return peerFinish(false)
+    const peerCanonical = peer.canonical!
+    const peerLeadIndex = peerCanonical.leads.indexOf(lead)
+    if (!peerGate("matching-rhythm-column", peerLeadIndex !== -1 && peerCanonical.rows.length === values.length)) return peerFinish(false)
+    const peerValues = peerCanonical.rows.map(row => row[peerLeadIndex])
+    const peerFinite = peerValues.filter(Number.isFinite).length
+    if (!peerGate("full-rhythm-coverage", peerFinite >= minimumSamples,
+      { finiteSamples: peerFinite, expectedSamples: peerValues.length, minimumSamples })) return peerFinish(false)
+    const rmseUv = alignSeries(values, peerValues).rmseUv
+    return peerFinish(peerGate("full-rhythm-alignment", rmseUv <= DISAGREEMENT_THRESHOLD_UV,
+      { rmseUv: Number.isFinite(rmseUv) ? rmseUv : null, maximumRmseUv: DISAGREEMENT_THRESHOLD_UV }))
+  }))
 }
 
 function buildUncertaintyRows(
   selected: CandidateResult,
   candidates: CandidateResult[],
   preprocessing: PreprocessingReport,
-  publishedCanonical = selected.canonical
+  publishedCanonical = selected.canonical,
+  options: { forPublication?: boolean } = {}
 ): UncertaintyRow[] {
   if (!publishedCanonical) return []
 
+  const sourceSupportedRhythm = candidateHasSourceGridTiming(selected)
+  // Fusion ranking also calls this function; publication must not change its
+  // historical comparison window or turn an evidence repair into a selector.
+  const includeFullRhythm = sourceSupportedRhythm || options.forPublication === true
   const comparableCandidates = candidates.filter(
     (candidate) =>
       candidateEligibleForSelection(candidate) &&
@@ -4717,7 +5022,7 @@ function buildUncertaintyRows(
       normalizeQaLayout(candidate.layout) === normalizeQaLayout(selected.layout) &&
       (!selected.sourceFidelity?.passed || candidate.sourceFidelity?.passed)
   )
-  const annotationRanges = annotationRangesByLead(
+  const annotationRanges = candidateHasPixelAnnotationExclusion(selected) ? {} : annotationRangesByLead(
     preprocessing,
     selected.layout,
     publishedCanonical.rows.length,
@@ -4730,10 +5035,11 @@ function buildUncertaintyRows(
     const publishedSegment = canonicalLeadSegment(
       publishedCanonical,
       selected.layout,
-      lead
+      lead,
+      includeFullRhythm
     )
     const reviewSegment = selected.canonical
-      ? canonicalLeadSegment(selected.canonical, selected.layout, lead)
+      ? canonicalLeadSegment(selected.canonical, selected.layout, lead, includeFullRhythm)
       : publishedSegment
     if (!publishedSegment || !reviewSegment) continue
 
@@ -4744,8 +5050,10 @@ function buildUncertaintyRows(
       ) {
         return []
       }
+      if (includeFullRhythm && selected.layout === "standard_3x4_with_r1" && lead === "II" && candidate.id !== selected.id &&
+          !candidateHasCorroboratedFullWidthRhythmLead(candidate, candidates, lead)) return []
       const segment = candidate.canonical
-        ? canonicalLeadSegment(candidate.canonical, candidate.layout, lead)
+        ? canonicalLeadSegment(candidate.canonical, candidate.layout, lead, includeFullRhythm)
         : null
       if (!segment) return []
       if (candidate.id === selected.id) {
@@ -4816,7 +5124,7 @@ function updateQaWithUncertainty(
       .filter(Number.isFinite)
       .sort((a, b) => a - b)
     const uncertainSamples = rows.filter((row) =>
-      row.status.startsWith("uncertain_")
+      row.status.startsWith("uncertain_") || row.status === "uncertainty_unavailable"
     ).length
     uncertainTotal += uncertainSamples
 
@@ -4830,7 +5138,9 @@ function updateQaWithUncertainty(
       selected.qa.warnings.push({
         lead,
         severity: "warning",
-        message: `${lead} has ${uncertainSamples} sample(s) flagged for annotation overlap or candidate disagreement.`,
+        message: rows.some(row => row.status === "uncertainty_unavailable")
+          ? `${lead} has ${uncertainSamples} sample(s) flagged for annotation overlap, candidate disagreement or unavailable quantitative uncertainty.`
+          : `${lead} has ${uncertainSamples} sample(s) flagged for annotation overlap or candidate disagreement.`,
       })
     }
   }
@@ -4895,7 +5205,7 @@ function reliabilitySummary(
     effectiveSampleRateHz:
       selected.effectiveSampleRateHz ?? SAMPLE_RATE_HZ,
     uncertainSampleCount: uncertaintyRows.filter((row) =>
-      row.status.startsWith("uncertain_")
+      row.status.startsWith("uncertain_") || row.status === "uncertainty_unavailable"
     ).length,
     missingSampleCount: uncertaintyRows.filter(
       (row) => !Number.isFinite(row.valueUv)
@@ -4955,6 +5265,8 @@ async function writeDigitizationProvenance({
   reliability,
   calibration,
   pipelineEvidence,
+  coordinateEvidenceFile,
+  sourceTimePublication,
 }: {
   path: string
   preprocessing: PreprocessingReport
@@ -4963,6 +5275,8 @@ async function writeDigitizationProvenance({
   reliability: DigitizerReliabilitySummary
   calibration?: LayoutGeometryReport["calibration"]
   pipelineEvidence: DigitizerPipelineEvidence
+  coordinateEvidenceFile?: string
+  sourceTimePublication?: SourceTimeManifest & { evidenceFile: string; evidenceSha256: string; selectionQa?: DigitizerQa }
 }) {
   const provenance = {
     version: 5,
@@ -5020,8 +5334,13 @@ async function writeDigitizationProvenance({
       selectedLayoutCost: selected.layoutCost,
       selectedEffectiveSampleRateHz: selected.effectiveSampleRateHz,
       selectedComputeDevice: selected.parameters.device,
+      ...(sourceTimePublication ? { sourceTimePublication } : {}),
+      ...(selected.sourceCoordinateEvidence ? { decoderCorrespondence: {
+        ...selected.sourceCoordinateEvidence, file: coordinateEvidenceFile ?? null,
+        scope: "raw selected decoder before publication exclusions and any time conversion",
+      } } : {}),
       sourceTransforms: candidates.filter(candidate => candidate.status === "completed" && !isDerivedCandidate(candidate)).map(candidate => ({
-        candidateId: candidate.id, ...sourceTransformChain(preprocessing, candidate.parameters),
+        candidateId: candidate.id, ...sourceTransformChain(preprocessing, candidate.parameters, candidate.inputPreparation),
         decoderResampling: { targetLongEdgePixels: candidate.parameters.resampleSize ?? null,
           note: "The transform ends at the candidate input raster; decoder-internal resampling is separate." },
       })),
@@ -5101,8 +5420,9 @@ async function writeDigitizationProvenance({
     uncertainty: {
       candidateAlignmentRadiusSamples: ALIGNMENT_RADIUS_SAMPLES,
       disagreementThresholdUv: DISAGREEMENT_THRESHOLD_UV,
-      annotationMapping:
-        "Source-coordinate annotation boxes were transformed into the selected working/corrected/cropped candidate raster before mapping to the nearest supported lead panel with a horizontal safety margin.",
+      annotationMapping: candidateHasPixelAnnotationExclusion(selected)
+        ? "Exact annotation mask pixels were excluded in the verified working-source frame before native vectorization and source-support checks; excluded waveform samples remain explicit gaps. Mask identities and counts are retained in sourceInkEvidence.annotationExclusion."
+        : "Source-coordinate annotation boxes were transformed into the selected working/corrected/cropped candidate raster before mapping to the nearest supported lead panel with a horizontal safety margin.",
       ...reliability,
     },
   }
@@ -5295,7 +5615,8 @@ function suppressAnnotatedSamples(
 function canonicalLeadSegment(
   canonical: CanonicalCsv,
   layout: string | undefined,
-  lead: string
+  lead: string,
+  sourceSupportedRhythm = false
 ) {
   const leadIndex = canonical.leads.indexOf(lead)
   if (leadIndex === -1) return null
@@ -5305,6 +5626,10 @@ function canonicalLeadSegment(
     ? LAYOUT_COLUMNS[normalizedLayout]
     : undefined
   if (!layoutColumns || !(lead in layoutColumns)) return null
+
+  if (sourceSupportedRhythm && layout === "standard_3x4_with_r1" && lead === "II") {
+    return { start: 0, end: canonical.rows.length, values: canonical.rows.map(row => row[leadIndex]) }
+  }
 
   const columnCount = Math.max(...Object.values(layoutColumns)) + 1
   const segmentSamples = Math.floor(canonical.rows.length / columnCount)
@@ -5691,7 +6016,7 @@ function finiteJsonNumber(_key: string, value: unknown) {
   return typeof value === "number" && !Number.isFinite(value) ? null : value
 }
 
-function evaluateQa(canonical: CanonicalCsv, layout?: string): DigitizerQa {
+function evaluateQa(canonical: CanonicalCsv, layout?: string, sourceSupportedRhythm = false): DigitizerQa {
   const warnings: DigitizerQaWarning[] = []
   const leads: Record<string, DigitizerLeadQa> = {}
   const qaLayout = normalizeQaLayout(layout)
@@ -5739,9 +6064,10 @@ function evaluateQa(canonical: CanonicalCsv, layout?: string): DigitizerQa {
     }
 
     const expectedColumn = layoutColumns?.[lead] ?? 0
-    const start = expectedColumn * segmentSamples
+    const fullRhythm = sourceSupportedRhythm && layout === "standard_3x4_with_r1" && lead === "II"
+    const start = fullRhythm ? 0 : expectedColumn * segmentSamples
     const end =
-      expectedColumn === columnCount - 1
+      fullRhythm || expectedColumn === columnCount - 1
         ? canonical.rows.length
         : start + segmentSamples
     const values = canonical.rows.map((row) => row[leadIndex])
@@ -5990,30 +6316,23 @@ function nativeCandidateHasUnverifiedPanelTiming(candidate: CandidateResult) {
   )
 }
 
-function candidateEligibleForSelection(candidate: CandidateResult) {
+function candidateSelectionIneligibility(candidate: CandidateResult): string | undefined {
   const capabilities = candidateCapabilities(candidate.parameters)
-  if (!capabilities.selectionEligible) return false
-  // A populated CSV and recognised lead labels cannot validate a time origin.
-  // Equal-width page fallback includes label/calibration margins on 3x4 and
-  // sequential pages, even when source-ink coverage or peer agreement is high.
-  if (nativeCandidateHasUnverifiedPanelTiming(candidate)) return false
-  if (
-    candidate.parameters.inputVariant === "preprocessed" &&
-    candidate.parameters.adaptivePreprocessingEligible !== true &&
-    candidate.parameters.geometryConfirmedLayout !== true
-  ) {
-    return false
+  if (!capabilities.selectionEligible) return "capability-ineligible"
+  if (nativeCandidateHasUnverifiedPanelTiming(candidate)) return "native-panel-timing-unverified"
+  if (candidate.parameters.inputVariant === "preprocessed" &&
+      candidate.parameters.adaptivePreprocessingEligible !== true &&
+      candidate.parameters.geometryConfirmedLayout !== true) return "preprocessing-unconfirmed"
+  if (candidate.parameters.inputVariant === "artifact-preprocessed" &&
+      candidate.parameters.artifactPreprocessingEligible !== true) return "artifact-preprocessing-unconfirmed"
+  if (capabilities.nativeGrid && capabilities.preprocessed && candidate.sourceFidelity?.passed !== true) {
+    return "preprocessed-native-fidelity-failed"
   }
-  if (
-    candidate.parameters.inputVariant === "artifact-preprocessed" &&
-    candidate.parameters.artifactPreprocessingEligible !== true
-  ) {
-    return false
-  }
-  if (capabilities.nativeGrid && capabilities.preprocessed) {
-    return candidate.sourceFidelity?.passed === true
-  }
-  return true
+  return undefined
+}
+
+function candidateEligibleForSelection(candidate: CandidateResult) {
+  return candidateSelectionIneligibility(candidate) === undefined
 }
 
 function hasLowResolutionNativeTraceCorroboration(
@@ -6664,6 +6983,8 @@ function openEcgConfig({
   gainMmPerMv,
   layoutConstraint,
   featureCachePath,
+  decoderCoordinatePath,
+  sourceRhythmContextPath,
 }: {
   inputDir: string
   outputDir: string
@@ -6676,6 +6997,8 @@ function openEcgConfig({
   gainMmPerMv?: number
   layoutConstraint?: string
   featureCachePath?: string
+  decoderCoordinatePath?: string
+  sourceRhythmContextPath?: string
 }) {
   if (gainMmPerMv !== undefined && ![5, 10, 20].includes(gainMmPerMv)) {
     throw new EvidenceContractError("unsupported_neural_gain", "Neural extraction requires a supported physical gain.")
@@ -6718,6 +7041,16 @@ function openEcgConfig({
   const featureCacheKwarg = featureCachePath
     ? `\n    feature_cache_path: ${JSON.stringify(featureCachePath)}`
     : ""
+  if (decoderCoordinatePath && !canCaptureDecoderCoordinates({ vectorizer, layoutConstraint })) {
+    throw new EvidenceContractError("unsupported_decoder_capture", "Coordinate capture requires a supported full-page dynamic-path layout.")
+  }
+  const coordinateKwarg = decoderCoordinatePath
+    ? `\n    decoder_coordinate_path: ${JSON.stringify(decoderCoordinatePath)}` : ""
+  if (sourceRhythmContextPath && !decoderCoordinatePath) {
+    throw new EvidenceContractError("missing_rhythm_coordinate_capture", "Source rhythm assignment requires coordinate capture.")
+  }
+  const rhythmKwarg = sourceRhythmContextPath
+    ? `\n    source_rhythm_context_path: ${JSON.stringify(sourceRhythmContextPath)}` : ""
   const gainKwarg = gainMmPerMv !== undefined && gainMmPerMv !== 10
     ? `\n    gain_mm_per_mv: ${gainMmPerMv}`
     : ""
@@ -6780,7 +7113,7 @@ function openEcgConfig({
     rotate_on_resample: true
     enable_timing: false
     apply_dewarping: false
-    ${fidelityKwargs}${forcedLayoutKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}${gainKwarg}
+    ${fidelityKwargs}${forcedLayoutKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}${gainKwarg}${coordinateKwarg}${rhythmKwarg}
 
 DATA:
   images_path: ${JSON.stringify(inputDir)}
@@ -7008,6 +7341,7 @@ function contentTypeForPath(filePath: string) {
   if (ext === ".webp") return "image/webp"
   if (ext === ".tif" || ext === ".tiff") return "image/tiff"
   if (ext === ".csv") return "text/csv; charset=utf-8"
+  if (ext === ".zip") return "application/zip"
   if (ext === ".json") return "application/json; charset=utf-8"
 
   return "application/octet-stream"
@@ -7044,6 +7378,12 @@ function relativePath(absolutePath: string) {
 }
 
 export const digitizerTestUtils = {
+  runNativeGridCandidate,
+  diagnosticAssetLabel,
+  SelectionEvidenceRecorder,
+  buildLeadFusionCandidate,
+  buildPipelineEvidence,
+  boundedSubprocessFailureDetail,
   subprocessEnvironment,
   AsyncSemaphore,
   alignSeries,
@@ -7051,6 +7391,11 @@ export const digitizerTestUtils = {
   assetsWithoutQuantitativeOutputs,
   attachSemanticLeadEvidence,
   buildUncertaintyRows,
+  buildSelectedSegmentDescriptors,
+  candidateHasSourceGridTiming,
+  candidateHasTrustedSourceGridTiming,
+  candidateHasPixelAnnotationExclusion,
+  publishWithAnnotationEvidence,
   candidateEligibleForSelection,
   candidatePublicationRank,
   hasLowResolutionNativeTraceCorroboration,
@@ -7060,6 +7405,7 @@ export const digitizerTestUtils = {
   candidateHasCorroboratedFullWidthRhythmLead,
   candidateHasPublishableLead,
   candidateHasExplicitSemanticLayoutEvidence,
+  exportedLeadIdentity,
   candidateInheritsProvisionalGeometryLeadIdentity,
   candidateHasProvisionalLayoutLeadIdentity,
   candidateHasNativeRasterColumnSamplingRisk,
@@ -7085,6 +7431,7 @@ export const digitizerTestUtils = {
   normalizeCanonicalPanelTiming,
   nativeCanonicalRequiresBoundarySuppression,
   openEcgConfig,
+  prepareCandidateInput,
   parseCanonicalCell,
   repairShortPeerSupportedGaps,
   sanitizeCanonicalForLayout,

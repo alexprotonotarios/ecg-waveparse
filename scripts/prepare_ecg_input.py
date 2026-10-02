@@ -3,15 +3,22 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
+
 from PIL import Image
 from scipy import ndimage
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from ecg_pipeline.annotation_color import color_candidates
+
 POLICY_THRESHOLDS = json.loads(
     (ROOT / "config/digitizer-policy.v3.json").read_text(encoding="utf-8")
 )["thresholds"]
@@ -224,27 +231,6 @@ def sha256(path: Path) -> str:
             digest.update(chunk)
     return digest.hexdigest()
 
-
-def color_candidates(image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    rgb = image.astype(np.int16)
-    red, green, blue = (rgb[..., index] for index in range(3))
-    saturation = rgb.max(axis=2) - rgb.min(axis=2)
-
-    blue_pixels = (
-        (blue >= 100)
-        & (blue - red >= 35)
-        & (blue - green >= 15)
-        & (saturation >= 50)
-    )
-    red_pixels = (
-        (red >= 120)
-        & (green <= 100)
-        & (blue <= 100)
-        & (red - green >= 35)
-        & (red - blue >= 35)
-        & (saturation >= 50)
-    )
-    return red_pixels, blue_pixels
 
 
 def annotation_components(

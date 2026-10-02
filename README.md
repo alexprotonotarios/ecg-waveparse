@@ -157,5 +157,6 @@ Actions workflows; run these checks before submitting source changes.
 Independently authored WaveParse code is MIT-licensed. Adapted Open-ECG-Digitizer
 components retain CC BY-SA 4.0. Runtime setup retrieves upstream components
 under their own terms. See [LICENSE](LICENSE) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Model-specific terms have not
-been independently confirmed; model weights are downloaded separately.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Model weights are downloaded separately. The upstream ECG-weight and OCR-model
+licence statements and attribution requirements are recorded in
+THIRD_PARTY_NOTICES.md.

@@ -3,7 +3,8 @@ import type { RunAssetKey, RunRecord } from "@/lib/runs"
 /** Quantitative evidence survives every human review outcome. */
 export const PERMANENT_EVIDENCE_ASSETS = new Set<RunAssetKey>([
   "input", "diagnostic", "paperRender", "probability", "canonicalCsv",
-  "segmentsCsv", "uncertaintyCsv", "segmentMapJson", "metadataCsv", "provenanceJson", "reviewJson",
+  "segmentsCsv", "uncertaintyCsv", "segmentMapJson", "coordinateEvidence", "sourceTimeEvidence", "metadataCsv", "provenanceJson", "reviewJson",
+  "diagnosticBundle", "diagnosticManifest",
 ])
 
 export type EvidenceAvailability = "recorded" | "unavailable_historical" | "not_recorded" | "not_applicable"

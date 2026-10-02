@@ -132,7 +132,7 @@ def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.Im
             return ImageFont.truetype(path, size)
         except OSError:
             pass
-    return ImageFont.load_default()
+    return ImageFont.load_default(size=size)
 
 
 def draw_ecg_grid(draw: ImageDraw.ImageDraw, width: int, height: int, px_per_mm: int) -> None:

@@ -1,4 +1,4 @@
-"""Limit temporary convolution matrices for the pinned macOS CPU U-Nets.
+"""Limit temporary convolution matrices for the pinned macOS and Linux CPU U-Nets.
 
 Only individual convolutions are evaluated in row stripes. Every normalization
 layer still sees the complete spatial tensor. The output and model weights keep
@@ -77,7 +77,7 @@ def bound_cpu_convolutions(
 ) -> int:
     """Wrap the pinned convolution geometries after loading the original weights.
 
-    The caller enables this only for macOS CPU inference. Unsupported operators,
+    The caller enables this for macOS and Linux CPU inference. Unsupported operators,
     autograd, autocast and other devices retain their original execution path.
     Repeated installation leaves existing wrappers unchanged.
     """

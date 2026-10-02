@@ -4,6 +4,24 @@ import { EvidenceContractError, positivePhysicalValue, type EvidenceState } from
 import type { SourceRegion } from "@/lib/digitizer/geometry-evidence"
 import { validateIntervalLineage, type IntervalLineage } from "@/lib/digitizer/lineage"
 
+export type SourceTimeConversionEvidence = {
+  version: 1
+  method: "source_grid_time_publication_v1"
+  evidenceAsset: "sourceTimeEvidence"
+  lineageFile: "lineage.csv"
+  lineageSha256: string
+  coordinateSha256: string
+  inputCanonicalSha256: string
+  inputUncertaintySha256: string
+  inputSegmentMapSha256: string
+  sourceOriginMark: string
+  sourceMidpointXY: [number, number]
+  originPaperXmm: number
+  originLocusPaperXmmRange: [number, number]
+  inkFootprintPaperXmmRange: [number, number]
+  geometricTimingShiftMsRange: [number, number]
+}
+
 export type SegmentDescriptor = {
   lead: string
   panelIndex: number
@@ -14,8 +32,9 @@ export type SegmentDescriptor = {
   identityState: EvidenceState
   identityMethod: string
   candidateId: string
-  lineageState: "direct_candidate" | "candidate_summary_only" | "interval_recorded"
+  lineageState: "direct_candidate" | "candidate_summary_only" | "interval_recorded" | "source_time_conversion_recorded"
   intervalLineage?: IntervalLineage[]
+  sourceTimeConversion?: SourceTimeConversionEvidence
   sourceLabel?: string
   polarity?: 1 | -1
   sourceCrop?: SourceRegion
@@ -107,7 +126,7 @@ export function validateSegmentEvidence(value: unknown, identities?: { sourceSha
         !["panel", "rhythm"].includes(segment.role) || !["verified", "inferred", "unresolved", "not_applicable"].includes(segment.identityState) ||
         typeof segment.identityMethod !== "string" || !segment.identityMethod || typeof segment.sourceLabel !== "string" || !segment.sourceLabel ||
         typeof segment.candidateId !== "string" || !segment.candidateId ||
-        !["direct_candidate", "candidate_summary_only", "interval_recorded"].includes(segment.lineageState) || ![1, -1].includes(segment.polarity)) return fail("invalid_segment_identity")
+        !["direct_candidate", "candidate_summary_only", "interval_recorded", "source_time_conversion_recorded"].includes(segment.lineageState) || ![1, -1].includes(segment.polarity)) return fail("invalid_segment_identity")
     ids.add(segment.segmentId); leads.add(segment.lead)
     if (segment.segmentId !== `${segment.lead}:${segment.role}:${segment.panelIndex}` ||
         segment.immutableId !== createHash("sha256").update(`${map.runId}:${map.sourceSha256}:${map.canonicalSha256}:${segment.segmentId}`).digest("hex")) return fail("invalid_immutable_segment_id")
@@ -129,6 +148,25 @@ export function validateSegmentEvidence(value: unknown, identities?: { sourceSha
     if (next !== segment.sampleCount) return fail("incomplete_segment_support")
     if (segment.intervalLineage) validateIntervalLineage(segment.intervalLineage,segment.sampleCount)
     if (segment.lineageState==="interval_recorded" && !segment.intervalLineage) return fail("missing_interval_lineage")
+    if (segment.lineageState === "source_time_conversion_recorded") {
+      const proof = segment.sourceTimeConversion
+      const pair = (value: unknown): value is [number, number] => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite)
+      // The same source boundary can be evaluated through different polygon
+      // subdivisions. Permit only arithmetic roundoff when comparing extents;
+      // retain the measured bounds exactly and do not alter the time origin.
+      const containsBound = (lower: number, upper: number) => lower <= upper ||
+        lower - upper <= 8 * Number.EPSILON * Math.max(1, Math.abs(lower), Math.abs(upper))
+      const mark = segment.panelIndex === 0 ? `row${segment.rowIndex}:pulse` : `row${segment.rowIndex}:separator${segment.panelIndex}`
+      if (!proof || segment.intervalLineage !== undefined || proof.version !== 1 || proof.method !== "source_grid_time_publication_v1" ||
+          proof.evidenceAsset !== "sourceTimeEvidence" || proof.lineageFile !== "lineage.csv" || proof.sourceOriginMark !== mark ||
+          ![proof.lineageSha256, proof.coordinateSha256, proof.inputCanonicalSha256, proof.inputUncertaintySha256, proof.inputSegmentMapSha256].every(v => typeof v === "string" && /^[a-f0-9]{64}$/.test(v)) ||
+          !pair(proof.sourceMidpointXY) || !pair(proof.originLocusPaperXmmRange) || !pair(proof.inkFootprintPaperXmmRange) ||
+          !pair(proof.geometricTimingShiftMsRange) || !Number.isFinite(proof.originPaperXmm) ||
+          !(proof.originLocusPaperXmmRange[0] <= proof.originPaperXmm && proof.originPaperXmm <= proof.originLocusPaperXmmRange[1]) ||
+          !(containsBound(proof.inkFootprintPaperXmmRange[0], proof.originLocusPaperXmmRange[0]) && containsBound(proof.originLocusPaperXmmRange[1], proof.inkFootprintPaperXmmRange[1])) ||
+          proof.geometricTimingShiftMsRange[0] !== (proof.originPaperXmm - proof.originLocusPaperXmmRange[1]) * 40 ||
+          proof.geometricTimingShiftMsRange[1] !== (proof.originPaperXmm - proof.originLocusPaperXmmRange[0]) * 40 || map.exportSampleRateHz !== 500) return fail("invalid_source_time_lineage")
+    } else if (segment.sourceTimeConversion !== undefined) return fail("source_time_lineage_state_mismatch")
     if (!segment.sourceCrop || !["inferred", "unresolved"].includes(segment.sourceCrop.state)) return fail("invalid_source_region")
     if (segment.sourceCrop.state === "inferred") {
       const region = segment.sourceCrop

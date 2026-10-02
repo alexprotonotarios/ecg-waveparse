@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -62,6 +64,22 @@ class ContactSheet:
 
 
 OcrRunner = Callable[[np.ndarray], dict[str, Any]]
+
+# Providers apply only within the current thread/task context. Default semantic
+# verification always uses the original source-slot and Roman-group observers.
+_source_glyph_providers: ContextVar[tuple[Callable, Callable] | None] = ContextVar(
+    "source_glyph_providers", default=None
+)
+
+
+@contextmanager
+def source_glyph_observers(slot_observer: Callable, group_observer: Callable):
+    """Scope diagnostic source observations without replacing module globals."""
+    token = _source_glyph_providers.set((slot_observer, group_observer))
+    try:
+        yield
+    finally:
+        _source_glyph_providers.reset(token)
 
 
 def _connected_components(
@@ -157,7 +175,23 @@ def _layout_slots(
     centers = [int(value) for value in geometry.get("rowCenters") or []]
     slots: list[LabelSlot | None] = []
 
-    if layout in {"standard_6x2", "standard_6x2_with_r1_ignored"}:
+    if geometry.get("sourceLabelGrid") is not None:
+        if layout != "standard_3x4_with_r1":
+            return []
+        grid = geometry["sourceLabelGrid"]
+        expected = [(lead, row, col) for row, names in enumerate(STANDARD_THREE_BY_FOUR)
+                    for col, lead in enumerate(names)]
+        items = grid.get("slots") or []
+        if len(items) != len(expected):
+            return []
+        for item, (lead, row, col) in zip(items, expected, strict=True):
+            if (item.get("lead"), item.get("row"), item.get("column")) != (lead, row, col):
+                return []
+            slot = _source_grid_slot(image, grid, item)
+            if slot is None:
+                return []
+            slots.append(slot)
+    elif layout in {"standard_6x2", "standard_6x2_with_r1_ignored"}:
         if len(centers) not in {6, 7}:
             return []
         centers = centers[:6]
@@ -278,6 +312,35 @@ def _layout_slots(
                 )
             )
     return [slot for slot in slots if slot is not None]
+
+
+def _source_grid_slot(image: np.ndarray, grid: dict[str, Any], item: dict[str, Any]) -> LabelSlot | None:
+    providers = _source_glyph_providers.get()
+    observer = providers[0] if providers is not None else _default_source_grid_slot
+    return observer(image, grid, item)
+
+
+def _default_source_grid_slot(image: np.ndarray, grid: dict[str, Any], item: dict[str, Any]) -> LabelSlot | None:
+    height, width = image.shape[:2]
+    spacing = grid.get("rowSpacing")
+    box = item.get("box")
+    if not (grid.get("version") == 1 and grid.get("method") == "source-value-grid-below-trace-v1"
+            and grid.get("imageSize") == [width, height]
+            and grid.get("maskMethod") == "maximum-channel-below-160-v1"
+            and isinstance(spacing, (int, float)) and not isinstance(spacing, bool)
+            and np.isfinite(spacing) and .09*height < spacing < .30*height
+            and isinstance(box, list) and len(box) == 4
+            and all(isinstance(value, int) and not isinstance(value, bool) for value in box)
+            and 0 <= box[0] < box[2] <= width and 0 <= box[1] < box[3] <= height):
+        return None
+    slot = _slot(image, item["lead"], item["row"], item["column"], tuple(box), float(spacing))
+    if slot is None:
+        return None
+    crop = image[box[1]:box[3], box[0]:box[2]]
+    # Dark ink can acquire chroma where the scanned red grid crosses a glyph.
+    # Keep those observed strokes; bright red paper still fails max-channel 160.
+    slot.mask = ((crop[..., :3].max(axis=2) if crop.ndim == 3 else crop) < 160).astype(np.uint8)
+    return slot
 
 
 def _remove_long_lines(mask: np.ndarray, spacing: float) -> np.ndarray:
@@ -840,13 +903,23 @@ def _normalised_component(mask: np.ndarray) -> np.ndarray:
         int(x_values.min()) : int(x_values.max()) + 1,
     ]
     scale = min(26.0 / max(crop.shape[1], 1), 26.0 / max(crop.shape[0], 1))
-    resized = cv2.resize(
-        crop,
-        None,
-        fx=scale,
-        fy=scale,
-        interpolation=cv2.INTER_NEAREST,
-    )
+    if min(round(crop.shape[1] * scale), round(crop.shape[0] * scale)) < 1:
+        # A long one-pixel artifact can round its short axis to zero. Keep it
+        # as a thin source-derived component instead of crashing recognition.
+        # Preserve the established OpenCV scale path for every ordinary glyph.
+        resized = cv2.resize(
+            crop,
+            (max(1, round(crop.shape[1] * scale)), max(1, round(crop.shape[0] * scale))),
+            interpolation=cv2.INTER_NEAREST,
+        )
+    else:
+        resized = cv2.resize(
+            crop,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_NEAREST,
+        )
     top = (32 - resized.shape[0]) // 2
     left = (32 - resized.shape[1]) // 2
     canvas[top : top + resized.shape[0], left : left + resized.shape[1]] = (
@@ -880,6 +953,15 @@ def _vertical_occupancy_dice(first: np.ndarray, second: np.ndarray) -> float:
 
 
 def _roman_groups(
+    slot: LabelSlot,
+    expected_count: int,
+) -> list[dict[str, Any]]:
+    providers = _source_glyph_providers.get()
+    observer = providers[1] if providers is not None else _default_roman_groups
+    return observer(slot, expected_count)
+
+
+def _default_roman_groups(
     slot: LabelSlot,
     expected_count: int,
 ) -> list[dict[str, Any]]:
@@ -2741,7 +2823,9 @@ def recognise_rhythm_lead_identity(
     method = "source-pixel-rhythm-label-value-validation-v1"
     layout = str(geometry.get("layoutHint") or "")
     centers = [int(value) for value in geometry.get("rowCenters") or []]
-    if layout != "standard_6x2_with_r1_ignored" or len(centers) != 7:
+    source_grid = geometry.get("sourceLabelGrid")
+    anchored_three = bool(layout == "standard_3x4_with_r1" and len(centers) == 4 and source_grid)
+    if not anchored_three and (layout != "standard_6x2_with_r1_ignored" or len(centers) != 7):
         return {
             "passed": False,
             "lead": None,
@@ -2754,9 +2838,15 @@ def recognise_rhythm_lead_identity(
         }
 
     height, width = image.shape[:2]
-    spacing = float(np.median(np.diff(centers[:6])))
-    center = centers[6]
-    slot = _slot(
+    spacing = float(np.median(np.diff(centers[:3] if anchored_three else centers[:6])))
+    center = centers[-1]
+    rhythm_item = (source_grid or {}).get("rhythmSlot") or {}
+    slot = (
+        _source_grid_slot(image, source_grid, rhythm_item)
+        if anchored_three and (rhythm_item.get("lead"), rhythm_item.get("row"), rhythm_item.get("column")) == ("II", 3, 0)
+        else None
+        if anchored_three
+        else _slot(
         image,
         "II",
         6,
@@ -2770,6 +2860,7 @@ def recognise_rhythm_lead_identity(
             center - spacing * 0.18,
         ),
         spacing,
+        )
     )
     if slot is None:
         return {
@@ -2966,4 +3057,9 @@ def attach_semantic_lead_identity(
             **(result.get("leadLabelValidation") or {}),
             **shared,
         }
+        if layout == "standard_3x4_with_r1" and result.get("sourceLabelGrid"):
+            result["rhythmLeadValidation"] = recognise_rhythm_lead_identity(
+                image, result, ocr_runner=ocr_runner,
+                primary_identity_confirmed=bool(report.get("passed")),
+            )
     return result

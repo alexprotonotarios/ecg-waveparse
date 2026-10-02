@@ -1,5 +1,6 @@
 import type { RunRecord } from "@/lib/runs"
 import { EvidenceContractError, positivePhysicalValue, unitFraction } from "@/lib/digitizer/physical-contracts"
+import { validateSourcePhotoAttempt } from "@/lib/digitizer/source-photo-contract"
 
 /** Additive validation of legacy records: missing evidence stays missing. */
 export function validateDurableRun(value: unknown): RunRecord {
@@ -29,5 +30,15 @@ export function validateDurableRun(value: unknown): RunRecord {
     }
     if (!unitFraction(reliability.annotationMaskedFraction) || reliability.morphologyReconstructed !== false || reliability.originalPreserved !== true) return fail("invalid_reliability_evidence")
   }
+  if (run.sourcePhotoAttempt) {
+    validateSourcePhotoAttempt(run.sourcePhotoAttempt, run.sourceIdentity?.sha256)
+    if (run.sourcePhotoAttempt.state !== "failed" &&
+        run.assets.diagnosticManifest?.identity?.sha256 !== run.sourcePhotoAttempt.manifestSha256) return fail("source_photo_manifest_identity_mismatch")
+    if (run.sourcePhotoAttempt.state === "diagnostic_available" &&
+        (run.publicationDecision?.reasonCode !== "diagnostic_source_photo" || run.publicationDecision.outcome !== "partial" ||
+         run.assets.canonicalCsv || run.assets.segmentsCsv || run.assets.uncertaintyCsv || run.assets.segmentMapJson ||
+         !run.assets.diagnosticBundle || !run.assets.diagnosticManifest || !run.assets.diagnostic || !run.assets.paperRender)) return fail("invalid_source_photo_publication")
+  }
+  if (run.publicationDecision?.reasonCode === "diagnostic_source_photo" && run.sourcePhotoAttempt?.state !== "diagnostic_available") return fail("invalid_source_photo_publication")
   return run
 }

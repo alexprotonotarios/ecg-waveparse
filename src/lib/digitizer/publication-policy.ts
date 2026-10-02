@@ -12,6 +12,7 @@ export type PublicationReasonCode =
   | "calibration_conflict"
   | "unsupported_calibration"
   | "no_publishable_candidate"
+  | "diagnostic_source_photo"
 
 export type PublicationDecision<T> =
   | {
@@ -32,6 +33,7 @@ export type PublicationDecision<T> =
     }
 
 export function resolvePublicationDecision<T>({
+  sourceTimingVerified,
   sourceVerified,
   adaptivePreprocessed,
   fused,
@@ -40,6 +42,8 @@ export function resolvePublicationDecision<T>({
   supportedPartial,
   rankCandidate,
 }: {
+  /** Caller has verified source-bound physical timing and all ordinary trust gates. */
+  sourceTimingVerified?: T
   sourceVerified?: T
   adaptivePreprocessed?: T
   fused?: T
@@ -48,6 +52,9 @@ export function resolvePublicationDecision<T>({
   supportedPartial?: T
   rankCandidate?: (candidate: T) => number
 }): PublicationDecision<T> {
+  if (sourceTimingVerified !== undefined) {
+    return selected("needs_review", "source_verified", sourceTimingVerified)
+  }
   const completeCandidates: Array<{
     candidate: T
     reasonCode:

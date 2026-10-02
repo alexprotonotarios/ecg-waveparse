@@ -13,6 +13,10 @@ import {
   type CaptureQualitySummary,
 } from "@/lib/digitizer/capture-quality"
 import type { PublicationReasonCode } from "@/lib/digitizer/publication-policy"
+import type { SourcePhotoAttempt } from "@/lib/digitizer/source-photo-contract"
+import type { LayoutGeometryReport } from "@/lib/digitizer/contracts"
+import type { SelectionDiagnostics } from "@/lib/digitizer/selection-evidence"
+import type { SourcePanelTimingEvidence, SourceInkEvidence, SourceTransitionEvidence, SourceRhythmRefinementEvidence, SourceGridConversionEvidence, SourceRhythmContinuityEvidence, SourceSeparatorPublicationEvidence } from "@/lib/digitizer/source-grid-contract"
 import { validateDurableRun } from "@/lib/digitizer/record-contracts"
 import { describeOutcome } from "@/lib/digitizer/outcome-dimensions"
 import {
@@ -47,9 +51,13 @@ export const ASSET_KEYS = [
   "segmentsCsv",
   "uncertaintyCsv",
   "segmentMapJson",
+  "coordinateEvidence",
+  "sourceTimeEvidence",
   "metadataCsv",
   "provenanceJson",
   "reviewJson",
+  "diagnosticBundle",
+  "diagnosticManifest",
 ] as const
 
 export type RunAssetKey = (typeof ASSET_KEYS)[number]
@@ -162,6 +170,7 @@ export type RunRecord = {
   selectedCandidateId?: string
   publicationDecision?: DigitizerPublicationDecision
   digitizer?: DigitizerRunSummary
+  sourcePhotoAttempt?: SourcePhotoAttempt
   reliability?: DigitizerReliabilitySummary
   review?: DigitizerReviewSummary
   processing?: DigitizerJobLifecycle
@@ -258,6 +267,19 @@ export type DigitizerSourceFidelitySummary = {
   minimumCoverage: number
   minimumRequiredCoverage?: number
   sourcePanelTimingDetected?: boolean
+  sourcePanelTiming?: SourcePanelTimingEvidence
+  sourceInkEvidence?: SourceInkEvidence
+  sourceTransitionEvidence?: SourceTransitionEvidence
+  sourceRhythmRefinement?: SourceRhythmRefinementEvidence
+  sourceGridConversion?: SourceGridConversionEvidence
+  sourceRhythmContinuity?: SourceRhythmContinuityEvidence
+  sourceSeparatorPublication?: SourceSeparatorPublicationEvidence
+  rhythmFidelityDomain?: {
+    method: "source-confirmed-recorded-interval-v1"
+    sourceInterval: [number, number]
+    expectedColumns: number
+    missingColumnsCountAgainstCoverage: true
+  }
   rowLocalSourceTimingDetected?: boolean
   rowTimeOriginConsensus?: {
     method: string
@@ -456,6 +478,13 @@ export type DigitizerStabilityEvidence = {
 }
 
 export type DigitizerPipelineEvidence = {
+  selectionDiagnostics?: SelectionDiagnostics
+  physicalCalibration?: LayoutGeometryReport["calibration"]
+  sourceLabelGeometry?: {
+    sourceSha256: string
+    coordinateSpace: "working" | "geometry-corrected"
+    grid: NonNullable<LayoutGeometryReport["sourceLabelGrid"]>
+  }
   version: 1
   selectorCalibrationProfileId: string
   neuralEscalated: boolean
@@ -1125,9 +1154,13 @@ const DERIVED_ASSET_DIRECTORY: Record<
   segmentsCsv: "exports",
   uncertaintyCsv: "exports",
   segmentMapJson: "exports",
+  coordinateEvidence: "exports",
+  sourceTimeEvidence: "exports",
   metadataCsv: "exports",
   provenanceJson: "preprocessing",
   reviewJson: "review",
+  diagnosticBundle: "exports",
+  diagnosticManifest: "exports",
 }
 
 export async function readVerifiedRunAsset(
@@ -1539,7 +1572,7 @@ export async function compactStoredRun(id: string) {
       return PERMANENT_EVIDENCE_ASSETS.has(key)
     })
     const reviewArtifactsRetained = retainedKeys.some(
-      (key) => key === "segmentsCsv" || key === "uncertaintyCsv"
+      (key) => key === "segmentsCsv" || key === "uncertaintyCsv" || key === "diagnosticBundle"
     )
     const retainedKeySet = new Set(retainedKeys)
     const removedAssets = ASSET_KEYS.filter(
@@ -2755,9 +2788,13 @@ function assetLabel(key: RunAssetKey) {
     segmentsCsv: "Compact 500 Hz CSV",
     uncertaintyCsv: "Per-sample uncertainty CSV",
     segmentMapJson: "Segment identity and timing evidence",
+    coordinateEvidence: "Decoder coordinate evidence",
+    sourceTimeEvidence: "Source timing and sample lineage",
     metadataCsv: "Digitizer metadata",
     provenanceJson: "Digitization provenance",
     reviewJson: "Review audit trail",
+    diagnosticBundle: "Photo diagnostic review bundle",
+    diagnosticManifest: "Photo diagnostic manifest",
   }
 
   return labels[key]

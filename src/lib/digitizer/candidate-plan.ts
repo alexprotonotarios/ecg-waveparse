@@ -1,6 +1,7 @@
 import type { LayoutGeometryReport, PreprocessingReport, RasterCropBox } from "@/lib/digitizer/contracts"
 import type { DigitizerCandidateKind } from "@/lib/digitizer/domain"
 import { DIGITIZER_POLICY } from "@/lib/digitizer/policy"
+import { shouldUseSourceGridNativeMode } from "@/lib/digitizer/geometry-evidence"
 import type {
   DigitizerComputeDevice,
   DigitizerInputVariant,
@@ -83,7 +84,9 @@ export function analyzeCandidatePlanningContext(
   const nativeGridRequiresOriginalRaster =
     nativeGridLayout === "row_local_compound_12lead" ||
     nativeGridLayout === "row_local_labeled_6x2" ||
-    nativeGridLayout === "standard_12x1"
+    nativeGridLayout === "standard_12x1" ||
+    (geometry.detectedInputVariant === "original" &&
+      shouldUseSourceGridNativeMode(geometry, "original", false))
   return {
     adaptivePreprocessingEligible,
     artifactPreprocessingEligible,

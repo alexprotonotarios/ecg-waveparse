@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -26,6 +27,34 @@ from ecg_pipeline.native_layout_strategies import (
     sequential_row_bounds,
     six_row_bounds,
 )
+from ecg_pipeline.source_panel_timing import propose_source_panel_timing
+from ecg_pipeline.joint_source_timing import (
+    map_source_events,
+    source_panel_ranges,
+    source_recorded_interval,
+)
+from ecg_pipeline.source_grid_displacement import source_grid_rhythm_coordinates
+from ecg_pipeline.source_rhythm_continuity import source_rhythm_continuity
+from ecg_pipeline.source_separator_publication import (
+    apply_separator_publication_validity,
+    separator_publication_mask,
+    separator_publication_path_evidence,
+)
+from ecg_pipeline.source_waveform_support import (
+    build_source_ink,
+    connected_source_validity,
+    piecewise_rhythm_to_canonical,
+    source_supported_validity,
+)
+
+
+NATIVE_PUBLISHED_LAYOUTS = frozenset({
+    "standard_6x2",
+    "standard_6x2_with_r1_ignored",
+    "standard_3x4",
+    "standard_3x4_with_r1",
+    "standard_12x1",
+})
 
 
 @dataclass(frozen=True)
@@ -450,6 +479,92 @@ def trace_crossing_path(
     return columns, path
 
 
+def refine_source_rhythm_path(
+    evidence: np.ndarray,
+    source_support: np.ndarray,
+    columns: np.ndarray,
+    original_path: np.ndarray,
+    validity: np.ndarray,
+    *,
+    source_interval: tuple[int, int] | list[int],
+    y_start: int,
+    y_end: int,
+    row_center: float,
+    row_spacing: float,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Follow connected source strokes without changing primary event anchors."""
+    original_validity = source_supported_validity(
+        source_support, columns, original_path, validity
+    )
+    original_validity, _ = connected_source_validity(
+        evidence, columns, original_path, original_validity,
+        source_interval=source_interval,
+    )
+    x_start, x_end = int(columns[0]), int(columns[-1]) + 1
+    if not np.array_equal(columns, np.arange(x_start, x_end)):
+        raise ValueError("Source rhythm refinement requires consecutive source columns.")
+    recorded = (columns >= source_interval[0]) & (columns < source_interval[1])
+    band = evidence[y_start:y_end, x_start:x_end]
+    component_count, labels = cv2.connectedComponents(
+        (band >= 0.24).astype(np.uint8), connectivity=8
+    )
+    seeded: set[int] = set()
+    for index in np.flatnonzero(original_validity & recorded):
+        local_y = int(original_path[index]) - y_start
+        seeded.update(int(value) for value in labels[
+            max(0, local_y - 1):min(labels.shape[0], local_y + 2),
+            max(0, index - 1):min(labels.shape[1], index + 2),
+        ].ravel())
+    seeded.discard(0)
+    # Keep the existing 3x3 blur/support margin. Thresholding that margin away
+    # can erase a valid low-intensity edge without changing the source image.
+    allowed = cv2.dilate(
+        np.isin(labels, sorted(seeded)).astype(np.uint8),
+        np.ones((3, 3), dtype=np.uint8),
+    ).astype(bool)
+    preference = evidence.copy()
+    preference[y_start:y_end, x_start:x_end] = np.where(allowed, band, 0)
+    _, refined_path = trace_crossing_path(
+        preference, y_start=y_start, y_end=y_end,
+        x_start=x_start, x_end=x_end, row_center=row_center,
+        row_spacing=row_spacing, transition_scale=2.0,
+        ink_connected_displacement_reward=0.03,
+    )
+    refined_validity = source_supported_validity(
+        source_support, columns, refined_path, validity
+    )
+    refined_validity, _ = connected_source_validity(
+        evidence, columns, refined_path, refined_validity,
+        source_interval=source_interval,
+    )
+    refined_validity &= original_validity
+    path_hash = lambda values: hashlib.sha256(
+        np.asarray(values, dtype="<i4").tobytes()
+    ).hexdigest()
+    receipt = {
+        "version": 1, "method": "source-connected-rhythm-refinement-v1",
+        "sourceInterval": list(source_interval),
+        "traceBounds": [x_start, y_start, x_end, y_end],
+        "supportThreshold": 0.24, "supportRadiusPixels": 1,
+        "retainedBlurMarginPixels": 1, "transitionScale": 2.0,
+        "displacementRewardPerPixel": 0.03,
+        "componentCount": component_count, "seededComponentCount": len(seeded),
+        "removedPreferencePixels": int(np.count_nonzero((band > 0) & ~allowed)),
+        "pathEncoding": "int32-le-y-by-source-column-v1",
+        "columnsSha256": path_hash(columns),
+        "originalPathSha256": path_hash(original_path),
+        "refinedPathSha256": path_hash(refined_path),
+        "changedRecordedColumns": int(np.count_nonzero(recorded & (original_path != refined_path))),
+        "originalValidColumns": int(np.count_nonzero(recorded & original_validity)),
+        "refinedValidColumns": int(np.count_nonzero(recorded & refined_validity)),
+        "newlyLostColumns": columns[recorded & original_validity & ~refined_validity].tolist(),
+        "oldGapsRecovered": 0, "sourceEvidenceChanged": False,
+        "primaryAnchorsChanged": False, "sourceTimingChanged": False,
+        "truthUsed": False,
+    }
+    return refined_path, refined_validity, receipt
+
+
 def _true_runs(mask: np.ndarray) -> list[np.ndarray]:
     indexes = np.flatnonzero(mask)
     if indexes.size == 0:
@@ -514,6 +629,7 @@ def cross_lead_event_anchors(
     tolerance_pixels: int,
     artifact_columns: np.ndarray | None = None,
     minimum_other_leads: int = 2,
+    source_ranges: dict[str, tuple[int, int]] | None = None,
 ) -> np.ndarray:
     """Return event times independently reproduced in other simultaneous leads.
 
@@ -535,7 +651,9 @@ def cross_lead_event_anchors(
         )
         for event in events:
             column = int(event)
-            if not panel_start <= column < panel_end:
+            source_interval = (source_ranges[lead] if source_ranges is not None
+                               else (panel_start, panel_end))
+            if not source_interval[0] <= column < source_interval[1]:
                 continue
             if (
                 artifact_columns is not None
@@ -543,6 +661,10 @@ def cross_lead_event_anchors(
                 and bool(artifact_columns[column])
             ):
                 continue
+            if source_ranges is not None:
+                column = int(map_source_events(
+                    np.asarray([column]), source_interval, (panel_start, panel_end)
+                )[0])
             observations.append((column, lead))
 
     if not observations:
@@ -2085,9 +2207,39 @@ def fidelity_for_path(
     row_spacing: float,
     validity: np.ndarray | None = None,
     safety_metrics: dict[str, int] | None = None,
+    source_interval: tuple[int, int] | None = None,
 ) -> LeadFidelity:
     if validity is None:
         validity = np.ones(columns.size, dtype=bool)
+    support_start, support_end = 0, evidence.shape[1]
+    if source_interval is not None:
+        if (
+            not isinstance(source_interval, (tuple, list))
+            or len(source_interval) != 2
+            or any(
+                isinstance(value, (bool, np.bool_))
+                or not isinstance(value, (int, np.integer))
+                for value in source_interval
+            )
+        ):
+            raise ValueError("Source interval must contain two integer bounds.")
+        support_start, support_end = source_interval
+        if evidence.ndim != 2 or not 0 <= support_start < support_end <= evidence.shape[1]:
+            raise ValueError("Source interval falls outside the source raster.")
+        if (
+            columns.ndim != 1 or path.shape != columns.shape
+            or not np.issubdtype(columns.dtype, np.integer)
+            or not np.issubdtype(path.dtype, np.integer)
+            or np.any(np.diff(columns) <= 0)
+            or np.any(columns < 0) or np.any(columns >= evidence.shape[1])
+            or np.any(path < 0) or np.any(path >= evidence.shape[0])
+            or validity.shape != columns.shape or validity.dtype != np.bool_
+        ):
+            raise ValueError("Invalid source path coordinates or validity.")
+        # Keep missing columns in the expected denominator. Page margins and
+        # calibration space are outside the verified recording interval.
+        validity = validity & (columns >= support_start) & (columns < support_end)
+        panel_width = int(support_end - support_start)
     if not np.any(validity):
         raise ValueError("A source-fidelity path must retain at least one sample.")
     safety_metrics = safety_metrics or {}
@@ -2102,8 +2254,8 @@ def fidelity_for_path(
     for index in large_jump_indexes:
         lower = int(min(path[index], path[index + 1]))
         upper = int(max(path[index], path[index + 1])) + 1
-        left = max(0, int(columns[index]) - 3)
-        right = min(evidence.shape[1], int(columns[index + 1]) + 4)
+        left = max(support_start, int(columns[index]) - 3)
+        right = min(support_end, int(columns[index + 1]) + 4)
         vertical_support = np.max(evidence[lower:upper, left:right], axis=1)
         large_jump_support.append(float(np.mean(vertical_support >= 0.24)))
     unsupported_large_jumps = sum(value < 0.35 for value in large_jump_support)
@@ -2634,10 +2786,37 @@ def digitize_native_grid(
     output_dir: Path,
     trace_evidence: np.ndarray | None = None,
     verified_rhythm_lead: str | None = None,
+    source_label_grid: bool = False,
+    calibration_source_image: np.ndarray | None = None,
+    source_identity: dict[str, str] | None = None,
+    source_annotation_mask: np.ndarray | None = None,
+    expected_layout: str | None = None,
 ) -> dict[str, Any]:
+    if expected_layout is not None and (
+        not isinstance(expected_layout, str)
+        or expected_layout not in NATIVE_PUBLISHED_LAYOUTS
+    ):
+        raise ValueError("Expected native layout must be a supported published layout.")
+    if source_annotation_mask is not None and not source_label_grid:
+        raise ValueError("Source annotation masks require explicit source-grid mode.")
     if extraction_image.shape[:2] != source_image.shape[:2]:
         raise ValueError("Extraction and source images must have identical dimensions.")
-    geometry = detect_ecg_layout_geometry(extraction_image)
+    source_timing = None
+    source_support = None
+    source_ink_receipt = None
+    publication_mask = None
+    publication_proof = None
+    if source_label_grid:
+        if trace_evidence is not None or not np.array_equal(extraction_image, source_image):
+            raise ValueError("Source-grid extraction requires the unmodified source raster.")
+        geometry = detect_ecg_layout_geometry(
+            source_image, recognise_semantic_labels=True,
+            calibration_source_image=(calibration_source_image
+                                      if calibration_source_image is not None else source_image),
+            calibration_source_sha256=(source_identity or {}).get("calibrationSourceSha256"),
+        )
+    else:
+        geometry = detect_ecg_layout_geometry(extraction_image)
     if verified_rhythm_lead is not None:
         if verified_rhythm_lead != "II":
             raise ValueError("Only a source-verified lead II rhythm strip is supported.")
@@ -2656,20 +2835,38 @@ def digitize_native_grid(
             for name in ("first", "second")
         )
     )
-    if layout not in {
-        "standard_6x2",
-        "standard_6x2_with_r1_ignored",
-        "standard_3x4",
-        "standard_3x4_with_r1",
-        "standard_12x1",
-    } and not compound_row_local:
+    if layout not in NATIVE_PUBLISHED_LAYOUTS and not compound_row_local:
         raise ValueError(
             "Native grid extraction requires a detected 6 x 2, 3 x 4, or "
             "sequential/paired-panel 12-lead ECG."
         )
 
+    # Compound geometry already publishes a 6x2 canvas. An expectation may
+    # reject the detected route, but must never force a different geometry.
+    published_layout = "standard_6x2" if compound_row_local else layout
+    if expected_layout is not None and published_layout != expected_layout:
+        raise ValueError(
+            "native_layout_mismatch: "
+            f"expected={expected_layout}; detected={layout}; published={published_layout}"
+        )
+    if source_label_grid:
+        source_timing = propose_source_panel_timing(source_image, geometry)
+        if source_timing["state"] != "source_supported":
+            raise ValueError(f"Unconfirmed source-grid timing: {source_timing['failureReason']}")
+        source_timing["sourceIdentity"] = source_identity or {}
+        if source_timing.get("version") not in (4, 5):
+            source_timing["rhythmMapping"] = "four-contiguous-panels-common-baseline-v1"
+
     gray = cv2.cvtColor(extraction_image, cv2.COLOR_BGR2GRAY)
-    if trace_evidence is None:
+    if source_timing is not None:
+        evidence, source_support, _, source_ink_receipt = build_source_ink(
+            source_image, geometry, source_timing, source_annotation_mask
+        )
+        publication_mask, publication_proof = separator_publication_mask(
+            source_image, geometry, source_timing, source_support
+        )
+        evidence_method = source_ink_receipt["method"]
+    elif trace_evidence is None:
         evidence = grid_residual_evidence(gray)
         evidence_method = "rhythm-anchored-connected-multievidence-native-path-v6"
     else:
@@ -2686,6 +2883,65 @@ def digitize_native_grid(
         evidence_method = (
             "rhythm-anchored-connected-colour-plus-raw-grid-path-v2"
         )
+
+    # Bind source support at export/measurement boundaries only. Internal path
+    # recovery retains its original validity, exactly as in the frozen probe.
+    # These are per-call functions; other runs and prior layouts are unchanged.
+    def retained_source_path(columns, path, current, *, source_row, publish=True):
+        validity = source_supported_validity(source_support, columns, path, current)
+        interval = source_recorded_interval(source_timing, source_row)
+        if source_timing.get("version") in (4, 5):
+            validity &= (columns >= interval[0]) & (columns < interval[1])
+        retained, proof = connected_source_validity(
+            evidence, columns, path, validity,
+            source_interval=interval,
+        )
+        # Keep every earlier gap: removing mark support before the original
+        # transition check could skip a formerly rejected transition.
+        if publish:
+            retained = apply_separator_publication_validity(
+                publication_mask, columns, path, retained
+            )
+        return retained, proof
+
+    source_grid_conversion = None
+
+    def convert_path(columns, path, *, source_row, **kwargs):
+        nonlocal source_grid_conversion
+        if source_support is not None:
+            kwargs["validity"], _ = retained_source_path(
+                columns, path, kwargs.get("validity"), source_row=source_row
+            )
+            if source_timing.get("version") in (4, 5):
+                requested = (kwargs["panel_start"], kwargs["panel_start"] + kwargs["panel_width"])
+                expected = ((source_recorded_interval(source_timing, 3),)
+                            if kwargs["panel_samples"] == SAMPLE_RATE_HZ * PAGE_DURATION_SECONDS
+                            else source_panel_ranges(source_timing, source_row))
+                if requested not in expected or (kwargs["panel_samples"] == SAMPLE_RATE_HZ * PAGE_DURATION_SECONDS and source_row != 3):
+                    raise ValueError("Conversion must retain the verified source row's timing.")
+            if kwargs["panel_samples"] == SAMPLE_RATE_HZ * PAGE_DURATION_SECONDS:
+                paper_path, source_grid_conversion = source_grid_rhythm_coordinates(
+                    source_image, columns, path, kwargs["validity"],
+                    source_interval=source_timing["rhythmRange"],
+                    pixels_per_mm=kwargs["pixels_per_mm"],
+                )
+                return piecewise_rhythm_to_canonical(
+                    native_path_to_canonical, columns, paper_path,
+                    source_panel_ranges(source_timing, 3), **kwargs
+                )
+        return native_path_to_canonical(columns, path, **kwargs)
+
+    def measure_path(evidence, columns, path, *, source_row, **kwargs):
+        if source_support is not None:
+            kwargs["validity"], _ = retained_source_path(
+                columns, path, kwargs.get("validity"), source_row=source_row
+            )
+            if source_timing.get("version") in (4, 5) and kwargs.get("source_interval") is None:
+                interval = (int(columns[0]), int(columns[-1]) + 1)
+                if interval not in source_panel_ranges(source_timing, source_row):
+                    raise ValueError("Primary fidelity must use its verified source panel.")
+                kwargs["source_interval"] = interval
+        return fidelity_for_path(evidence, columns, path, **kwargs)
     height, width = gray.shape
     calibration = geometry.get("calibration") or {}
     calibration_detected = bool(
@@ -2787,6 +3043,8 @@ def digitize_native_grid(
         )
         rhythm_x_start = max(3, round(width * 0.012))
         rhythm_x_end = width - max(4, round(width * 0.035))
+        if source_timing is not None and source_timing.get("version") in (4, 5):
+            rhythm_x_start, rhythm_x_end = source_recorded_interval(source_timing, 3)
         rhythm_columns, rhythm_path = trace_path(
             evidence,
             y_start=rhythm_start,
@@ -2852,6 +3110,8 @@ def digitize_native_grid(
         else None
     )
     labeled_three_by_four_ranges = (
+        source_panel_ranges(source_timing, 0)
+        if source_timing is not None else
         labeled_three_by_four_time_ranges(
             evidence,
             primary_centers,
@@ -3027,7 +3287,9 @@ def digitize_native_grid(
             / PAGE_DURATION_SECONDS
         )
     rhythm_source_time_range = (
-        contiguous_rhythm_time_range(source_time_ranges, page_width=width)
+        (source_recorded_interval(source_timing, 3)
+         if source_timing is not None and source_timing.get("version") in (4, 5)
+         else contiguous_rhythm_time_range(source_time_ranges, page_width=width))
         if publish_rhythm_trace
         else None
     )
@@ -3051,13 +3313,25 @@ def digitize_native_grid(
     lead_source_ranges: dict[str, tuple[int, int]] = {}
     lead_order_validation: dict[str, Any] | None = None
 
+    def primary_panel_range(row, column):
+        if source_timing is not None and source_timing.get("version") in (4, 5):
+            return source_panel_ranges(source_timing, row)[column]
+        return panel_ranges[column]
+
+    def primary_qrs_anchors(row, column):
+        if source_timing is not None and source_timing.get("version") in (4, 5):
+            return map_source_events(page_qrs_anchors,
+                                     source_panel_ranges(source_timing, 3)[column],
+                                     primary_panel_range(row, column))
+        return page_qrs_anchors
+
     for row_index, leads in enumerate(row_leads):
         y_start, y_end = primary_bounds[row_index]
         for column, lead in enumerate(leads):
             if labeled_twelve_time_ranges is not None:
                 panel_start, panel_end = labeled_twelve_time_ranges[row_index]
             else:
-                panel_start, panel_end = panel_ranges[column]
+                panel_start, panel_end = primary_panel_range(row_index, column)
             panel_width = panel_end - panel_start
             lead_source_ranges[lead] = (panel_start, panel_end)
             if (
@@ -3159,7 +3433,7 @@ def digitize_native_grid(
                     aligned_anchors, anchor_shift, anchor_matches = (
                         align_panel_qrs_anchors(
                             event_columns,
-                            page_qrs_anchors,
+                            primary_qrs_anchors(row_index, column),
                             panel_start=panel_start,
                             panel_end=panel_end,
                             effective_sample_rate_hz=effective_sample_rate_hz,
@@ -3219,7 +3493,7 @@ def digitize_native_grid(
                 validity = np.ones(columns.size, dtype=bool)
                 safety_metrics = {}
             paths[lead] = (columns, path, validity)
-            canonical_values[lead] = native_path_to_canonical(
+            canonical_values[lead] = convert_path(
                 columns,
                 path,
                 panel_start=panel_start,
@@ -3228,8 +3502,9 @@ def digitize_native_grid(
                 pixels_per_mm=diagnostic_amplitude_pixels_per_mm,
                 gain_mm_per_mv=gain_mm_per_mv,
                 validity=validity,
+                source_row=row_index,
             )
-            lead_metrics[lead] = fidelity_for_path(
+            lead_metrics[lead] = measure_path(
                 evidence,
                 columns,
                 path,
@@ -3238,6 +3513,7 @@ def digitize_native_grid(
                 row_spacing=row_spacing,
                 validity=validity,
                 safety_metrics=safety_metrics,
+                source_row=row_index,
             )
 
     sequential_event_anchor_count = 0
@@ -3285,7 +3561,7 @@ def digitize_native_grid(
                     validity = np.ones(columns.size, dtype=bool)
                     paths[lead] = (columns, recovered_path, validity)
                     panel_width = panel_end - panel_start
-                    canonical_values[lead] = native_path_to_canonical(
+                    canonical_values[lead] = convert_path(
                         columns,
                         recovered_path,
                         panel_start=panel_start,
@@ -3294,8 +3570,9 @@ def digitize_native_grid(
                         pixels_per_mm=diagnostic_amplitude_pixels_per_mm,
                         gain_mm_per_mv=gain_mm_per_mv,
                         validity=validity,
+                        source_row=row_index,
                     )
-                    lead_metrics[lead] = fidelity_for_path(
+                    lead_metrics[lead] = measure_path(
                         evidence,
                         columns,
                         recovered_path,
@@ -3306,6 +3583,7 @@ def digitize_native_grid(
                         safety_metrics={
                             "qrsAnchorMatchCount": sequential_event_anchor_count,
                         },
+                        source_row=row_index,
                     )
 
     if allow_ink_backed_crossings and (
@@ -3323,7 +3601,7 @@ def digitize_native_grid(
                 columns, path, previous_validity = paths[lead]
                 if bool(np.all(previous_validity)) and not row_local_labeled_six:
                     continue
-                panel_start, panel_end = panel_ranges[column]
+                panel_start, panel_end = primary_panel_range(row_index, column)
                 peer_leads = tuple(
                     row_leads[peer_row][column]
                     for peer_row in range(len(row_leads))
@@ -3341,6 +3619,8 @@ def digitize_native_grid(
                     ),
                     artifact_columns=artifact_column_mask,
                     minimum_other_leads=2,
+                    source_ranges=(lead_source_ranges if source_timing is not None
+                                   and source_timing.get("version") in (4, 5) else None),
                 )
                 event_columns = waveform_event_columns(
                     columns,
@@ -3350,7 +3630,7 @@ def digitize_native_grid(
                 aligned_anchors, anchor_shift, anchor_matches = (
                     align_panel_qrs_anchors(
                         event_columns,
-                        page_qrs_anchors,
+                        primary_qrs_anchors(row_index, column),
                         panel_start=panel_start,
                         panel_end=panel_end,
                         effective_sample_rate_hz=effective_sample_rate_hz,
@@ -3403,7 +3683,7 @@ def digitize_native_grid(
                 )
                 panel_width = panel_end - panel_start
                 paths[lead] = (columns, path, validity)
-                canonical_values[lead] = native_path_to_canonical(
+                canonical_values[lead] = convert_path(
                     columns,
                     path,
                     panel_start=panel_start,
@@ -3412,8 +3692,9 @@ def digitize_native_grid(
                     pixels_per_mm=diagnostic_amplitude_pixels_per_mm,
                     gain_mm_per_mv=gain_mm_per_mv,
                     validity=validity,
+                    source_row=row_index,
                 )
-                lead_metrics[lead] = fidelity_for_path(
+                lead_metrics[lead] = measure_path(
                     evidence,
                     columns,
                     path,
@@ -3422,6 +3703,7 @@ def digitize_native_grid(
                     row_spacing=row_spacing,
                     validity=validity,
                     safety_metrics=safety_metrics,
+                    source_row=row_index,
                 )
 
     if row_local_twelve:
@@ -3510,21 +3792,34 @@ def digitize_native_grid(
                     "method": "discriminative-limb-lead-algebra-v1",
                 }
 
+    source_rhythm_refinement = None
+    source_rhythm_continuity_proof = None
     if rhythm_trace is not None:
         rhythm_columns, rhythm_path, rhythm_validity = rhythm_trace
-        paths["rhythm II"] = rhythm_trace
+        if source_timing is not None and source_support is not None and publish_rhythm_trace:
+            rhythm_path, rhythm_validity, source_rhythm_refinement = refine_source_rhythm_path(
+                evidence, source_support, rhythm_columns, rhythm_path, rhythm_validity,
+                source_interval=source_timing["rhythmRange"],
+                y_start=rhythm_start, y_end=rhythm_end,
+                row_center=row_centers[rhythm_row_index], row_spacing=row_spacing,
+            )
+        paths["rhythm II"] = (rhythm_columns, rhythm_path, rhythm_validity)
         lead_rows["rhythm II"] = rhythm_row_index
-        rhythm_metric = fidelity_for_path(
+        rhythm_metric = measure_path(
             evidence,
             rhythm_columns,
             rhythm_path,
             panel_width=width,
+            source_interval=(
+                rhythm_source_time_range if source_timing is not None else None
+            ),
             row_center=row_centers[rhythm_row_index],
             row_spacing=row_spacing,
             validity=rhythm_validity,
             safety_metrics={
                 "qrsAnchorMatchCount": int(page_qrs_anchors.size),
             },
+            source_row=rhythm_row_index,
         )
         rhythm_trace_passed = bool(
             rhythm_metric.coverage >= 0.90
@@ -3533,13 +3828,28 @@ def digitize_native_grid(
             and rhythm_metric.p95NativeJumpPixels <= row_spacing * 0.20
             and rhythm_metric.maxNativeJumpPixels <= row_spacing * 0.35
         )
+        if source_timing is not None and source_support is not None and publish_rhythm_trace:
+            measured_validity, _ = retained_source_path(
+                rhythm_columns, rhythm_path, rhythm_validity,
+                source_row=rhythm_row_index,
+            )
+            source_rhythm_continuity_proof = source_rhythm_continuity(
+                evidence, rhythm_columns, rhythm_path, measured_validity,
+                source_interval=source_timing["rhythmRange"],
+                row_spacing=row_spacing,
+                decoded_raster_sha256=source_timing["decodedRasterSha256"],
+                metrics=asdict(rhythm_metric),
+            )
+            if source_rhythm_continuity_proof["legacyRhythmTracePassed"] != rhythm_trace_passed:
+                raise ValueError("Source continuity must preserve the original rhythm QA decision.")
+            rhythm_trace_passed = source_rhythm_continuity_proof["rhythmTracePassed"]
         if publish_rhythm_trace:
             rhythm_panel_start, rhythm_panel_end = (
                 rhythm_source_time_range
                 if rhythm_source_time_range is not None
                 else (0, width)
             )
-            canonical_values["II"] = native_path_to_canonical(
+            canonical_values["II"] = convert_path(
                 rhythm_columns,
                 rhythm_path,
                 panel_start=rhythm_panel_start,
@@ -3548,6 +3858,7 @@ def digitize_native_grid(
                 pixels_per_mm=diagnostic_amplitude_pixels_per_mm,
                 gain_mm_per_mv=gain_mm_per_mv,
                 validity=rhythm_validity,
+                source_row=rhythm_row_index,
             )
             lead_metrics["II"] = rhythm_metric
 
@@ -3658,6 +3969,52 @@ def digitize_native_grid(
             and lead_order_validation is not None
             and lead_order_validation.get("selectedOrder") == "standard"
         )
+    if source_timing is not None:
+        fidelity["sourcePanelTiming"] = source_timing
+        fidelity["sourceInkEvidence"] = source_ink_receipt
+        if source_grid_conversion is not None:
+            fidelity["sourceGridConversion"] = source_grid_conversion
+        if source_rhythm_refinement is not None:
+            fidelity["sourceRhythmRefinement"] = {
+                **source_rhythm_refinement,
+                "decodedRasterSha256": source_timing["decodedRasterSha256"],
+                "imageSize": source_ink_receipt["imageSize"],
+            }
+        if rhythm_source_time_range is not None:
+            fidelity["rhythmFidelityDomain"] = {
+                "method": "source-confirmed-recorded-interval-v1",
+                "sourceInterval": list(rhythm_source_time_range),
+                "expectedColumns": rhythm_source_time_range[1] - rhythm_source_time_range[0],
+                "missingColumnsCountAgainstCoverage": True,
+            }
+        if source_rhythm_continuity_proof is not None:
+            fidelity["sourceRhythmContinuity"] = source_rhythm_continuity_proof
+        fidelity["method"] = ("source-label-endpoint-family-row-grid-supported-ink-v5"
+                              if source_timing.get("version") == 5 else
+                              "source-label-joint-row-grid-supported-ink-v4"
+                              if source_timing.get("version") in (4, 5) else
+                              "source-label-separator-local-grid-supported-ink-v3")
+        # Persist exactly the support used by the CSV and fidelity in the overlay.
+        transition_proofs = {}
+        publication_paths = {}
+        for lead, (columns, path, validity) in paths.items():
+            prior, proof = retained_source_path(columns, path, validity,
+                                                source_row=lead_rows[lead], publish=False)
+            retained, publication_paths[lead] = separator_publication_path_evidence(
+                publication_mask, columns, path, prior,
+                row=lead_rows[lead], row_bounds=publication_proof["rowBounds"],
+            )
+            paths[lead] = (columns, path, retained)
+            transition_proofs[lead] = proof
+        fidelity["sourceTransitionEvidence"] = {
+            "version": 1, "method": "verified-source-transition-gaps-v1",
+            "decodedRasterSha256": source_timing["decodedRasterSha256"],
+            "imageSize": source_ink_receipt["imageSize"],
+            "paths": transition_proofs,
+        }
+        fidelity["sourceSeparatorPublication"] = {
+            **publication_proof, "paths": publication_paths,
+        }
     output_dir.mkdir(parents=True, exist_ok=True)
     canonical_path = output_dir / "native_grid_timeseries_canonical.csv"
     overlay_path = output_dir / "native_grid_overlay.png"
@@ -3710,6 +4067,10 @@ def main() -> None:
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--upscale-max-dimension", type=int, default=0)
     parser.add_argument("--verified-rhythm-lead", choices=("II",))
+    parser.add_argument("--source-label-grid", action="store_true")
+    parser.add_argument("--calibration-source", type=Path)
+    parser.add_argument("--source-annotation-mask", type=Path)
+    parser.add_argument("--expected-layout", choices=sorted(NATIVE_PUBLISHED_LAYOUTS))
     args = parser.parse_args()
 
     extraction_image = cv2.imread(str(args.input), cv2.IMREAD_COLOR)
@@ -3729,6 +4090,28 @@ def main() -> None:
         raise SystemExit(f"Could not read source image: {args.source}")
     if args.evidence and trace_evidence is None:
         raise SystemExit(f"Could not read trace evidence: {args.evidence}")
+    if args.source_label_grid and (args.upscale_max_dimension or args.evidence):
+        raise ValueError("Source-grid mode cannot use an upscaled or prepared evidence raster.")
+    calibration_image = None
+    source_identity = None
+    source_annotation_mask = None
+    if args.source_annotation_mask:
+        if not args.source_label_grid:
+            raise ValueError("Source annotation masks require explicit source-grid mode.")
+        source_annotation_mask = cv2.imread(str(args.source_annotation_mask), cv2.IMREAD_GRAYSCALE)
+        if source_annotation_mask is None:
+            raise ValueError("Could not read source annotation mask.")
+    if args.source_label_grid:
+        from ecg_pipeline.printed_calibration import decode_source_raster
+        calibration_bytes = (args.calibration_source or args.source).read_bytes()
+        calibration_image = decode_source_raster(calibration_bytes)
+        source_identity = {
+            "sourceRasterFileSha256": hashlib.sha256(args.source.read_bytes()).hexdigest(),
+            "calibrationSourceSha256": hashlib.sha256(calibration_bytes).hexdigest(),
+            "coordinateSpace": "working",
+        }
+        if args.source_annotation_mask:
+            source_identity["annotationMaskFileSha256"] = hashlib.sha256(args.source_annotation_mask.read_bytes()).hexdigest()
     original_width = extraction_image.shape[1]
     original_max_dimension = max(extraction_image.shape[:2])
     if args.upscale_max_dimension > original_max_dimension:
@@ -3759,6 +4142,11 @@ def main() -> None:
         args.output_dir,
         trace_evidence=trace_evidence,
         verified_rhythm_lead=args.verified_rhythm_lead,
+        source_label_grid=args.source_label_grid,
+        calibration_source_image=calibration_image,
+        source_identity=source_identity,
+        source_annotation_mask=source_annotation_mask,
+        expected_layout=args.expected_layout,
     )
     if args.upscale_max_dimension > original_max_dimension:
         result["effectiveSampleRateHz"] = min(

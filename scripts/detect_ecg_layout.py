@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ecg_pipeline.lead_label_identity import attach_semantic_lead_identity
 from ecg_pipeline.printed_calibration import read_printed_settings, reconcile_printed_settings
+from ecg_pipeline.source_label_geometry import detect_source_label_geometry
 
 
 MIN_THREE_BY_FOUR_PANEL_INK_SUPPORT = 0.015
@@ -1673,6 +1674,172 @@ def _chromatic_excess_planes(image: np.ndarray) -> list[np.ndarray]:
     ]
 
 
+def _open_calibration_pulse_bodies(
+    dark: np.ndarray, minimum_vertical: int
+) -> np.ndarray:
+    """Remove one-pixel extensions without translating the surviving pulse ink."""
+    kernel = np.ones((minimum_vertical, 2), dtype=np.uint8)
+    erosion_anchor = (1, minimum_vertical // 2)
+    # OpenCV's same-anchor default translates even kernels by one pixel.
+    dilation_anchor = (0, minimum_vertical - 1 - erosion_anchor[1])
+    eroded = cv2.erode(
+        dark, kernel, anchor=erosion_anchor,
+        borderType=cv2.BORDER_CONSTANT, borderValue=0,
+    )
+    return cv2.dilate(
+        eroded, kernel, anchor=dilation_anchor,
+        borderType=cv2.BORDER_CONSTANT, borderValue=0,
+    )
+
+
+def _calibration_pulse_candidate(
+    dark: np.ndarray,
+    vertical: np.ndarray,
+    minimum_vertical: int,
+    x_period: float,
+    y_period: float,
+    x_confidence: float,
+    y_confidence: float,
+    *,
+    require_pulse_axis_agreement: bool = False,
+) -> dict[str, Any] | None:
+    """Rank supported rectangular pulses in one fixed vertical-ink mask."""
+    height, width = dark.shape
+    contours, _ = cv2.findContours(vertical, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    lines: list[tuple[float, int, int, int]] = []
+    for contour in contours:
+        x, y, line_width, line_height = cv2.boundingRect(contour)
+        if line_height < minimum_vertical or line_width > max(5, round(x_period * 0.8)):
+            continue
+        lines.append((x + line_width / 2, y, y + line_height, line_width))
+
+    best: dict[str, Any] | None = None
+    for first, second in itertools.combinations(lines, 2):
+        x0, y0, y1, first_line_width = first
+        x1, other_y0, other_y1, second_line_width = second
+        if x1 < x0:
+            x0, x1 = x1, x0
+            y0, y1, other_y0, other_y1 = other_y0, other_y1, y0, y1
+            first_line_width, second_line_width = (
+                second_line_width,
+                first_line_width,
+            )
+        pulse_width_pixels = x1 - x0
+        pulse_height_pixels = (
+            min(y1, other_y1)
+            - max(y0, other_y0)
+            - max(first_line_width, second_line_width)
+        )
+        if pulse_width_pixels <= 0 or pulse_height_pixels <= 0:
+            continue
+        # A rectangular pulse has aligned top and bottom endpoints. Thin grid
+        # extensions, separated QRS peaks and panel bars often violate this.
+        endpoint_tolerance = max(
+            3.0,
+            2.0 * max(first_line_width, second_line_width),
+            0.15 * pulse_height_pixels,
+        )
+        if (
+            abs(y0 - other_y0) > endpoint_tolerance
+            or abs(y1 - other_y1) > endpoint_tolerance
+        ):
+            continue
+        top = round(max(y0, other_y0))
+        x_start = max(0, round(x0))
+        x_end = min(width, round(x1) + 1)
+        if x_end - x_start < 3:
+            continue
+        horizontal_support = float(np.mean(dark[max(0, top - 1) : min(height, top + 2), x_start:x_end] > 0))
+        if horizontal_support < 0.45:
+            continue
+
+        grid_scales_mm_x = (1.0, 5.0) if x_period >= 12.0 else (1.0,)
+        grid_scales_mm_y = (1.0, 5.0) if y_period >= 12.0 else (1.0,)
+        for grid_scale_mm_x, grid_scale_mm_y in itertools.product(
+            grid_scales_mm_x,
+            grid_scales_mm_y,
+        ):
+            pixels_per_mm_x = x_period / grid_scale_mm_x
+            pixels_per_mm_y = y_period / grid_scale_mm_y
+            # Minor/major hypotheses may differ, but their resolved physical
+            # pixel scales must agree. Do not accept a fivefold axis mismatch.
+            if abs(pixels_per_mm_x - pixels_per_mm_y) / max(
+                pixels_per_mm_x, pixels_per_mm_y
+            ) > 0.15:
+                continue
+            height_mm = pulse_height_pixels / pixels_per_mm_y
+            width_mm = pulse_width_pixels / pixels_per_mm_x
+            gain_candidates = (5.0, 10.0, 20.0)
+            gain = min(gain_candidates, key=lambda value: abs(height_mm - value))
+            gain_error = abs(height_mm - gain) / gain
+            speed_candidates = (25.0, 50.0)
+            speed = min(speed_candidates, key=lambda value: abs(width_mm / 0.2 - value))
+            speed_error = abs(width_mm / 0.2 - speed) / speed
+            if gain_error > 0.35 or speed_error > 0.35:
+                continue
+            # Once the standard rectangular pulse is validated, its known
+            # 200 ms width and 1 mV height refine scale after non-integer image
+            # resizing (where a 5.3 px minor grid can alias to a 5 px period).
+            pulse_pixels_per_mm_x = pulse_width_pixels / (speed * 0.2)
+            pulse_pixels_per_mm_y = pulse_height_pixels / gain
+            refined_disagreement = abs(
+                pulse_pixels_per_mm_x - pulse_pixels_per_mm_y
+            ) / max(pulse_pixels_per_mm_x, pulse_pixels_per_mm_y, 1e-9)
+            if require_pulse_axis_agreement and refined_disagreement > 0.15:
+                continue
+            # A mesh can imitate two pulse sides and a plateau. A third full-height
+            # stroke between the sides contradicts the open interior of a pulse.
+            interior_margin = max(first_line_width, second_line_width) / 2
+            if any(
+                x0 + interior_margin < line[0] < x1 - interior_margin
+                and line[1] <= max(y0, other_y0) + endpoint_tolerance
+                and line[2] >= min(y1, other_y1) - endpoint_tolerance
+                for line in lines
+            ):
+                continue
+            if refined_disagreement <= 0.15:
+                refined_pixels_per_mm_x = pulse_pixels_per_mm_x
+                refined_pixels_per_mm_y = pulse_pixels_per_mm_y
+            else:
+                refined_pixels_per_mm_x = pixels_per_mm_x
+                refined_pixels_per_mm_y = pixels_per_mm_y
+            confidence = (
+                min(x_confidence, y_confidence)
+                * horizontal_support
+                * max(0.0, 1.0 - gain_error)
+                * max(0.0, 1.0 - speed_error)
+            )
+            candidate = {
+                "method": "grid-period-plus-rectangular-pulse-v1",
+                "detected": True,
+                "gridScaleDetected": True,
+                "gridScaleAmbiguous": False,
+                "gridScaleConfidence": float(confidence),
+                **(
+                    {"gridScaleMm": grid_scale_mm_x}
+                    if grid_scale_mm_x == grid_scale_mm_y
+                    else {}
+                ),
+                "gridScaleMmX": grid_scale_mm_x,
+                "gridScaleMmY": grid_scale_mm_y,
+                "gridSpacingXPixels": x_period,
+                "gridSpacingYPixels": y_period,
+                "pixelsPerMmX": float(refined_pixels_per_mm_x),
+                "pixelsPerMmY": float(refined_pixels_per_mm_y),
+                "paperSpeedMmPerSecond": speed,
+                "gainMmPerMv": gain,
+                "measuredGainMmPerMv": height_mm,
+                "pulseWidthMm": width_mm,
+                "pulseStartX": x_start,
+                "pulseEndX": x_end,
+                "confidence": float(confidence),
+            }
+            if best is None or candidate["confidence"] > best["confidence"]:
+                best = candidate
+
+    return best
+
+
 def detect_ecg_calibration(image: np.ndarray) -> dict[str, Any]:
     """Detect grid spacing and a rectangular 1 mV calibration pulse."""
 
@@ -1797,107 +1964,18 @@ def detect_ecg_calibration(image: np.ndarray) -> dict[str, Any]:
         cv2.MORPH_OPEN,
         cv2.getStructuringElement(cv2.MORPH_RECT, (1, minimum_vertical)),
     )
-    contours, _ = cv2.findContours(vertical, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    lines: list[tuple[float, int, int, int]] = []
-    for contour in contours:
-        x, y, line_width, line_height = cv2.boundingRect(contour)
-        if line_height < minimum_vertical or line_width > max(5, round(x_period * 0.8)):
-            continue
-        lines.append((x + line_width / 2, y, y + line_height, line_width))
-
-    best: dict[str, Any] | None = None
-    for first, second in itertools.combinations(lines, 2):
-        x0, y0, y1, first_line_width = first
-        x1, other_y0, other_y1, second_line_width = second
-        if x1 < x0:
-            x0, x1 = x1, x0
-            y0, y1, other_y0, other_y1 = other_y0, other_y1, y0, y1
-            first_line_width, second_line_width = (
-                second_line_width,
-                first_line_width,
-            )
-        pulse_width_pixels = x1 - x0
-        pulse_height_pixels = (
-            min(y1, other_y1)
-            - max(y0, other_y0)
-            - max(first_line_width, second_line_width)
+    best = _calibration_pulse_candidate(
+        dark, vertical, minimum_vertical,
+        x_period, y_period, x_confidence, y_confidence,
+    )
+    if best is None:
+        # Thin black grid lines can extend genuine pulse sides above their
+        # plateau. Try the thicker pulse body only after the first mask refuses.
+        best = _calibration_pulse_candidate(
+            dark, _open_calibration_pulse_bodies(dark, minimum_vertical),
+            minimum_vertical, x_period, y_period, x_confidence, y_confidence,
+            require_pulse_axis_agreement=True,
         )
-        if pulse_width_pixels <= 0 or pulse_height_pixels <= 0:
-            continue
-        top = round(max(y0, other_y0))
-        x_start = max(0, round(x0))
-        x_end = min(width, round(x1) + 1)
-        if x_end - x_start < 3:
-            continue
-        horizontal_support = float(np.mean(dark[max(0, top - 1) : min(height, top + 2), x_start:x_end] > 0))
-        if horizontal_support < 0.45:
-            continue
-
-        grid_scales_mm_x = (1.0, 5.0) if x_period >= 12.0 else (1.0,)
-        grid_scales_mm_y = (1.0, 5.0) if y_period >= 12.0 else (1.0,)
-        for grid_scale_mm_x, grid_scale_mm_y in itertools.product(
-            grid_scales_mm_x,
-            grid_scales_mm_y,
-        ):
-            pixels_per_mm_x = x_period / grid_scale_mm_x
-            pixels_per_mm_y = y_period / grid_scale_mm_y
-            height_mm = pulse_height_pixels / pixels_per_mm_y
-            width_mm = pulse_width_pixels / pixels_per_mm_x
-            gain_candidates = (5.0, 10.0, 20.0)
-            gain = min(gain_candidates, key=lambda value: abs(height_mm - value))
-            gain_error = abs(height_mm - gain) / gain
-            speed_candidates = (25.0, 50.0)
-            speed = min(speed_candidates, key=lambda value: abs(width_mm / 0.2 - value))
-            speed_error = abs(width_mm / 0.2 - speed) / speed
-            if gain_error > 0.35 or speed_error > 0.35:
-                continue
-            # Once the standard rectangular pulse is validated, its known
-            # 200 ms width and 1 mV height refine scale after non-integer image
-            # resizing (where a 5.3 px minor grid can alias to a 5 px period).
-            pulse_pixels_per_mm_x = pulse_width_pixels / (speed * 0.2)
-            pulse_pixels_per_mm_y = pulse_height_pixels / gain
-            refined_disagreement = abs(
-                pulse_pixels_per_mm_x - pulse_pixels_per_mm_y
-            ) / max(pulse_pixels_per_mm_x, pulse_pixels_per_mm_y, 1e-9)
-            if refined_disagreement <= 0.15:
-                refined_pixels_per_mm_x = pulse_pixels_per_mm_x
-                refined_pixels_per_mm_y = pulse_pixels_per_mm_y
-            else:
-                refined_pixels_per_mm_x = pixels_per_mm_x
-                refined_pixels_per_mm_y = pixels_per_mm_y
-            confidence = (
-                min(x_confidence, y_confidence)
-                * horizontal_support
-                * max(0.0, 1.0 - gain_error)
-                * max(0.0, 1.0 - speed_error)
-            )
-            candidate = {
-                "method": "grid-period-plus-rectangular-pulse-v1",
-                "detected": True,
-                "gridScaleDetected": True,
-                "gridScaleAmbiguous": False,
-                "gridScaleConfidence": float(confidence),
-                **(
-                    {"gridScaleMm": grid_scale_mm_x}
-                    if grid_scale_mm_x == grid_scale_mm_y
-                    else {}
-                ),
-                "gridScaleMmX": grid_scale_mm_x,
-                "gridScaleMmY": grid_scale_mm_y,
-                "gridSpacingXPixels": x_period,
-                "gridSpacingYPixels": y_period,
-                "pixelsPerMmX": float(refined_pixels_per_mm_x),
-                "pixelsPerMmY": float(refined_pixels_per_mm_y),
-                "paperSpeedMmPerSecond": speed,
-                "gainMmPerMv": gain,
-                "measuredGainMmPerMv": height_mm,
-                "pulseWidthMm": width_mm,
-                "pulseStartX": x_start,
-                "pulseEndX": x_end,
-                "confidence": float(confidence),
-            }
-            if best is None or candidate["confidence"] > best["confidence"]:
-                best = candidate
 
     if best is not None:
         result["calibration"] = best
@@ -3453,6 +3531,17 @@ def detect_ecg_layout_geometry(
                                         image
                                     )
                                 )
+    if recognise_semantic_labels:
+        result = attach_semantic_lead_identity(image, result)
+        confirmed = any((result.get(key) or {}).get("semanticIdentityConfirmed")
+                        for key in ("leadLabelValidation", "limbLabelValidation", "precordialLabelValidation"))
+        # Panel names alone do not prove the independent rhythm or source-grid
+        # coordinates. Seek the existing complete proof for this layout even
+        # when generic panel recognition already succeeded.
+        if not confirmed or result.get("layoutHint") == "standard_3x4_with_r1":
+            source_anchored = detect_source_label_geometry(image)
+            if source_anchored.get("layoutHint"):
+                result = source_anchored
     result.update(detect_ecg_content_box(image))
     if result.get("layoutHint") == "standard_12x1":
         result["compoundPanels"] = None
@@ -3474,8 +3563,6 @@ def detect_ecg_layout_geometry(
     if row_grid_scales is not None:
         result["calibration"]["rowPixelsPerMmX"] = row_grid_scales
         result["calibration"] = refine_horizontal_grid_consensus(result["calibration"], row_grid_scales)
-    if recognise_semantic_labels:
-        result = attach_semantic_lead_identity(image, result)
     if calibration_source_image is not None:
         printed = read_printed_settings(calibration_source_image)
         if calibration_source_sha256 is not None:
