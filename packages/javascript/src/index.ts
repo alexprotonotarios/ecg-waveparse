@@ -11,7 +11,7 @@ export const version = __WAVEPARSE_VERSION__
 
 export type RunResult = Omit<RunRecord, "assets"> & {
   schemaVersion: 1
-  waveparse: { version: string; runtimeManifestSha256: string; device: string }
+  waveparse: { version: string; runtimeManifestSha256: string; device: string; mode?: "production" | "trace" }
   assets: Partial<Record<RunAssetKey, RunAsset & { absolutePath: string }>>
 }
 export type ReviewOptions = {
@@ -22,6 +22,7 @@ export type ReviewOptions = {
 }
 export type DigitizerOptions = { workspaceDir: string; runtimeDir?: string }
 export type DigitizeOptions = {
+  mode?: "production" | "trace"
   device?: "cpu" | "mps"
   timeoutMs?: number
   signal?: AbortSignal
@@ -51,7 +52,7 @@ export class Digitizer {
   }
 
   digitize(inputPath: string, options: DigitizeOptions = {}): Promise<RunResult> {
-    return this.request({ operation: "digitize", inputPath: path.resolve(inputPath), device: options.device ?? "cpu", timeoutMs: options.timeoutMs ?? 1_800_000 }, options)
+    return this.request({ operation: "digitize", inputPath: path.resolve(inputPath), device: options.device ?? "cpu", mode: options.mode === undefined ? "production" : options.mode, timeoutMs: options.timeoutMs ?? 1_800_000 }, options)
   }
   getRun(runId: string): Promise<RunResult | null> {
     return this.request({ operation: "get", runId })

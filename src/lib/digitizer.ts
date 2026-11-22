@@ -11,7 +11,10 @@ import { bindPrintedCalibrationSource, calibrationIsUsable, calibrationPublicati
 import { validateSourceGridEvidence } from "@/lib/digitizer/source-grid-contract"
 import { beginSelectionPredicate, SelectionEvidenceRecorder, type SelectionDiagnostics } from "@/lib/digitizer/selection-evidence"
 import { retainSourcePhotoDiagnostic } from "@/lib/digitizer/source-photo-fallback"
+import { retainCandidateTraceDiagnostic } from "@/lib/digitizer/candidate-trace-recovery"
+import { buildProvisionalTracePlan, collectProvisionalTraceCandidates, expectedProvisionalLeads } from "@/lib/digitizer/provisional-trace-plan"
 import { applySourceTimePublication, sourceTimePublicationEligible, type PublicationUncertaintyRow, type SourceTimeManifest } from "@/lib/digitizer/source-time-publication"
+import { tryNeuralDigitizeRun } from "@/lib/neural-digitizer"
 import { promisify } from "node:util"
 
 import type {
@@ -142,6 +145,9 @@ const LABEL_CONFIRMED_RETRY_LAYOUTS = [
   "standard_3x4_with_r2",
   "standard_3x4_with_r3",
   "cabrera_12x1",
+  "standard_6x1_limb_constrained",
+  "cabrera_6x1_limb_constrained",
+  "precordial_6x1_constrained",
 ] as const
 const PAPER_RENDERER_PATH = path.join(RESOURCE_ROOT, "output", "render_digitized_paper.py")
 const INPUT_PREPARER_PATH = path.join(RESOURCE_ROOT, "scripts", "prepare_ecg_input.py")
@@ -273,6 +279,7 @@ type CanonicalCsv = {
 type CandidateResult = DigitizerCandidateSummary & {
   inputPreparation?: CandidatePreparationReceipt
   decoderCoordinatePath?: string
+  panelObservationPath?: string
   sourceCoordinatePath?: string
   sourceCoordinateEvidence?: {
     sha256: string
@@ -308,7 +315,7 @@ type PublishedCandidateResult = {
 
 type DigitizerExecutionOptions = {
   signal?: AbortSignal
-  candidateMode?: "production" | "exhaustive"
+  candidateMode?: "production" | "exhaustive" | "trace"
   onStage?: (stage: string, durationMs: number) => void
 }
 
@@ -361,6 +368,17 @@ export async function digitizeRun(
     }
   }
 
+  if (options.candidateMode !== "trace" && options.candidateMode !== "exhaustive") {
+    const neuralStarted = performance.now()
+    const neuralResult = await tryNeuralDigitizeRun(run, verifiedSourceSha256, {
+      signal: options.signal,
+    })
+    if (neuralResult) {
+      options.onStage?.("neural_3x4_digitizer", performance.now() - neuralStarted)
+      return neuralResult
+    }
+  }
+
   const availabilityMessage = await checkDigitizerAvailable()
   if (availabilityMessage) {
     return {
@@ -409,25 +427,28 @@ export async function digitizeRun(
   const layoutStarted=performance.now()
   const geometry = await detectLayoutGeometry(prepared, options.signal)
   options.onStage?.("ocr_and_layout",performance.now()-layoutStarted)
-  const planning = analyzeCandidatePlanningContext(prepared.report, geometry)
-  const calibrationBlock = calibrationPublicationBlock(geometry.calibration)
-  if (calibrationBlock) {
-    return {
+  if (options.candidateMode === "trace") {
+    const started = performance.now()
+    const candidates = await collectProvisionalTraceCandidates(
+      buildProvisionalTracePlan(prepared.report, geometry, device),
+      config => runCandidate(run, prepared, config, options.signal, geometry, true),
+      expectedProvisionalLeads(geometry), options.signal)
+    options.onStage?.("provisional_trace_search", performance.now() - started)
+    const failure: Partial<RunRecord> = {
       status: "failed",
       publicationDecision: { policyId: DIGITIZER_POLICY_ID, policyVersion: DIGITIZER_POLICY_VERSION,
-        outcome: "failed", reasonCode: calibrationBlock },
-      message: calibrationBlock === "calibration_conflict"
-        ? "Printed speed or gain conflicts with the available calibration evidence. The original image remains available; quantitative extraction requires resolving the settings."
-        : "The ECG speed or gain is unsupported by the available physical calibration evidence. The original image remains available; no quantitative CSV was produced.",
-      digitizer: { engine: "Open-ECG-Digitizer", candidates: [], evidence: buildPipelineEvidence({
-        preprocessing: prepared.report, geometry, planning, primaryPlan: [], candidates: [], selectionCandidates: [],
-        nativeGridCandidates: [], nativeGridStructurallyComplete: false, coreAgreementReached: false,
-        recoveryExpanded: false, reasonCode: calibrationBlock, stability: notRequiredStabilityEvidence(),
-      }) },
+        outcome: "failed", reasonCode: "semantic_identity_unconfirmed" },
+      message: "Provisional tracing requires source comparison before measurements.",
+      digitizer: { engine: "Open-ECG-Digitizer", candidates: candidates.map(publicCandidate) },
       assets: { ...run.assets, ...await preprocessingRunAssets(prepared) },
       updatedAt: new Date().toISOString(),
     }
+    return await retainFailedRunPhotoDiagnostic(run, prepared, failure, options, candidates) ?? failure
   }
+  const planning = analyzeCandidatePlanningContext(prepared.report, geometry)
+  const calibrationBlock = calibrationPublicationBlock(geometry.calibration)
+  // Calibration constrains measurements, while a provisional trace can still
+  // be recovered with explicitly unverified timing and amplitudes.
   const {
     adaptivePreprocessingEligible,
     lowResolutionNativeUpscaleTarget,
@@ -584,7 +605,7 @@ export async function digitizeRun(
         .filter(
           (candidate) =>
             candidate.status === "completed" &&
-            candidate.layout === layoutConstraint &&
+            normalizeQaLayout(candidate.layout) === normalizeQaLayout(layoutConstraint) &&
             Number.isFinite(candidate.layoutCost) &&
             (candidate.layoutCost ?? Number.POSITIVE_INFINITY) <= 0.75
         )
@@ -832,6 +853,24 @@ export async function digitizeRun(
     (candidate) => candidate.status === "completed" && candidate.canonicalPath
   )
 
+  if (calibrationBlock) {
+    const failure: Partial<RunRecord> = {
+      status: "failed",
+      publicationDecision: { policyId: DIGITIZER_POLICY_ID, policyVersion: DIGITIZER_POLICY_VERSION,
+        outcome: "failed", reasonCode: calibrationBlock },
+      message: "The ECG speed or gain is unresolved. Recovered traces require calibration review before measurements.",
+      digitizer: { engine: "Open-ECG-Digitizer", candidates: candidates.map(publicCandidate), evidence: buildPipelineEvidence({
+        preprocessing: prepared.report, geometry, planning, primaryPlan, candidates, selectionCandidates: [],
+        nativeGridCandidates, nativeGridStructurallyComplete, coreAgreementReached,
+        recoveryExpanded: exhaustiveMode || !coreAgreementReached, reasonCode: calibrationBlock,
+        stability: notRequiredStabilityEvidence(),
+      }) },
+      assets: { ...run.assets, ...await preprocessingRunAssets(prepared) },
+      updatedAt: new Date().toISOString(),
+    }
+    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options, completedCandidates)
+  }
+
   if (completedCandidates.length === 0) {
     const preprocessingAssets = await preprocessingRunAssets(prepared)
     const evidence = buildPipelineEvidence({
@@ -867,7 +906,7 @@ export async function digitizeRun(
       },
       updatedAt: new Date().toISOString(),
     }
-    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options)
+    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options, completedCandidates)
   }
 
   const selectionRecorder = new SelectionEvidenceRecorder()
@@ -1009,7 +1048,7 @@ export async function digitizeRun(
       },
       updatedAt: new Date().toISOString(),
     }
-    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options)
+    return retainFailedRunPhotoDiagnostic(run, prepared, failure, options, completedCandidates)
   }
   const selected = decision.candidate
   const stabilityResult = await confirmBorderlineMpsSelection({
@@ -1065,7 +1104,7 @@ export async function digitizeRun(
     selected: candidate.id === selected.id,
   }))
 
-  return {
+  const result: Partial<RunRecord> = {
     status: decision.outcome,
     publicationDecision: {
       policyId: DIGITIZER_POLICY_ID,
@@ -1124,14 +1163,43 @@ export async function digitizeRun(
     reliability: published.reliability,
     updatedAt: new Date().toISOString(),
   }
+  return await retainRunCandidateTrace(run, prepared, result, options, completedCandidates) ?? result
+}
+
+async function retainRunCandidateTrace(
+  run: RunRecord,
+  prepared: PreparedRunInput,
+  failure: Partial<RunRecord>,
+  options: DigitizerExecutionOptions,
+  candidates: CandidateResult[]
+) {
+  const started = performance.now()
+  const recovered = await retainCandidateTraceDiagnostic(failure, {
+    candidates: candidates.map(candidate => ({ id: candidate.id, status: candidate.status,
+      canonicalPath: candidate.canonicalPath, diagnosticPath: candidate.diagnosticPath,
+      decoderCoordinatePath: candidate.decoderCoordinatePath,
+      panelObservationPath: candidate.panelObservationPath,
+      rank: candidatePublicationRank(candidate), summary: publicCandidate(candidate), preparation: candidate.inputPreparation })),
+    originalSourcePath: prepared.sourcePath, sourceSha256: prepared.report.sourceSha256,
+    runDirectory: runDirectory(run.id), python: openEcgPythonPath(), environment: subprocessEnvironment("cpu"),
+    resourceRoot: RESOURCE_ROOT,
+    signal: options.signal, asset: assetFromAbsolutePath,
+  })
+  if (recovered) {
+    options.onStage?.("candidate_trace_recovery", performance.now() - started)
+  }
+  return recovered
 }
 
 async function retainFailedRunPhotoDiagnostic(
   run: RunRecord,
   prepared: PreparedRunInput,
   failure: Partial<RunRecord>,
-  options: DigitizerExecutionOptions
+  options: DigitizerExecutionOptions,
+  candidates: CandidateResult[] = []
 ) {
+  const recovered = await retainRunCandidateTrace(run, prepared, failure, options, candidates)
+  if (recovered) return recovered
   const started = performance.now()
   const result = await retainSourcePhotoDiagnostic(failure, {
     workingSourcePath: prepared.workingSourcePath,
@@ -1253,7 +1321,9 @@ async function runCandidate(
   candidate: DigitizerCandidateConfig,
   signal?: AbortSignal,
   geometry?: LayoutGeometryReport,
+  provisionalOperation = false,
 ): Promise<CandidateResult> {
+  assertProvisionalLayoutHint(candidate, provisionalOperation)
   const startedAt = performance.now()
   const inputPath = candidateInputPath(prepared, candidate.inputVariant)
   const candidateDir = path.join(
@@ -1282,11 +1352,14 @@ async function runCandidate(
       run,
       preparedInput.inputPath,
       candidate.resampleSize,
-      candidate.device
+      candidate.device,
+      candidate.rotateOnResample
     )
     const featureCacheHit = await pathExists(featureCachePath)
     const decoderCoordinatePath = canCaptureDecoderCoordinates(candidate)
       ? path.join(candidateDir, "decoder-coordinates.npz") : undefined
+    const panelObservationPath = candidate.vectorizer === "probability-centroid" && !candidate.cropBox
+      ? path.join(candidateDir, "decoder-panels.npz") : undefined
     let sourceRhythmContextPath: string | undefined
     let expectedRhythmIdentity: Parameters<typeof validateSourceRhythmAssignment>[1] | undefined
     if (canUseSourceRhythmAssignment(candidate, geometry)) {
@@ -1316,12 +1389,16 @@ async function runCandidate(
       labelThresh: candidate.labelThresh,
       vectorizer: candidate.vectorizer,
       device: candidate.device,
+      rotateOnResample: candidate.rotateOnResample,
       darkInkEnhancement: candidate.darkInkEnhancement,
       darkInkSupportRadius: candidate.darkInkSupportRadius,
       gainMmPerMv: candidate.gainMmPerMv,
       layoutConstraint: candidate.layoutConstraint,
+      provisionalLayoutHint: candidate.provisionalLayoutHint,
+      provisionalSourceInk: candidate.provisionalSourceInk,
       featureCachePath,
       decoderCoordinatePath,
+      panelObservationPath,
       sourceRhythmContextPath,
     })
 
@@ -1372,12 +1449,12 @@ async function runCandidate(
       const transformPath = path.join(candidateDir, "source-transform.json")
       await fs.writeFile(transformPath, JSON.stringify(chain, null, 2) + "\n", "utf8")
       sourceCoordinatePath = path.join(candidateDir, "decoder-source-coordinates.npz")
-      const { stdout } = await execFileAsync(openEcgPythonPath(), [
-        "-m", "ecg_pipeline.decoder_correspondence", "--capture", decoderCoordinatePath,
+      const { stdout } = await executePipelineModule("decoder_correspondence", [
+        "--capture", decoderCoordinatePath,
         "--transform", transformPath, "--canonical", canonicalPath,
         "--prepared-input", preparedInput.inputPath, "--original-source", prepared.sourcePath,
         "--output", sourceCoordinatePath,
-      ], { env: subprocessEnvironment(), signal, timeout: 60_000, maxBuffer: 4 * 1024 * 1024 })
+      ], signal)
       const evidence = JSON.parse(stdout)
       if (evidence.version !== 1 || evidence.method !== "observed-decoder-preparation-correspondence-v1" ||
           evidence.coordinateScope !== "original_source_raster" || evidence.preparationCorrespondenceVerified !== true ||
@@ -1410,7 +1487,7 @@ async function runCandidate(
     )
     if (
       candidate.layoutConstraint &&
-      ((!geometryConfirmedLayoutFallback &&
+      ((!geometryConfirmedLayoutFallback && !candidate.provisionalLayoutHint &&
         !Number.isFinite(metadata.layoutCost)) ||
         (candidate.maximumLayoutCost !== undefined &&
           (metadata.layoutCost ?? Number.POSITIVE_INFINITY) >
@@ -1420,10 +1497,10 @@ async function runCandidate(
         `The constrained ${candidate.layoutConstraint} layout did not have sufficient lead-label evidence.`
       )
     }
-    const effectiveLayout = geometryConfirmedLayoutFallback
+    const effectiveLayout = geometryConfirmedLayoutFallback || candidate.provisionalLayoutHint
       ? candidate.layoutConstraint
       : metadata.layout
-    const effectiveLayoutCost = geometryConfirmedLayoutFallback
+    const effectiveLayoutCost = candidate.provisionalLayoutHint ? 1 : geometryConfirmedLayoutFallback
       ? 1 - (candidate.geometryLayoutConfidence ?? 0)
       : metadata.layoutCost
     const timingNormalization = normalizeCanonicalPanelTiming(
@@ -1479,6 +1556,7 @@ async function runCandidate(
       featureCacheHit,
       inputPreparation: preparedInput.preparation,
       decoderCoordinatePath,
+      panelObservationPath: panelObservationPath && await pathExists(panelObservationPath) ? panelObservationPath : undefined,
       sourceCoordinatePath,
       sourceCoordinateEvidence,
     }
@@ -2752,16 +2830,25 @@ async function neuralFeatureCachePath(
   run: RunRecord,
   inputPath: string,
   resampleSize: number,
-  device: DigitizerComputeDevice
+  device: DigitizerComputeDevice,
+  rotateOnResample?: boolean
 ) {
-  const digest = createHash("sha256")
-    .update("open-ecg-segmentation-cache-v1\0")
-    .update(await fs.readFile(inputPath))
-    .update(`\0${resampleSize}\0${device}`)
-    .digest("hex")
+  const digest = neuralFeatureCacheDigest(await fs.readFile(inputPath), resampleSize, device, rotateOnResample)
   const cacheDirectory = path.join(runDirectory(run.id), "neural-cache")
   await fs.mkdir(cacheDirectory, { recursive: true })
   return path.join(cacheDirectory, `${digest}.pt`)
+}
+
+function neuralFeatureCacheDigest(input: Buffer, resampleSize: number,
+  device: DigitizerComputeDevice, rotateOnResample?: boolean) {
+  const hash = createHash("sha256")
+    .update("open-ecg-segmentation-cache-v1\0")
+    .update(input)
+    .update(`\0${resampleSize}\0${device}`)
+  // Undefined/true retain historical cache identity. A source-preserving tensor
+  // needs its own key even when resampling produces the same tensor dimensions.
+  if (rotateOnResample === false) hash.update("\0source-orientation-v1")
+  return hash.digest("hex")
 }
 
 async function pathExists(filePath: string) {
@@ -2773,6 +2860,18 @@ async function pathExists(filePath: string) {
   }
 }
 
+function executePipelineModule(
+  module: "candidate_preparation" | "decoder_correspondence",
+  arguments_: string[],
+  signal?: AbortSignal
+) {
+  // Python adds cwd ahead of PYTHONPATH. Callers may have an older package
+  // in their checkout, so both helpers must resolve from this resource root.
+  return execFileAsync(openEcgPythonPath(), ["-m", `ecg_pipeline.${module}`, ...arguments_], {
+    cwd: RESOURCE_ROOT, env: subprocessEnvironment(), maxBuffer: 4 * 1024 * 1024, signal, timeout: 60_000,
+  })
+}
+
 async function prepareCandidateRaster(
   inputPath: string,
   outputPath: string,
@@ -2781,11 +2880,11 @@ async function prepareCandidateRaster(
   upscaleToMaxDimension?: number,
   cropBox?: RasterCropBox
 ) {
-  const { stdout } = await execFileAsync(openEcgPythonPath(), [
-    "-m", "ecg_pipeline.candidate_preparation", "--input", inputPath, "--output", outputPath,
+  const { stdout } = await executePipelineModule("candidate_preparation", [
+    "--input", inputPath, "--output", outputPath,
     "--mode", mode, "--target", String(upscaleToMaxDimension ?? 0),
     ...(cropBox ? ["--crop", String(cropBox.left), String(cropBox.top), String(cropBox.right), String(cropBox.bottom)] : []),
-  ], { env: subprocessEnvironment(), maxBuffer: 4 * 1024 * 1024, signal, timeout: 60_000 })
+  ], signal)
   const receipt = parseCandidatePreparation(JSON.parse(stdout))
   const [input, prepared] = await Promise.all([fs.readFile(inputPath), fs.readFile(outputPath)])
   if (receipt.mode !== mode || !candidatePreparationMatchesRequest(receipt, upscaleToMaxDimension, cropBox) ||
@@ -6971,6 +7070,19 @@ async function writeCompactSegmentsCsv(
   await fs.writeFile(outputPath, `${rows.join("\n")}\n`, "utf8")
 }
 
+function assertProvisionalLayoutHint(candidate: DigitizerCandidateConfig, provisionalOperation: boolean) {
+  if (candidate.provisionalSourceInk && (!candidate.provisionalLayoutHint || candidate.darkInkEnhancement)) {
+    throw new EvidenceContractError("invalid_provisional_source_ink", "Source contrast tracing requires the explicit provisional layout fallback.")
+  }
+  if (!candidate.provisionalLayoutHint) return
+  if (!provisionalOperation || candidate.layoutConstraint !== "standard_3x4_with_r1" ||
+      candidate.selectionEligible !== false || candidate.rotateOnResample !== false ||
+      candidate.vectorizer !== "probability-centroid" || candidate.resampleSize !== 1500 ||
+      candidate.cropBox || candidate.geometryConfirmedLayout || candidate.semanticLeadIdentityConfirmed) {
+    throw new EvidenceContractError("invalid_provisional_layout_hint", "An unverified layout hypothesis requires an explicit provisional trace operation.")
+  }
+}
+
 function openEcgConfig({
   inputDir,
   outputDir,
@@ -6978,12 +7090,16 @@ function openEcgConfig({
   labelThresh,
   vectorizer,
   device,
+  rotateOnResample,
   darkInkEnhancement,
   darkInkSupportRadius,
   gainMmPerMv,
   layoutConstraint,
+  provisionalLayoutHint,
+  provisionalSourceInk,
   featureCachePath,
   decoderCoordinatePath,
+  panelObservationPath,
   sourceRhythmContextPath,
 }: {
   inputDir: string
@@ -6992,19 +7108,28 @@ function openEcgConfig({
   labelThresh?: number
   vectorizer: DigitizerVectorizer
   device: DigitizerComputeDevice
+  rotateOnResample?: boolean
   darkInkEnhancement?: boolean
   darkInkSupportRadius?: number
   gainMmPerMv?: number
   layoutConstraint?: string
+  provisionalLayoutHint?: boolean
+  provisionalSourceInk?: boolean
   featureCachePath?: string
   decoderCoordinatePath?: string
+  panelObservationPath?: string
   sourceRhythmContextPath?: string
 }) {
   if (gainMmPerMv !== undefined && ![5, 10, 20].includes(gainMmPerMv)) {
     throw new EvidenceContractError("unsupported_neural_gain", "Neural extraction requires a supported physical gain.")
   }
-  const signalExtractorKwargs =
-    typeof labelThresh === "number"
+  if (provisionalSourceInk && (!provisionalLayoutHint || layoutConstraint !== "standard_3x4_with_r1" ||
+      vectorizer !== "probability-centroid" || resampleSize !== 1500 || rotateOnResample !== false || darkInkEnhancement)) {
+    throw new EvidenceContractError("invalid_provisional_source_ink", "Source contrast tracing requires the explicit provisional r1 fallback.")
+  }
+  const signalExtractorKwargs = provisionalSourceInk
+    ? `\n          label_thresh: ${labelThresh ?? .1}\n          threshold_line_in_mask: 0.95`
+    : typeof labelThresh === "number"
       ? `\n          label_thresh: ${labelThresh}`
       : " {}"
   const isConstrainedSixRowPanel =
@@ -7031,9 +7156,11 @@ function openEcgConfig({
     : `
     dark_ink_strength: 0.0`
   const forcedLayoutKwarg =
-    darkInkEnhancement && layoutConstraint
+    (darkInkEnhancement || provisionalLayoutHint) && layoutConstraint
       ? `\n    forced_layout_substring: ${JSON.stringify(layoutConstraint)}`
       : ""
+  const provisionalSourceInkKwarg = provisionalSourceInk
+    ? "\n    provisional_source_ink: true" : ""
   const leadLabelThresholdKwarg =
     darkInkEnhancement && isConstrainedSixRowPanel
       ? "\n    lead_label_threshold: 0.5"
@@ -7046,6 +7173,11 @@ function openEcgConfig({
   }
   const coordinateKwarg = decoderCoordinatePath
     ? `\n    decoder_coordinate_path: ${JSON.stringify(decoderCoordinatePath)}` : ""
+  if (panelObservationPath && (vectorizer !== "probability-centroid" || decoderCoordinatePath)) {
+    throw new EvidenceContractError("unsupported_numeric_panel_observation", "Numeric panel observation is separate from coordinate capture.")
+  }
+  const panelObservationKwarg = panelObservationPath
+    ? `\n    decoder_panel_observation_path: ${JSON.stringify(panelObservationPath)}` : ""
   if (sourceRhythmContextPath && !decoderCoordinatePath) {
     throw new EvidenceContractError("missing_rhythm_coordinate_capture", "Source rhythm assignment requires coordinate capture.")
   }
@@ -7097,7 +7229,7 @@ function openEcgConfig({
           lower_grid_line_factor: 0.3
 
       LAYOUT_IDENTIFIER:
-        class_path: 'src.model.lead_identifier.LeadIdentifier'
+        class_path: '${provisionalLayoutHint ? "ecg_pipeline.provisional_layout_identifier.ProvisionalLayoutLeadIdentifier" : "src.model.lead_identifier.LeadIdentifier"}'
         config_path: ${JSON.stringify(
           layoutConfigPathForConstraint(layoutConstraint)
         )}
@@ -7110,10 +7242,10 @@ function openEcgConfig({
 
     device: '${device}'
     resample_size: ${resampleSize}
-    rotate_on_resample: true
+    rotate_on_resample: ${rotateOnResample !== false}
     enable_timing: false
     apply_dewarping: false
-    ${fidelityKwargs}${forcedLayoutKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}${gainKwarg}${coordinateKwarg}${rhythmKwarg}
+    ${fidelityKwargs}${forcedLayoutKwarg}${provisionalSourceInkKwarg}${leadLabelThresholdKwarg}${featureCacheKwarg}${gainKwarg}${coordinateKwarg}${panelObservationKwarg}${rhythmKwarg}
 
 DATA:
   images_path: ${JSON.stringify(inputDir)}
@@ -7152,6 +7284,9 @@ function parametersForCandidate(candidate: DigitizerCandidateConfig) {
     kind: candidateKind(candidate),
     capabilities: candidateCapabilities(candidate),
     resampleSize: candidate.resampleSize,
+    ...(candidate.rotateOnResample !== undefined ? { rotateOnResample: candidate.rotateOnResample } : {}),
+    ...(candidate.provisionalLayoutHint ? { provisionalLayoutHint: true } : {}),
+    ...(candidate.provisionalSourceInk ? { provisionalSourceInk: true } : {}),
     ...(candidate.gainMmPerMv !== undefined ? { gainMmPerMv: candidate.gainMmPerMv } : {}),
     ...(candidate.upscaleToMaxDimension
       ? { upscaleToMaxDimension: candidate.upscaleToMaxDimension }
@@ -7378,6 +7513,7 @@ function relativePath(absolutePath: string) {
 }
 
 export const digitizerTestUtils = {
+  executePipelineModule,
   runNativeGridCandidate,
   diagnosticAssetLabel,
   SelectionEvidenceRecorder,
@@ -7431,6 +7567,9 @@ export const digitizerTestUtils = {
   normalizeCanonicalPanelTiming,
   nativeCanonicalRequiresBoundarySuppression,
   openEcgConfig,
+  assertProvisionalLayoutHint,
+  neuralFeatureCacheDigest,
+  parametersForCandidate,
   prepareCandidateInput,
   parseCanonicalCell,
   repairShortPeerSupportedGaps,

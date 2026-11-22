@@ -1,6 +1,7 @@
 import type { RunRecord } from "@/lib/runs"
 import { EvidenceContractError, positivePhysicalValue, unitFraction } from "@/lib/digitizer/physical-contracts"
 import { validateSourcePhotoAttempt } from "@/lib/digitizer/source-photo-contract"
+import { validateCandidateTraceRecovery } from "@/lib/digitizer/candidate-trace-recovery"
 
 /** Additive validation of legacy records: missing evidence stays missing. */
 export function validateDurableRun(value: unknown): RunRecord {
@@ -40,5 +41,27 @@ export function validateDurableRun(value: unknown): RunRecord {
          !run.assets.diagnosticBundle || !run.assets.diagnosticManifest || !run.assets.diagnostic || !run.assets.paperRender)) return fail("invalid_source_photo_publication")
   }
   if (run.publicationDecision?.reasonCode === "diagnostic_source_photo" && run.sourcePhotoAttempt?.state !== "diagnostic_available") return fail("invalid_source_photo_publication")
+  if (run.traceRecovery) {
+    validateCandidateTraceRecovery(run.traceRecovery, run.sourceIdentity?.sha256)
+    if (!run.sourceIdentity || run.status !== "partial" || run.publicationDecision?.outcome !== "partial" ||
+        run.publicationDecision.reasonCode !== "diagnostic_candidate_trace" ||
+        run.publicationDecision.candidateId !== run.traceRecovery.candidateId ||
+        run.assets.diagnosticManifest?.identity?.sha256 !== run.traceRecovery.manifestSha256 ||
+        !run.assets.diagnostic || !run.assets.diagnosticBundle ||
+        run.assets.canonicalCsv || run.assets.segmentsCsv || run.assets.uncertaintyCsv || run.assets.segmentMapJson ||
+        run.assets.coordinateEvidence || run.assets.sourceTimeEvidence || run.assets.paperRender) return fail("invalid_candidate_trace_publication")
+  }
+  if (run.publicationDecision?.reasonCode === "diagnostic_candidate_trace" && !run.traceRecovery) return fail("invalid_candidate_trace_publication")
+  if (run.provisionalTrace) {
+    validateCandidateTraceRecovery(run.provisionalTrace, run.sourceIdentity?.sha256, "needs_review")
+    if (!run.sourceIdentity || !["needs_review", "completed"].includes(run.status) ||
+        run.publicationDecision?.outcome !== "needs_review" ||
+        run.provisionalTrace.originalPublicationReason !== run.publicationDecision.reasonCode ||
+        run.assets.provisionalTraceManifest?.identity?.sha256 !== run.provisionalTrace.manifestSha256 ||
+        !run.assets.canonicalCsv || !run.assets.provisionalTraceCsv || !run.assets.provisionalTracePreview ||
+        !run.assets.provisionalTraceBundle || run.traceRecovery) return fail("invalid_provisional_trace_publication")
+  }
+  if ([run.assets.provisionalTraceCsv, run.assets.provisionalTracePreview, run.assets.provisionalTraceManifest, run.assets.provisionalTraceBundle].some(Boolean) &&
+      !run.provisionalTrace) return fail("invalid_provisional_trace_publication")
   return run
 }

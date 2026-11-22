@@ -161,6 +161,38 @@ def dark_ink_probability(
     ).clamp(0.0, 1.0)
 
 
+def provisional_source_ink_probability(
+    image: Tensor, signal_probability: Tensor, grid_probability: Tensor,
+) -> Tensor:
+    """Add local neutral source contrast to the explicit provisional fallback.
+
+    This fixed setting is an availability hypothesis. It retains the model's
+    original probability and never modifies the source image or fills gaps.
+    """
+    import numpy as np
+    from scipy.ndimage import maximum_filter
+
+    if (image.ndim != 4 or image.shape[1] != 3 or
+            signal_probability.shape != grid_probability.shape or
+            signal_probability.shape != (image.shape[0], 1, *image.shape[2:])):
+        raise ValueError("Source ink requires aligned RGB and matching probability maps.")
+    source = image.detach().cpu().permute(0, 2, 3, 1).numpy()
+    signal = signal_probability.detach().cpu().numpy()
+    grid = grid_probability.detach().cpu().numpy()
+    enhanced = []
+    for rgb, probability, grid_map in zip(source, signal[:, 0], grid[:, 0], strict=True):
+        maximum = rgb.max(axis=2)
+        chroma = maximum - rgb.min(axis=2)
+        background = maximum_filter(maximum, size=15, mode="nearest")
+        contrast = np.clip((background - maximum) / .20, 0, 1)
+        neutral = np.clip(1 - chroma / .12, 0, 1)
+        support = np.clip(maximum_filter(probability, size=97, mode="nearest") * 2, 0, 1)
+        ink = (contrast * neutral * support * .4).astype(np.float32)
+        ink = ink * (1 - np.clip(grid_map, 0, 1))
+        enhanced.append(np.maximum(probability, ink))
+    return torch.from_numpy(np.stack(enhanced)[:, None]).to(signal_probability)
+
+
 class FidelityInferenceWrapper(InferenceWrapper):
     """Open-ECG wrapper that retains source-pixel evidence for narrow trace ink."""
 
@@ -181,18 +213,29 @@ class FidelityInferenceWrapper(InferenceWrapper):
         dark_ink_threshold: float = 0.45,
         dark_ink_strength: float = 0.5,
         dark_ink_support_radius: int = 48,
+        provisional_source_ink: bool = False,
         forced_layout_substring: str | None = None,
         lead_label_threshold: float = 0.8,
         gain_mm_per_mv: float = 10.0,
         feature_cache_path: str | None = None,
         decoder_coordinate_path: str | None = None,
+        decoder_panel_observation_path: str | None = None,
         source_rhythm_context_path: str | None = None,
         **kwargs: object,
     ) -> None:
+        if (type(provisional_source_ink) is not bool or
+                (provisional_source_ink and (forced_layout_substring != "standard_3x4_with_r1" or dark_ink_strength != 0.0))):
+            raise ValueError("Provisional source ink requires its explicit r1 fallback and no dark-ink addition.")
         if decoder_coordinate_path is not None and (
             not isinstance(decoder_coordinate_path, str) or not decoder_coordinate_path
         ):
             raise ValueError("Decoder coordinate path must be a nonempty string.")
+        if decoder_panel_observation_path is not None and (
+            not isinstance(decoder_panel_observation_path, str) or not decoder_panel_observation_path
+        ):
+            raise ValueError("Decoder numeric panel observation path must be a nonempty string.")
+        if decoder_panel_observation_path is not None and decoder_coordinate_path is not None:
+            raise ValueError("Numeric-only panel observation and coordinate capture use separate modes.")
         if source_rhythm_context_path is not None and (
             not isinstance(source_rhythm_context_path, str) or not source_rhythm_context_path or not decoder_coordinate_path
         ):
@@ -214,12 +257,17 @@ class FidelityInferenceWrapper(InferenceWrapper):
         self.dark_ink_threshold = dark_ink_threshold
         self.dark_ink_strength = dark_ink_strength
         self.dark_ink_support_radius = dark_ink_support_radius
+        self.provisional_source_ink = provisional_source_ink
+        self.provisional_source_ink_decision: dict[str, object] | None = None
         self.forced_layout_substring = forced_layout_substring
         self.feature_cache_path = (
             Path(feature_cache_path).resolve() if feature_cache_path else None
         )
         self.decoder_coordinate_path = (
             Path(decoder_coordinate_path).resolve() if decoder_coordinate_path else None
+        )
+        self.decoder_panel_observation_path = (
+            Path(decoder_panel_observation_path).resolve() if decoder_panel_observation_path else None
         )
         self.source_rhythm_context_path = source_rhythm_context_path
         if not 0.5 <= lead_label_threshold <= 0.8:
@@ -265,7 +313,20 @@ class FidelityInferenceWrapper(InferenceWrapper):
         layout = self.forced_layout_substring or layout_should_include_substring
         coordinate_path = getattr(self, "decoder_coordinate_path", None)
         if coordinate_path is None:
-            return super().__call__(image, layout_should_include_substring=layout)
+            panel_path = getattr(self, "decoder_panel_observation_path", None)
+            if panel_path is None:
+                return super().__call__(image, layout_should_include_substring=layout)
+            if panel_path.exists():
+                raise FileExistsError("Refusing to overwrite an earlier numeric panel observation.")
+            from ecg_pipeline.decoder_panel_observation import DecoderPanelObservation
+
+            with DecoderPanelObservation(self.identifier) as panels:
+                result = super().__call__(image, layout_should_include_substring=layout)
+            decision = getattr(self, "provisional_source_ink_decision", None)
+            if decision is not None:
+                panels.data["sourceInkRecovery"] = decision
+            panels.save_if_supported(panel_path)
+            return result
         if coordinate_path.exists():
             raise FileExistsError("Refusing to overwrite an earlier decoder-coordinate capture.")
         from ecg_pipeline.decoder_coordinates import DecoderCoordinateCapture
@@ -291,6 +352,52 @@ class FidelityInferenceWrapper(InferenceWrapper):
         capture.save_prepared_input(coordinate_path)
         return result
 
+    def _provisional_baseline_coverage(self, probability: Tensor) -> dict[str, object]:
+        """Observe original panel coverage without consuming the final decoder RNG.
+
+        Coverage only chooses an unverified recovery route. It establishes no
+        source-following morphology, lead identity or measurement accuracy.
+        """
+        from ecg_pipeline.panel_trace_recovery import PANELS
+
+        extractor = self.signal_extractor
+        original_threshold = extractor.threshold_line_in_mask
+        original_peaks = extractor.num_peaks
+        rng = torch.get_rng_state().clone()
+        counts: dict[str, int] = {}
+        normalized_rows = 0
+        try:
+            extractor.threshold_line_in_mask = .95
+            with torch.no_grad():
+                lines = extractor(probability.squeeze())
+                identifier = self.identifier
+                while hasattr(identifier, "identifier"):
+                    identifier = identifier.identifier
+                if lines.ndim == 2 and lines.shape[0] > 0:
+                    merged = identifier._merge_nonoverlapping_lines(lines)
+                    if 4 <= merged.shape[0] <= 6:
+                        # Unit conversion does not affect finite coverage. Use
+                        # the actual identifier's crop/interpolation rules.
+                        normalized = identifier.normalize(merged, 1.0, .1)
+                        normalized_rows = int(normalized.shape[0])
+                        if (normalized.ndim == 2 and normalized.shape[1] == 5000 and
+                                not torch.isinf(normalized).any()):
+                            for row, names in enumerate(PANELS):
+                                for column, name in enumerate(names):
+                                    part = normalized[row, column * 1250:(column + 1) * 1250]
+                                    counts[name] = int(torch.isfinite(part).sum())
+        finally:
+            extractor.threshold_line_in_mask = original_threshold
+            extractor.num_peaks = original_peaks
+            torch.set_rng_state(rng)
+        complete = len(counts) == 12 and all(value >= 250 for value in counts.values())
+        return {"version": 1, "method": "original-provisional-panel-coverage-v1",
+                "baselineMembership": .95, "recoveryMembership": .8,
+                "minimumFiniteSamplesPerPanel": 250, "baselineNormalizedRows": normalized_rows,
+                "baselineFiniteByColumn": counts, "baselineNumericCoverageComplete": complete,
+                "sourceInkApplied": not complete, "decoderRngRestored": True,
+                "sourceFidelityConfirmed": False, "clinicalValidationUse": False}
+
     def _align_feature_maps(
         self,
         image: Tensor,
@@ -311,6 +418,18 @@ class FidelityInferenceWrapper(InferenceWrapper):
             text_probability,
             source_points,
         )
+        if getattr(self, "provisional_source_ink", False):
+            decision = self._provisional_baseline_coverage(aligned_signal_probability)
+            self.provisional_source_ink_decision = decision
+            complete = decision["baselineNumericCoverageComplete"] is True
+            self.signal_extractor.threshold_line_in_mask = .95 if complete else .8
+            return (
+                aligned_image,
+                aligned_signal_probability if complete else provisional_source_ink_probability(
+                    aligned_image, aligned_signal_probability, aligned_grid_probability),
+                aligned_grid_probability,
+                aligned_text_probability,
+            )
         ink_probability = dark_ink_probability(
             aligned_image,
             aligned_signal_probability,

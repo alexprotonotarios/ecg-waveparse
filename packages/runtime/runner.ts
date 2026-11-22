@@ -7,7 +7,7 @@ import { digitizeRun } from "../../src/lib/digitizer"
 import { preflightCaptureBytes } from "../../src/lib/digitizer/capture-preflight"
 import { RESOURCE_ROOT, WORKSPACE_ROOT } from "../../src/lib/runtime-paths"
 import {
-  createStoredRunFromBytes, getRun, saveRun, compactStoredRun,
+  createStoredRunFromBytes, getRun, saveRun,
   appendRunReview, readVerifiedRunSource, readVerifiedRunAsset,
   tryClaimStoredRunProcessing, releaseStoredRunProcessingClaim,
   type RunRecord, type RunAssetKey,
@@ -22,6 +22,7 @@ const controller = new AbortController()
 let activeId: string | undefined
 let runtimeHash = ""
 let device = "cpu"
+let mode: "production" | "trace" = "production"
 const output = (value: unknown) => process.stdout.write(JSON.stringify(value) + "\n")
 // Stdout is reserved exclusively for the versioned line protocol.
 console.log = (...args) => console.error(...args)
@@ -52,7 +53,7 @@ async function verifiedResult(run: RunRecord | null) {
     if (!run.sourceIdentity || !run.assets.canonicalCsv?.identity || !verified) throw new RequestError("invalid_evidence_contract", "Segment map lacks its source or signal identity.")
     validateSegmentEvidence(JSON.parse(verified.bytes.toString("utf8")), { sourceSha256: run.sourceIdentity.sha256, canonicalSha256: run.assets.canonicalCsv.identity.sha256 })
   }
-  let waveparse = { version: release.version, runtimeManifestSha256: runtimeHash, device }
+  let waveparse = { version: release.version, runtimeManifestSha256: runtimeHash, device, mode }
   try { waveparse = JSON.parse(await fs.readFile(path.join(WORKSPACE_ROOT, run.localPath, "waveparse.json"), "utf8")) } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
   }
@@ -94,7 +95,7 @@ async function recoverInterruptedRun(current: RunRecord | null) {
     latest.assets = { input: latest.assets.input }
     latest.processing = { ...latest.processing, state: "failed", failureCode: "worker_failure", finishedAt: latest.updatedAt }
     await saveRun(latest)
-    return await compactStoredRun(latest.id)
+    return latest
   } finally { await releaseStoredRunProcessingClaim(current.id, owner) }
 }
 
@@ -127,8 +128,8 @@ async function main() {
     const owner = `review-${process.pid}-${randomUUID()}`
     if (!await tryClaimStoredRunProcessing({ id, ownerId: owner, staleAfterMs: 120_000, now: Date.now() })) throw new RequestError("run_busy", "Another process is using this run.")
     try {
-      await appendRunReview({ id, decision: request.decision, reviewer: textField(request, "reviewer"), notes: textField(request, "notes"), confirmations: request.confirmations as Parameters<typeof appendRunReview>[0]["confirmations"] })
-      return verifiedResult(await compactStoredRun(id))
+      const reviewed = await appendRunReview({ id, decision: request.decision, reviewer: textField(request, "reviewer"), notes: textField(request, "notes"), confirmations: request.confirmations as Parameters<typeof appendRunReview>[0]["confirmations"] })
+      return verifiedResult(reviewed)
     } finally { await releaseStoredRunProcessingClaim(id, owner) }
   }
   if (operation !== "digitize") throw new RequestError("invalid_request", "Unknown operation.")
@@ -136,6 +137,10 @@ async function main() {
   if (!Number.isSafeInteger(timeoutMs) || Number(timeoutMs) < 60_000 || Number(timeoutMs) > 7_200_000) throw new RequestError("invalid_request", "timeoutMs must be between 60000 and 7200000.")
   device = String(request.device ?? "cpu")
   if (device !== "cpu" && device !== "mps") throw new RequestError("invalid_request", "device must be cpu or mps.")
+  if (request.mode !== undefined && request.mode !== "production" && request.mode !== "trace") {
+    throw new RequestError("invalid_request", "mode must be production or trace.")
+  }
+  mode = request.mode === "trace" ? "trace" : "production"
   const runtimeDir = request.runtimeDir ? path.resolve(textField(request, "runtimeDir")) : runtimeDirectory(RESOURCE_ROOT)
   process.env.OPEN_ECG_DIGITIZER_DIR = path.join(runtimeDir, "engine")
   process.env.ECG_DIGITIZER_DEVICE = device
@@ -143,9 +148,9 @@ async function main() {
   await checkRuntime(runtimeDir)
   stageDurationsMs.runtime_verification=performance.now()-stageStarted
   const source = path.resolve(textField(request, "inputPath"))
-  if (![".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"].includes(path.extname(source).toLowerCase())) throw new RequestError("invalid_input", "Unsupported image format.")
+  if (![".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".pdf"].includes(path.extname(source).toLowerCase())) throw new RequestError("invalid_input", "Unsupported ECG file format. Supported: PNG, JPEG, WebP, TIFF, PDF.")
   const sourceStat = await fs.stat(source)
-  if (!sourceStat.isFile() || sourceStat.size === 0 || sourceStat.size > 50 * 1024 * 1024) throw new RequestError("invalid_input", "Input must be a non-empty image file no larger than 50 MB.")
+  if (!sourceStat.isFile() || sourceStat.size === 0 || sourceStat.size > 50 * 1024 * 1024) throw new RequestError("invalid_input", "Input must be a non-empty ECG image or PDF file no larger than 50 MB.")
   const bytes = await fs.readFile(source)
   stageStarted=performance.now()
   const captureQuality = await preflightCaptureBytes({ fileName: path.basename(source), bytes, captureMethod: "upload" })
@@ -161,7 +166,7 @@ async function main() {
   run.processing = { version: 1, state: "running", attempt: 1, recoveryCount: 0, queuedAt: startedAt, startedAt, heartbeatAt: startedAt, deadlineAt: new Date(Date.now() + Number(timeoutMs)).toISOString(), timeoutMs: Number(timeoutMs), ownerId: owner }
   run.status = "running"
   await saveRun(run)
-  await fs.writeFile(path.join(WORKSPACE_ROOT, run.localPath, "waveparse.json"), JSON.stringify({ version: release.version, runtimeManifestSha256: runtimeHash, device }), { mode: 0o600 })
+  await fs.writeFile(path.join(WORKSPACE_ROOT, run.localPath, "waveparse.json"), JSON.stringify({ version: release.version, runtimeManifestSha256: runtimeHash, device, mode }), { mode: 0o600 })
   output({ type: "started", runId: run.id })
   let timedOut = false
   const deadline = setTimeout(() => { timedOut = true; controller.abort(new Error("timeout")) }, Number(timeoutMs))
@@ -169,7 +174,7 @@ async function main() {
   const heartbeat = setInterval(() => { const now = new Date(); void fs.utimes(path.join(WORKSPACE_ROOT, run.localPath), now, now).catch(() => undefined) }, 5000)
   try {
     stageStarted=performance.now()
-    const patch = await digitizeRun(run, { signal: controller.signal,onStage:(stage,duration)=>{stageDurationsMs[stage]=duration} })
+    const patch = await digitizeRun(run, { candidateMode: mode, signal: controller.signal,onStage:(stage,duration)=>{stageDurationsMs[stage]=duration} })
     if (!controller.signal.aborted) run = { ...run, ...patch, assets: { ...run.assets, ...patch.assets } }
   } catch (error) {
     run.status = "failed"
@@ -189,7 +194,6 @@ async function main() {
     const policyAbstention = run.status === "failed" && run.publicationDecision?.outcome === "failed"
     run.processing = { ...run.processing!, state: run.status === "timed_out" ? "timed_out" : run.status === "failed" ? "failed" : "completed", finishedAt: run.updatedAt, ...(run.status === "failed" && !policyAbstention ? { failureCode: "worker_failure" as const } : {}), ...(timedOut ? { failureCode: "job_timeout" as const } : {}) }
     try { await saveRun(run) } finally { await releaseStoredRunProcessingClaim(run.id, owner) }
-    run = await compactStoredRun(run.id)
   }
   if (controller.signal.aborted && !timedOut) throw new RequestError("cancelled", "Digitization cancelled; admitted source preserved.")
   return verifiedResult(run)

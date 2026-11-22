@@ -30,7 +30,7 @@ Python, in a virtual environment:
 ```sh
 python3.12 -m venv .venv
 . .venv/bin/activate
-python -m pip install ./ecg_waveparse-0.1.0-py3-none-any.whl
+python -m pip install ./ecg_waveparse-0.2.0-py3-none-any.whl
 python -m ecg_waveparse setup
 python -m ecg_waveparse doctor --workspace-dir ./ecg-results
 python -m ecg_waveparse digitize --input ./ECG.png --workspace-dir ./ecg-results
@@ -39,7 +39,7 @@ python -m ecg_waveparse digitize --input ./ECG.png --workspace-dir ./ecg-results
 JavaScript / TypeScript, from your application directory:
 
 ```sh
-npm install ./ecg-waveparse-0.1.0.tgz
+npm install ./ecg-waveparse-0.2.0.tgz
 npx --no-install ecg-waveparse setup --python /path/to/python3.12
 npx --no-install ecg-waveparse doctor --python /path/to/python3.12 --workspace-dir ./ecg-results
 npx --no-install ecg-waveparse digitize --input ./ECG.png --workspace-dir ./ecg-results
@@ -83,13 +83,13 @@ cancellation, retained evidence and recording a human review.
 
 ## Inputs and outputs
 
-Inputs are PNG, JPEG, WebP or single-frame TIFF files up to 50 MB, 80 million
-decoded pixels and 32,768 pixels on either edge. Use the original scan or export
+Inputs are PNG, JPEG, WebP, single-frame TIFF, or PDF (native vector PDFs or scanned PDFs) files up to 50 MB, 80 million
+decoded pixels and 32,768 pixels on either edge. Supported layouts include `3x4+1r`, `3x4+3r`, `6x2`, `Cabrera 6x2` (with automatic `-aVR` polarity inversion), and `12x1`. Use the original scan, PDF, or photograph
 where possible, with the full sheet, readable labels and visible calibration.
 
 A returned quantitative result includes the untouched source, canonical
-12-lead CSV, compact lead-segment CSV, uncertainty CSV, segment map, source
-overlay, ECG-paper render, and metadata with file identities and calibration.
+12-lead CSV, compact lead-segment CSV, uncertainty CSV, PhysioNet WFDB (`.hea` + `.dat`), structured downstream JSON (`downstream-ecg.json`), source
+overlay, ECG-paper render, and metadata with file identities, calibration, and reference-free clinical physics checks.
 Unavailable samples remain missing; a 500 Hz export does not imply that the
 image contained 500 Hz of information. The paper render uses 25 mm/s and
 10 mm/mV and is baseline-centred for inspection.
@@ -140,11 +140,11 @@ For example, install the newly built wheel from the checkout root into the activ
 virtual environment:
 
 ```sh
-python -m pip install ./dist/ecg_waveparse-0.1.0-py3-none-any.whl
+python -m pip install ./dist/ecg_waveparse-0.2.0-py3-none-any.whl
 ```
 
 For a separate JavaScript application, install the archive at
-`/absolute/path/to/checkout/dist/ecg-waveparse-0.1.0.tgz`. Then run the setup,
+`/absolute/path/to/checkout/dist/ecg-waveparse-0.2.0.tgz`. Then run the setup,
 doctor and digitize commands in [Install and run](#install-and-run).
 Building packages does not download the inference models. To verify the built packages, run
 `WAVEPARSE_PYTHON=python corepack pnpm waveparse:verify`.

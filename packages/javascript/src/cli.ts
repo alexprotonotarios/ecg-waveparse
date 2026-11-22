@@ -22,7 +22,7 @@ async function main() {
     return
   }
   if (command !== "digitize" || !option("--input") || !option("--workspace-dir")) {
-    console.log("ECG WaveParse\n  ecg-waveparse setup [--python /path/to/python3.12] [--runtime-dir DIR]\n  ecg-waveparse doctor [--runtime-dir DIR] [--workspace-dir DIR]\n  ecg-waveparse digitize --input ECG.png --workspace-dir DIR [--runtime-dir DIR] [--device cpu|mps] [--timeout-ms MS]")
+    console.log("ECG WaveParse\n  ecg-waveparse setup [--python /path/to/python3.12] [--runtime-dir DIR]\n  ecg-waveparse doctor [--runtime-dir DIR] [--workspace-dir DIR]\n  ecg-waveparse digitize --input ECG.png --workspace-dir DIR [--runtime-dir DIR] [--device cpu|mps] [--mode production|trace] [--timeout-ms MS]")
     if (command && command !== "--help") process.exitCode = 1
     return
   }
@@ -31,7 +31,7 @@ async function main() {
   process.once("SIGINT", stop); process.once("SIGTERM", stop)
   try {
     const digitizer = new Digitizer({ workspaceDir: option("--workspace-dir")!, runtimeDir: option("--runtime-dir") })
-    const result = await digitizer.digitize(option("--input")!, { device: option("--device") as "cpu" | "mps" | undefined, timeoutMs: option("--timeout-ms") ? Number(option("--timeout-ms")) : undefined, signal: controller.signal })
+    const result = await digitizer.digitize(option("--input")!, { device: option("--device") as "cpu" | "mps" | undefined, mode: option("--mode") as "production" | "trace" | undefined, timeoutMs: option("--timeout-ms") ? Number(option("--timeout-ms")) : undefined, signal: controller.signal })
     console.log(JSON.stringify(result, null, 2))
     if (result.status === "failed" || result.status === "timed_out") process.exitCode = 2
   } finally { process.removeListener("SIGINT", stop); process.removeListener("SIGTERM", stop) }

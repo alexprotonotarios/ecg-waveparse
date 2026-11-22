@@ -18,7 +18,7 @@
   },
   "storage": {
     "directory": "storage/runs",
-    "minimumFreeBytes": 5368709120,
+    "minimumFreeBytes": 20000000000,
     "minimumRunReservationBytes": 1073741824
   },
   "engine": {

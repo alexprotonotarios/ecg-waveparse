@@ -11,6 +11,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { values } = parseArgs({ options: { dist: { type: 'string', default: 'dist' } } });
 const dist = path.resolve(root, values.dist);
 const distribution = JSON.parse(await fs.readFile(path.join(root, 'config/waveparse-distribution.json'), 'utf8'));
+const release = JSON.parse(await fs.readFile(path.join(root, 'config/waveparse-release.json'), 'utf8'));
+const ver = release.version;
 const scratch = await fs.mkdtemp(path.join(tmpdir(), 'waveparse-consumer-'));
 const python = process.env.WAVEPARSE_PYTHON || 'python3.12';
 const run = (command, args, options = {}) => execFileSync(command, args, { cwd: scratch, stdio: 'inherit', ...options });
@@ -19,7 +21,8 @@ try {
 import re, sys, tarfile, zipfile
 from pathlib import Path
 root = Path(sys.argv[1])
-names = ['ecg-waveparse-0.1.0.tgz', 'ecg_waveparse-0.1.0-py3-none-any.whl', 'ecg_waveparse-0.1.0.tar.gz', 'ecg-waveparse-0.1.0-source.tar.gz']
+ver = sys.argv[2]
+names = [f'ecg-waveparse-{ver}.tgz', f'ecg_waveparse-{ver}-py3-none-any.whl', f'ecg_waveparse-{ver}.tar.gz', f'ecg-waveparse-{ver}-source.tar.gz']
 for name in names:
     if name.endswith('.whl'):
         with zipfile.ZipFile(root / name) as archive:
@@ -35,12 +38,12 @@ for name in names:
         if path.endswith(('.md', '.gitignore', '/PKG-INFO', '/METADATA')):
             assert not re.search(rb'benchmark|\bARVC\b|SEM-16|FINAL-EVALUATION|multisource_truth', data, re.I), path
     print('Inspected download:', name, len(files), 'files')
-`, dist]);
+`, dist, ver]);
   await fs.writeFile(path.join(scratch, 'package.json'), '{"private":true,"type":"module"}');
-  run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--cache', path.join(scratch, 'cache'), path.join(dist, 'ecg-waveparse-0.1.0.tgz')]);
+  run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--cache', path.join(scratch, 'cache'), path.join(dist, `ecg-waveparse-${ver}.tgz`)]);
   run(python, ['-m', 'venv', path.join(scratch, 'venv')]);
   const consumerPython = path.join(scratch, 'venv/bin/python');
-  run(consumerPython, ['-m', 'pip', 'install', '--no-index', '--no-deps', path.join(dist, 'ecg_waveparse-0.1.0-py3-none-any.whl')]);
+  run(consumerPython, ['-m', 'pip', 'install', '--no-index', '--no-deps', path.join(dist, `ecg_waveparse-${ver}-py3-none-any.whl`)]);
   const jsRuntime = path.join(scratch, 'node_modules/ecg-waveparse/runtime');
   const pyRuntime = String(execFileSync(consumerPython, ['-c', 'from ecg_waveparse import _resources; print(_resources())'], { cwd: scratch })).trim();
   for (const directory of [path.dirname(jsRuntime), path.dirname(pyRuntime)]) {
@@ -85,11 +88,30 @@ for name in names:
   }
   run(process.execPath, [path.join(root, 'node_modules/typescript/bin/tsc'), '--noEmit', '--strict', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--typeRoots', path.join(root, 'node_modules/@types'), 'consumer.mts', 'consumer.cts']);
   run(consumerPython, ['-c', `import asyncio\nfrom ecg_waveparse import Digitizer, WaveParseError\nd=Digitizer(workspace_dir='python')\nassert d.get_run('run_absent') is None\nassert asyncio.run(d.get_run_async('run_absent')) is None\ntry: d.get_run('../escape')\nexcept WaveParseError as e: assert e.code == 'invalid_request'\nelse: raise AssertionError('unsafe ID accepted')`]);
+  await fs.writeFile(path.join(scratch, 'trace-mode.mjs'), `
+import { Digitizer } from 'ecg-waveparse'; import assert from 'node:assert/strict';
+const d = new Digitizer({workspaceDir:'./trace-mode',runtimeDir:'./absent-runtime'});
+await assert.rejects(d.digitize('absent.png',{mode:'invalid'}),{code:'invalid_request'});
+await assert.rejects(d.digitize('absent.png',{mode:'trace'}),{code:'runtime_unavailable'});
+`);
+  run(process.execPath, ['trace-mode.mjs']);
+  run(consumerPython, ['-c', `
+import asyncio
+from ecg_waveparse import Digitizer, WaveParseError
+d=Digitizer(workspace_dir='python-trace-mode',runtime_dir='absent-runtime')
+for mode,code in [('invalid','invalid_request'),('trace','runtime_unavailable')]:
+    try: d.digitize('absent.png',mode=mode)
+    except WaveParseError as e: assert e.code==code,(mode,e.code)
+    else: raise AssertionError('unexpected success')
+    try: asyncio.run(d.digitize_async('absent.png',mode=mode))
+    except WaveParseError as e: assert e.code==code,(mode,e.code)
+    else: raise AssertionError('unexpected async success')
+`]);
   const extracted = path.join(scratch, 'source');
   await fs.mkdir(extracted);
-  run('tar', ['-xzf', path.join(dist, 'ecg-waveparse-0.1.0-source.tar.gz'), '-C', extracted]);
+  run('tar', ['-xzf', path.join(dist, `ecg-waveparse-${ver}-source.tar.gz`), '-C', extracted]);
   run(process.execPath, [path.join(extracted, 'scripts/audit-waveparse-source.mjs'), extracted, path.join(scratch, 'source-audit.json')]);
-  const members = String(execFileSync('tar', ['-tzf', path.join(dist, 'ecg-waveparse-0.1.0-source.tar.gz')]));
+  const members = String(execFileSync('tar', ['-tzf', path.join(dist, `ecg-waveparse-${ver}-source.tar.gz`)]));
   assert(!members.split('\n').some(name => /(^|\/)(input|storage|\.git|\.external)(\/|$)|\.(png|jpe?g|onnx|pth|pt)$/.test(name)), 'Private data or models in source distribution');
   console.log('Installed npm and wheel consumers passed: identical payloads, ESM/CJS, NodeNext types, Python sync/async, source allowlist.');
 } finally { await fs.rm(scratch, { recursive: true, force: true }); }

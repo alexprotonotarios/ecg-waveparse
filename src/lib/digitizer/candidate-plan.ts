@@ -15,12 +15,15 @@ export type DigitizerCandidateConfig = {
   id: string
   label: string
   resampleSize: number
+  rotateOnResample?: boolean
   upscaleToMaxDimension?: number
   darkInkEnhancement?: boolean
   darkInkSupportRadius?: number
   gainMmPerMv?: number
   labelThresh?: number
   layoutConstraint?: string
+  provisionalLayoutHint?: boolean
+  provisionalSourceInk?: boolean
   geometryConfirmedLayout?: boolean
   geometryLayoutConfidence?: number
   semanticLeadIdentityConfirmed?: boolean

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "runtimeId": "waveparse-0.1.0-97a15087d4ab",
+  "runtimeId": "waveparse-0.2.0-97a15087d4ab",
   "node": "22.22.2",
   "python": "3.12.9",
   "engineCommit": "97a15087d4abcda843da8c58ee74b1d8f47e6f9a",
@@ -52,6 +52,22 @@
     "src/transform/vision.py": "b71273fa5f7838c11ef1898732ed51a08b596569f606ae357bcf5acf0f0b3b4f",
     "src/utils.py": "eaf86e4cdec8fc2dd9fcf4dc304d9e5adb8a414abb05041246e688459c523902"
   },
+  "cleanroomModels": [
+    {
+      "path": "cleanroom/waveparse-grid-rectifier-v3-fp16.pt",
+      "bytes": 49092211,
+      "sha256": "2417ac88027f7ebeb77ea0266e86e154eeabb8941e4aa45a188034d31d4487cb",
+      "url": "https://github.com/alexprotonotarios/ecg-waveparse/releases/download/v0.2.0/waveparse-grid-rectifier-v3-fp16.pt",
+      "license": "MIT"
+    },
+    {
+      "path": "cleanroom/waveparse-lead-decoder-v1-fp16.pt",
+      "bytes": 49186873,
+      "sha256": "73c66f273f9b94f6c758f9362404588a7b5cb0f5e423cc6b1d5447e1b15226e0",
+      "url": "https://github.com/alexprotonotarios/ecg-waveparse/releases/download/v0.2.0/waveparse-lead-decoder-v1-fp16.pt",
+      "license": "MIT"
+    }
+  ],
   "models": [
     {
       "path": "weights/unet_weights_07072025.pt",

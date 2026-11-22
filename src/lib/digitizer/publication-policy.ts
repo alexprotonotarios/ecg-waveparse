@@ -13,6 +13,7 @@ export type PublicationReasonCode =
   | "unsupported_calibration"
   | "no_publishable_candidate"
   | "diagnostic_source_photo"
+  | "diagnostic_candidate_trace"
 
 export type PublicationDecision<T> =
   | {

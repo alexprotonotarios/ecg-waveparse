@@ -18,6 +18,26 @@ import tempfile
 import urllib.request
 import fcntl
 
+MINIMUM_FREE_BYTES = 20_000_000_000
+
+
+def assert_storage_write(directory: Path, write_bytes: int = 0) -> int:
+    """Check actual available space for this write, without future reservations."""
+    if type(write_bytes) is not int or write_bytes < 0:
+        raise ValueError("Imminent write bytes must be a non-negative integer.")
+    volume = directory
+    while not volume.exists():
+        volume = volume.parent
+    stat = os.statvfs(volume)
+    block = stat.f_frsize or stat.f_bsize
+    if block <= 0:
+        raise RuntimeError("Invalid filesystem allocation block size.")
+    allocated = ((write_bytes + block - 1) // block) * block
+    available = shutil.disk_usage(volume).free
+    if available < MINIMUM_FREE_BYTES + allocated:
+        raise RuntimeError(f"Storage write paused: {available} bytes available; preserve at least {MINIMUM_FREE_BYTES} free bytes after the next {allocated}-byte write. Existing files remain available for recovery.")
+    return available
+
 
 def digest(path: Path) -> str:
     with path.open("rb") as stream:
@@ -35,8 +55,11 @@ def default_directory(manifest: dict) -> Path:
     return base / "ecg-waveparse" / manifest["runtimeId"] / host_target()
 
 
-def run(command: list[str], **kwargs) -> None:
+def run(command: list[str], *, storage_directory: Path | None = None, **kwargs) -> None:
+    directory = storage_directory or Path.cwd()
+    assert_storage_write(directory)
     subprocess.run(command, check=True, stdout=sys.stderr, stderr=sys.stderr, **kwargs)
+    assert_storage_write(directory)
 
 
 def verify_toolchain(manifest: dict) -> None:
@@ -61,11 +84,14 @@ def download(url: str, destination: Path, expected_hash: str | None = None) -> N
         raise RuntimeError("Runtime downloads require HTTPS.")
     destination.parent.mkdir(parents=True, exist_ok=True)
     partial = destination.with_name(destination.name + ".partial")
+    assert_storage_write(destination.parent)
     request = urllib.request.Request(url, headers={"User-Agent": "ecg-waveparse-runtime-setup"})
     with urllib.request.urlopen(request, timeout=60) as response, partial.open("wb") as output:
         if not response.geturl().startswith("https://"):
             raise RuntimeError("Insecure download redirect refused.")
-        shutil.copyfileobj(response, output)
+        while chunk := response.read(64 << 10):
+            assert_storage_write(partial.parent, len(chunk))
+            output.write(chunk)
     if expected_hash and digest(partial) != expected_hash:
         raise RuntimeError(f"Checksum mismatch for {destination.name}; file not activated.")
     partial.replace(destination)
@@ -92,6 +118,7 @@ def extract_source(archive: Path, engine: Path, files: dict[str, str]) -> None:
                 raise RuntimeError(f"Source checksum mismatch: {name}")
             target = engine / name
             target.parent.mkdir(parents=True, exist_ok=True)
+            assert_storage_write(target.parent, len(data))
             target.write_bytes(data)
             remaining.remove(name)
     if remaining:
@@ -149,6 +176,7 @@ print(json.dumps({"rapidocrRoot": str(Path(rapidocr.__file__).parent), "plotting
 
 
 def doctor(directory: Path, resources: Path, manifest: dict, device: str, *, require_receipt: bool = True) -> dict:
+    assert_storage_write(directory)
     verify_toolchain(manifest)
     if device not in ("cpu", "mps") or (device == "mps" and host_target() != "darwin-arm64"):
         raise RuntimeError("The requested device is unsupported.")
@@ -163,6 +191,10 @@ def doctor(directory: Path, resources: Path, manifest: dict, device: str, *, req
         file = engine / model["path"]
         if not file.is_file() or file.is_symlink() or digest(file) != model["sha256"]:
             raise RuntimeError(f"Model integrity mismatch: {model['path']}")
+    for model in manifest.get("cleanroomModels", []):
+        file = engine / model["path"]
+        if not file.is_file() or file.is_symlink() or digest(file) != model["sha256"]:
+            raise RuntimeError(f"Clean-room MIT model integrity mismatch: {model['path']}")
     requirement = resources / manifest["platforms"][host_target()]["requirements"]
     if digest(requirement) != manifest["platforms"][host_target()]["requirementsSha256"]:
         raise RuntimeError("Packaged requirements lock was modified.")
@@ -171,6 +203,7 @@ def doctor(directory: Path, resources: Path, manifest: dict, device: str, *, req
 
 
 def setup(directory: Path, resources: Path, manifest: dict, device: str) -> dict:
+    assert_storage_write(directory)
     verify_toolchain(manifest)
     directory.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     lock_path = directory.with_name(directory.name + ".setup.lock")
@@ -182,8 +215,7 @@ def setup(directory: Path, resources: Path, manifest: dict, device: str) -> dict
             raise RuntimeError("An incomplete runtime exists at the destination. Choose a new --runtime-dir; existing files were preserved.")
         stage = directory.with_name(directory.name + ".partial")
         stage.mkdir(mode=0o700, exist_ok=True)
-        if shutil.disk_usage(stage).free < 6 * 1024**3:
-            raise RuntimeError("Runtime setup requires at least 6 GiB of free disk space.")
+        assert_storage_write(stage)
         engine = stage / "engine"
         engine.mkdir(exist_ok=True)
         archive = stage / "source.tar.gz"
@@ -192,17 +224,19 @@ def setup(directory: Path, resources: Path, manifest: dict, device: str) -> dict
         extract_source(archive, engine, manifest["sourceFiles"])
         for model in manifest["models"]:
             download(model["url"], engine / model["path"], model["sha256"])
+        for model in manifest.get("cleanroomModels", []):
+            download(model["url"], engine / model["path"], model["sha256"])
         python = engine / ".venv/bin/python"
         if not python.exists():
-            run([sys.executable, "-m", "venv", str(engine / ".venv")])
+            run([sys.executable, "-m", "venv", str(engine / ".venv")], storage_directory=engine)
         bootstrap = resources / "requirements-runtime-bootstrap.txt"
         if digest(bootstrap) != manifest["bootstrapSha256"]:
             raise RuntimeError("Packaged bootstrap lock was modified.")
-        run([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--require-hashes", "--no-deps", "-r", str(bootstrap)])
+        run([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--require-hashes", "--no-deps", "-r", str(bootstrap)], storage_directory=engine)
         requirements = resources / manifest["platforms"][host_target()]["requirements"]
         if digest(requirements) != manifest["platforms"][host_target()]["requirementsSha256"]:
             raise RuntimeError("Packaged runtime lock was modified.")
-        run([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--require-hashes", "--no-deps", "--only-binary=:all:", "--no-binary=antlr4-python3-runtime", "--no-build-isolation", "-r", str(requirements)])
+        run([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--require-hashes", "--no-deps", "--only-binary=:all:", "--no-binary=antlr4-python3-runtime", "--no-build-isolation", "-r", str(requirements)], storage_directory=engine)
         doctor(stage, resources, manifest, device, require_receipt=False)
         archive.unlink()
         # Relocate text entry points before atomic activation. Interpreter
@@ -212,8 +246,12 @@ def setup(directory: Path, resources: Path, manifest: dict, device: str) -> dict
                 continue
             data = script.read_bytes()
             if b"\0" not in data:
-                script.write_bytes(data.replace(str(stage).encode(), str(directory).encode()))
-        (stage / "installed.json").write_text(json.dumps({"manifestSha256": digest(resources / "config/waveparse-runtime.json"), "target": host_target()}))
+                rewritten = data.replace(str(stage).encode(), str(directory).encode())
+                assert_storage_write(script.parent, len(rewritten))
+                script.write_bytes(rewritten)
+        receipt = json.dumps({"manifestSha256": digest(resources / "config/waveparse-runtime.json"), "target": host_target()})
+        assert_storage_write(stage, len(receipt.encode()))
+        (stage / "installed.json").write_text(receipt)
         stage.rename(directory)
         return doctor(directory, resources, manifest, device)
 
@@ -233,9 +271,9 @@ def main() -> None:
     result = operation(directory, resources, manifest, args.device)
     if args.workspace_dir:
         args.workspace_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if shutil.disk_usage(args.workspace_dir).free < 6 * 1024**3:
-            raise RuntimeError("Workspace requires at least 6 GiB free for the first run.")
+        assert_storage_write(args.workspace_dir, len(b"waveparse"))
         with tempfile.TemporaryFile(dir=args.workspace_dir) as probe:
+            assert_storage_write(args.workspace_dir, len(b"waveparse"))
             probe.write(b"waveparse"); probe.flush(); os.fsync(probe.fileno())
     print(json.dumps(result))
 

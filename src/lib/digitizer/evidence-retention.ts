@@ -5,6 +5,7 @@ export const PERMANENT_EVIDENCE_ASSETS = new Set<RunAssetKey>([
   "input", "diagnostic", "paperRender", "probability", "canonicalCsv",
   "segmentsCsv", "uncertaintyCsv", "segmentMapJson", "coordinateEvidence", "sourceTimeEvidence", "metadataCsv", "provenanceJson", "reviewJson",
   "diagnosticBundle", "diagnosticManifest",
+  "provisionalTraceCsv", "provisionalTracePreview", "provisionalTraceManifest", "provisionalTraceBundle",
 ])
 
 export type EvidenceAvailability = "recorded" | "unavailable_historical" | "not_recorded" | "not_applicable"

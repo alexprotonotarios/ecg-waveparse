@@ -10,7 +10,7 @@ import signal
 import subprocess
 from typing import Any, NotRequired, TypedDict
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class RunAsset(TypedDict):
@@ -46,6 +46,8 @@ class RunResult(TypedDict):
     gainMmPerMv: NotRequired[float]
     selectedCandidateId: NotRequired[str]
     publicationDecision: NotRequired[dict[str, Any]]
+    traceRecovery: NotRequired[dict[str, Any]]
+    provisionalTrace: NotRequired[dict[str, Any]]
     reliability: NotRequired[dict[str, Any]]
     review: NotRequired[dict[str, Any]]
     processing: NotRequired[dict[str, Any]]
@@ -145,11 +147,11 @@ class Digitizer:
             raise
         return _decode(stdout, stderr, process.returncode)
 
-    def digitize(self, input_path: str | Path, *, device: str = "cpu", timeout_ms: int = 1_800_000) -> RunResult:
-        return self._request("digitize", inputPath=str(Path(input_path).resolve()), device=device, timeoutMs=timeout_ms)
+    def digitize(self, input_path: str | Path, *, device: str = "cpu", mode: str = "production", timeout_ms: int = 1_800_000) -> RunResult:
+        return self._request("digitize", inputPath=str(Path(input_path).resolve()), device=device, mode=mode, timeoutMs=timeout_ms)
 
-    async def digitize_async(self, input_path: str | Path, *, device: str = "cpu", timeout_ms: int = 1_800_000) -> RunResult:
-        return await self._request_async("digitize", inputPath=str(Path(input_path).resolve()), device=device, timeoutMs=timeout_ms)
+    async def digitize_async(self, input_path: str | Path, *, device: str = "cpu", mode: str = "production", timeout_ms: int = 1_800_000) -> RunResult:
+        return await self._request_async("digitize", inputPath=str(Path(input_path).resolve()), device=device, mode=mode, timeoutMs=timeout_ms)
 
     def get_run(self, run_id: str) -> RunResult | None:
         return self._request("get", runId=run_id)

@@ -14,13 +14,13 @@ import {
 } from "@/lib/digitizer/capture-quality"
 import type { PublicationReasonCode } from "@/lib/digitizer/publication-policy"
 import type { SourcePhotoAttempt } from "@/lib/digitizer/source-photo-contract"
+import type { CandidateTraceRecovery } from "@/lib/digitizer/candidate-trace-recovery"
 import type { LayoutGeometryReport } from "@/lib/digitizer/contracts"
 import type { SelectionDiagnostics } from "@/lib/digitizer/selection-evidence"
 import type { SourcePanelTimingEvidence, SourceInkEvidence, SourceTransitionEvidence, SourceRhythmRefinementEvidence, SourceGridConversionEvidence, SourceRhythmContinuityEvidence, SourceSeparatorPublicationEvidence } from "@/lib/digitizer/source-grid-contract"
 import { validateDurableRun } from "@/lib/digitizer/record-contracts"
 import { describeOutcome } from "@/lib/digitizer/outcome-dimensions"
 import {
-  PERMANENT_EVIDENCE_ASSETS,
   quantitativeEvidenceAvailability,
   type QuantitativeEvidenceAvailability,
 } from "@/lib/digitizer/evidence-retention"
@@ -32,6 +32,7 @@ import {
 } from "@/lib/digitizer/review-policy"
 import {
   assertRunStorageAdmission,
+  assertRunStorageWriteAt,
   requiredRunStorageReservationBytes,
   RunStorageAdmissionError,
   runStoragePolicy,
@@ -50,6 +51,9 @@ export const ASSET_KEYS = [
   "canonicalCsv",
   "segmentsCsv",
   "uncertaintyCsv",
+  "wfdbHeader",
+  "wfdbSignal",
+  "downstreamJson",
   "segmentMapJson",
   "coordinateEvidence",
   "sourceTimeEvidence",
@@ -58,6 +62,10 @@ export const ASSET_KEYS = [
   "reviewJson",
   "diagnosticBundle",
   "diagnosticManifest",
+  "provisionalTraceCsv",
+  "provisionalTracePreview",
+  "provisionalTraceManifest",
+  "provisionalTraceBundle",
 ] as const
 
 export type RunAssetKey = (typeof ASSET_KEYS)[number]
@@ -171,6 +179,8 @@ export type RunRecord = {
   publicationDecision?: DigitizerPublicationDecision
   digitizer?: DigitizerRunSummary
   sourcePhotoAttempt?: SourcePhotoAttempt
+  traceRecovery?: CandidateTraceRecovery
+  provisionalTrace?: CandidateTraceRecovery
   reliability?: DigitizerReliabilitySummary
   review?: DigitizerReviewSummary
   processing?: DigitizerJobLifecycle
@@ -181,6 +191,7 @@ export type RunRecord = {
   assets: Partial<Record<RunAssetKey, RunAsset>>
 }
 
+// Read-only compatibility for historical runs; new runs are never compacted.
 export type RunRetentionSummary = {
   version: 1 | 2
   policy: "lean-final-evidence-v1" | "lean-final-evidence-v2"
@@ -415,6 +426,9 @@ export type DigitizerCandidateSummary = {
     kind?: DigitizerCandidateKind
     capabilities?: DigitizerCandidateCapabilities
     resampleSize: number
+    rotateOnResample?: boolean
+    provisionalLayoutHint?: boolean
+    provisionalSourceInk?: boolean
     upscaleToMaxDimension?: number
     darkInkEnhancement?: boolean
     darkInkSupportRadius?: number
@@ -457,7 +471,11 @@ export type DigitizerCandidateSummary = {
 }
 
 export type DigitizerRunSummary = {
-  engine: "Open-ECG-Digitizer"
+  engine:
+    | "Open-ECG-Digitizer"
+    | "WaveParse-Neural-3x4"
+    | "WaveParse-CleanRoom-MIT"
+    | "WaveParse-Vector-PDF-MIT"
   selectedCandidateId?: string
   candidates: DigitizerCandidateSummary[]
   evidence?: DigitizerPipelineEvidence
@@ -885,7 +903,8 @@ async function createStoredRunFromBytesInternal(
       await syncDirectory(runDir)
       return run
     } catch (error) {
-      if (stagingCreated && !committed) {
+      const capacityPaused = error instanceof RunStorageAdmissionError && error.code === "insufficient_storage"
+      if (stagingCreated && !committed && !capacityPaused) {
         await fs.rm(stagingDir, { recursive: true, force: true })
         await syncDirectory(STORAGE_DIR).catch(() => undefined)
       }
@@ -896,7 +915,7 @@ async function createStoredRunFromBytesInternal(
 
 export function allowedUploadExtension(fileName: string) {
   const ext = path.extname(fileName).toLowerCase()
-  return [".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"].includes(ext)
+  return [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"].includes(ext)
 }
 
 export function sanitizeFileName(fileName: string) {
@@ -912,12 +931,14 @@ export function sanitizeFileName(fileName: string) {
 export function contentTypeForPath(filePath: string) {
   const ext = path.extname(filePath).toLowerCase()
 
+  if (ext === ".pdf") return "application/pdf"
   if (ext === ".png") return "image/png"
   if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg"
   if (ext === ".webp") return "image/webp"
   if (ext === ".tif" || ext === ".tiff") return "image/tiff"
   if (ext === ".csv") return "text/csv; charset=utf-8"
   if (ext === ".json") return "application/json; charset=utf-8"
+  if (ext === ".hea") return "text/plain; charset=utf-8"
 
   return "application/octet-stream"
 }
@@ -1153,6 +1174,9 @@ const DERIVED_ASSET_DIRECTORY: Record<
   canonicalCsv: "exports",
   segmentsCsv: "exports",
   uncertaintyCsv: "exports",
+  wfdbHeader: "exports",
+  wfdbSignal: "exports",
+  downstreamJson: "exports",
   segmentMapJson: "exports",
   coordinateEvidence: "exports",
   sourceTimeEvidence: "exports",
@@ -1161,6 +1185,10 @@ const DERIVED_ASSET_DIRECTORY: Record<
   reviewJson: "review",
   diagnosticBundle: "exports",
   diagnosticManifest: "exports",
+  provisionalTraceCsv: "exports",
+  provisionalTracePreview: "exports",
+  provisionalTraceManifest: "exports",
+  provisionalTraceBundle: "exports",
 }
 
 export async function readVerifiedRunAsset(
@@ -1554,173 +1582,6 @@ async function appendRunReviewUnlocked({
   return run
 }
 
-const RUN_WORKING_DIRECTORIES = [
-  "candidates",
-  "candidate-inputs",
-  "neural-cache",
-] as const
-
-export async function compactStoredRun(id: string) {
-  return withRunMutation(id, async () => {
-    const run = await readStoredRun(id)
-    if (!run) throw new Error("Run not found.")
-    if (run.source !== "upload" || !isTerminalStoredRun(run)) return run
-
-    await readVerifiedRunSource(run)
-    const retainedKeys = ASSET_KEYS.filter((key) => {
-      if (!run.assets[key]) return false
-      return PERMANENT_EVIDENCE_ASSETS.has(key)
-    })
-    const reviewArtifactsRetained = retainedKeys.some(
-      (key) => key === "segmentsCsv" || key === "uncertaintyCsv" || key === "diagnosticBundle"
-    )
-    const retainedKeySet = new Set(retainedKeys)
-    const removedAssets = ASSET_KEYS.filter(
-      (key) => run.assets[key] && !retainedKeySet.has(key)
-    )
-    const retainedPaths = new Set<string>()
-    const retainedAssets: RunRecord["assets"] = {}
-
-    for (const key of retainedKeys) {
-      const asset = run.assets[key]
-      if (!asset) continue
-      if (key === "input") {
-        retainedAssets.input = asset
-        continue
-      }
-      const verified = await readVerifiedRunAsset(run, key)
-      if (!verified) continue
-      retainedAssets[key] = asset
-      retainedPaths.add(verified.absolutePath)
-    }
-
-    const compactedAt = new Date().toISOString()
-    const previousRemovedAssets = run.retention?.removedAssets ?? []
-    const cumulativeRemovedAssets = ASSET_KEYS.filter(
-      (key) => previousRemovedAssets.includes(key) || removedAssets.includes(key)
-    )
-    const compacted: RunRecord = {
-      ...run,
-      digitizer: run.digitizer
-        ? {
-            ...run.digitizer,
-            candidates: run.digitizer.candidates.map((candidate) => {
-              const next = { ...candidate }
-              delete next.localPath
-              next.workingFilesRetained = false
-              return next
-            }),
-          }
-        : undefined,
-      assets: retainedAssets,
-      retention: {
-        version: 2,
-        policy: "lean-final-evidence-v2",
-        compactedAt,
-        retainedAssets: retainedKeys,
-        removedAssets: cumulativeRemovedAssets,
-        reviewArtifactsRetained,
-        reclaimedBytes: 0,
-        cumulativeReclaimedBytes:
-          run.retention?.cumulativeReclaimedBytes ?? 0,
-      },
-    }
-    compacted.quantitativeEvidence = quantitativeEvidenceAvailability(compacted)
-    compacted.outcomeDimensions = describeOutcome(compacted)
-
-    const runDir = runDirectory(id)
-    await atomicWritePrivateFile(
-      path.join(runDir, METADATA_FILE),
-      `${JSON.stringify(compacted, null, 2)}\n`
-    )
-
-    let reclaimedBytes = 0
-    for (const directoryName of RUN_WORKING_DIRECTORIES) {
-      reclaimedBytes += await removeTreeAndCount(
-        path.join(runDir, directoryName)
-      )
-    }
-    for (const directoryName of ["exports", "preprocessing", "review"] as const) {
-      reclaimedBytes += await pruneDirectoryToRetainedFiles(
-        path.join(runDir, directoryName),
-        retainedPaths
-      )
-    }
-
-    compacted.retention = {
-      ...compacted.retention!,
-      reclaimedBytes,
-      cumulativeReclaimedBytes:
-        (run.retention?.cumulativeReclaimedBytes ?? 0) + reclaimedBytes,
-    }
-    await writeRun(compacted)
-    return compacted
-  })
-}
-
-async function removeTreeAndCount(target: string) {
-  const bytes = await logicalTreeBytes(target)
-  await fs.rm(target, { recursive: true, force: true })
-  return bytes
-}
-
-async function logicalTreeBytes(target: string): Promise<number> {
-  let stat
-  try {
-    stat = await fs.lstat(target)
-  } catch (error) {
-    if (isNodeError(error) && error.code === "ENOENT") return 0
-    throw error
-  }
-  if (!stat.isDirectory() || stat.isSymbolicLink()) return stat.size
-  const entries = await fs.readdir(target)
-  let total = 0
-  for (const entry of entries) {
-    total += await logicalTreeBytes(path.join(target, entry))
-  }
-  return total
-}
-
-async function pruneDirectoryToRetainedFiles(
-  directory: string,
-  retainedPaths: ReadonlySet<string>
-): Promise<number> {
-  let entries
-  try {
-    entries = await fs.readdir(directory, { withFileTypes: true })
-  } catch (error) {
-    if (isNodeError(error) && error.code === "ENOENT") return 0
-    throw error
-  }
-
-  let reclaimedBytes = 0
-  for (const entry of entries) {
-    const target = path.join(directory, entry.name)
-    if (entry.isDirectory()) {
-      reclaimedBytes += await pruneDirectoryToRetainedFiles(
-        target,
-        retainedPaths
-      )
-      try {
-        await fs.rmdir(target)
-      } catch (error) {
-        if (
-          !isNodeError(error) ||
-          (error.code !== "ENOENT" && error.code !== "ENOTEMPTY")
-        ) {
-          throw error
-        }
-      }
-      continue
-    }
-    if (entry.isFile() && retainedPaths.has(target)) continue
-    const stat = await fs.lstat(target)
-    reclaimedBytes += stat.size
-    await fs.rm(target, { recursive: true, force: true })
-  }
-  return reclaimedBytes
-}
-
 export async function removeStoredRun(id: string) {
   await withRunMutation(id, () =>
     fs.rm(runDirectory(id), { recursive: true, force: true })
@@ -1798,7 +1659,9 @@ async function tryClaimStorageAdmission(
   }
   const createClaim = async () => {
     try {
-      await fs.writeFile(claimPath, `${JSON.stringify(claim, null, 2)}\n`, {
+      const contents = `${JSON.stringify(claim, null, 2)}\n`
+      await assertRunStorageWriteAt(storageDir, Buffer.byteLength(contents))
+      await fs.writeFile(claimPath, contents, {
         encoding: "utf8",
         flag: "wx",
         mode: 0o600,
@@ -2217,7 +2080,7 @@ function parseRunIntakeJournal(source: string) {
       typeof storage.admittedAt !== "string" ||
       !Number.isFinite(Date.parse(storage.admittedAt)) ||
       !Number.isSafeInteger(storage.minimumFreeBytes) ||
-      storage.minimumFreeBytes < runStoragePolicy.minimumFreeBytes ||
+      storage.minimumFreeBytes < runStoragePolicy.minimumRecordedFreeBytes ||
       !Number.isSafeInteger(storage.reservedBytes) ||
       storage.reservedBytes <
         requiredRunStorageReservationBytes(journal.fileSizeBytes!) ||
@@ -2272,9 +2135,11 @@ export async function tryClaimStoredRunProcessing({
 
   const createClaim = async () => {
     try {
+      const contents = `${JSON.stringify(claim, null, 2)}\n`
+      await assertRunStorageWriteAt(path.dirname(claimPath), Buffer.byteLength(contents))
       await fs.writeFile(
         claimPath,
-        `${JSON.stringify(claim, null, 2)}\n`,
+        contents,
         { encoding: "utf8", flag: "wx" }
       )
       return true
@@ -2342,37 +2207,6 @@ export async function releaseStoredRunProcessingClaim(
 export async function touchStoredRun(id: string) {
   const now = new Date()
   await fs.utimes(runDirectory(id), now, now)
-}
-
-export async function purgeStaleWorkerRuns(
-  olderThanMs: number,
-  now = Date.now(),
-  storageDir = STORAGE_DIR
-) {
-  let entries
-  try {
-    entries = await fs.readdir(storageDir, { withFileTypes: true })
-  } catch (error) {
-    if (isNodeError(error) && error.code === "ENOENT") return 0
-    throw error
-  }
-
-  let removed = 0
-  for (const entry of entries) {
-    if (!entry.isDirectory() || !entry.name.startsWith("neo_") || !isSafeRunId(entry.name)) {
-      continue
-    }
-    const directory = path.join(storageDir, entry.name)
-    try {
-      const stat = await fs.stat(directory)
-      if (now - stat.mtimeMs < olderThanMs) continue
-      await fs.rm(directory, { recursive: true, force: true })
-      removed += 1
-    } catch (error) {
-      if (!isNodeError(error) || error.code !== "ENOENT") throw error
-    }
-  }
-  return removed
 }
 
 export async function resolveRunAsset(id: string, key: RunAssetKey) {
@@ -2527,9 +2361,11 @@ async function atomicWritePrivateFile(
         if (!isNodeError(error) || error.code !== "ENOENT") throw error
       }
     }
+    await assertRunStorageWriteAt(directory, Buffer.byteLength(contents))
     handle = await fs.open(temporary, "wx", 0o600)
     temporaryCreated = true
     await fault?.("opened")
+    await assertRunStorageWriteAt(directory, Buffer.byteLength(contents))
     if (typeof contents === "string") {
       await handle.writeFile(contents, "utf8")
     } else {
@@ -2727,6 +2563,7 @@ async function copyKnownAssets(
       fileName
     )
 
+    await assertRunStorageWriteAt(exportsDir, (await fs.stat(sourceAbsolutePath)).size)
     await fs.copyFile(sourceAbsolutePath, destinationPath)
     await fs.chmod(destinationPath, 0o600)
     copiedAssets[key] = await assetFromRelativePath(
@@ -2787,6 +2624,9 @@ function assetLabel(key: RunAssetKey) {
     canonicalCsv: "Canonical CSV",
     segmentsCsv: "Compact 500 Hz CSV",
     uncertaintyCsv: "Per-sample uncertainty CSV",
+    wfdbHeader: "PhysioNet WFDB Header (.hea)",
+    wfdbSignal: "PhysioNet WFDB Signal (.dat)",
+    downstreamJson: "Downstream Medical JSON",
     segmentMapJson: "Segment identity and timing evidence",
     coordinateEvidence: "Decoder coordinate evidence",
     sourceTimeEvidence: "Source timing and sample lineage",
@@ -2795,6 +2635,10 @@ function assetLabel(key: RunAssetKey) {
     reviewJson: "Review audit trail",
     diagnosticBundle: "Photo diagnostic review bundle",
     diagnosticManifest: "Photo diagnostic manifest",
+    provisionalTraceCsv: "Provisional trace CSV",
+    provisionalTracePreview: "Provisional trace preview",
+    provisionalTraceManifest: "Provisional trace evidence",
+    provisionalTraceBundle: "Provisional trace review bundle",
   }
 
   return labels[key]

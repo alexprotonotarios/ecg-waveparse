@@ -6,6 +6,7 @@ below retain their own licences.
 | Material | Origin / treatment |
 | --- | --- |
 | Language interfaces, packaging, setup, runtime-path adapter | Independently authored WaveParse code; MIT. |
+| Clean-room WaveParse neural models (`WaveParseGridRectifierNet` + `WaveParseLeadDecoderNet`), vector PDF extractor, WFDB/JSON exports, universal layout detector | Independently authored WaveParse code and weights trained exclusively on open CC-BY-4.0 PhysioNet 2021 waveforms with torchvision ResNet-34 (BSD-3-Clause) encoders; MIT. Weights downloaded separately from this project's GitHub releases with SHA-256 verification. |
 | TypeScript orchestration, deterministic processing, policy and rendering | Independently authored project implementation; MIT except the explicit file list below. |
 | Layout configuration and Open-ECG extension modules | CC BY-SA 4.0; attribution and modification details below. |
 | Open-ECG-Digitizer | Ahus-AIM, commit `97a15087d4abcda843da8c58ee74b1d8f47e6f9a`; CC BY-SA 4.0. Downloaded by explicit setup with its original LICENSE; not included in npm/Python payloads or relicensed as MIT. |
@@ -30,12 +31,14 @@ The following distributed files use CC BY-SA 4.0, whose full text is retained at
 - `ecg_pipeline/lead_layout_standard_3x4.yml`
 - `ecg_pipeline/lead_layout_standard_3x4_with_r1.yml`
 - `ecg_pipeline/lead_layout_standard_12x1.yml`
-- `ecg_pipeline/fidelity_inference_wrapper.py`
+- `ecg_pipeline/fidelity_inference_wrapper.py` (including opt-in provisional source contrast with original-coverage routing and RNG preservation)
 - `ecg_pipeline/reliable_signal_extractor.py`
 - `ecg_pipeline/compact_signal_extractor.py` (cropped storage for rejected centroid regions)
 - `ecg_pipeline/cpu_unet_lifetime.py` (release consumed U-Net tensor references on Linux CPU)
 - `ecg_pipeline/cpu_unet_decoder_lifetime.py` (release consumed encoder/decoder inputs on Mac CPU)
 - `ecg_pipeline/probability_path.py` (extracted unchanged from the signal-extractor extension)
+- `ecg_pipeline/decoder_panel_observation.py` (observe numeric short panels before rhythm assignment)
+- `ecg_pipeline/provisional_layout_identifier.py` (unverified provisional layout routing)
 
 The layouts adapt `src/config/lead_layouts_all.yml` from Open-ECG-Digitizer by
 selecting supported layouts, constraining geometry, and handling rhythm rows.
